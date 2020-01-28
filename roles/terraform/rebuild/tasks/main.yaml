@@ -1,0 +1,7 @@
+- name: terraform/rebuild | init, destroy, apply
+  include_role:
+    name: "{{ item }}"
+  with_items:
+  - terraform/init
+  - terraform/destroy
+  - terraform/apply

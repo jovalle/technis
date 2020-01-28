@@ -1,0 +1,76 @@
+# Source: https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+nodeRegistration:
+  name: "{{ inventory_hostname }}"
+{% if container_runtime == 'docker' %}
+  criSocket: "/var/run/dockershim.sock"
+{% else %}
+  criSocket: "/run/containerd/containerd.sock"
+{% endif %}
+  taints:
+  - key: "kubeadmNode"
+    value: "master"
+    effect: "NoSchedule"
+  kubeletExtraArgs:
+{% if container_runtime == 'docker' %}
+    cgroup-driver: "systemd"
+{% else %}
+    cgroup-driver: "cgroupfs"
+{% endif %}
+  ignorePreflightErrors:
+  - IsPrivilegedUser
+localAPIEndpoint:
+  advertiseAddress: "{{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}"
+  bindPort: {{ k8s_api_port }}
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+etcd:
+  # one of local or external
+  # local:
+  #   imageRepository: "k8s.gcr.io"
+  #   imageTag: "3.2.24"
+  #   dataDir: "/var/lib/etcd"
+  #   extraArgs:
+  #     listen-client-urls: "http://10.100.0.1:2379"
+  #   serverCertSANs:
+  #   -  "ec2-10-100-0-1.compute-1.amazonaws.com"
+  #   peerCertSANs:
+  #   - "10.100.0.1"
+  external:
+    endpoints:
+{% for i in groups['etcd'] %}
+    - https://{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }}:2379
+{% endfor %}
+    caFile: "/etc/kubernetes/pki/etcd-ca.pem"
+    certFile: "/etc/kubernetes/pki/apiserver-etcd-client.pem"
+    keyFile: "/etc/kubernetes/pki/apiserver-etcd-client-key.pem"
+networking:
+  serviceSubnet: "{{ k8s_service_subnet }}"
+  podSubnet: "{{ k8s_pod_subnet }}"
+  dnsDomain: "{{ domain }}"
+kubernetesVersion: "v1.17.1"
+controlPlaneEndpoint: "{{ k8s_api_endpoint }}"
+apiServer:
+  extraArgs:
+    authorization-mode: "Node,RBAC"
+  certSANs:
+  - "{{ k8s_api_fqdn }}"
+  timeoutForControlPlane: 4m0s
+controllerManager:
+  extraArgs:
+    "node-cidr-mask-size": "20"
+scheduler: {}
+certificatesDir: "/etc/kubernetes/pki"
+imageRepository: "k8s.gcr.io"
+useHyperKubeImage: false
+clusterName: "{{ cluster }}"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# kubelet specific options here
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+# kube-proxy specific options here

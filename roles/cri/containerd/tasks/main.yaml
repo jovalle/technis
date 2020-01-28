@@ -1,0 +1,67 @@
+- name: create install dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+  - /etc/containerd
+
+- name: check runc binary
+  stat:
+    path: /usr/local/bin/runc
+  register: runc_bin
+
+- name: check runc version
+  shell: |
+    echo "v$(runc --version | grep version | awk '{print $NF}')"
+  register: runc_version
+
+- name: get runc binaries
+  get_url:
+    url: "{{ item.url }}"
+    dest: "/usr/local/bin/{{ item.dest }}"
+    mode: 0755
+    owner: root
+    group: root
+    force: yes
+  with_items:
+  - { url: "https://github.com/opencontainers/runc/releases/download/v1.0.0-rc9/runc.amd64", dest: "runc" }
+  - { url: "https://storage.googleapis.com/gvisor/releases/nightly/latest/runsc", dest: "runsc" }
+  when: (runc_bin.stat.exists == False) #or (runc_version.stdout != k8s_versions.runc)
+
+- name: check containerd binary
+  stat:
+    path: /bin/containerd
+  register: containerd_bin
+
+- name: check containerd version
+  shell: |
+    containerd --version | awk '{print $3}' | tr -d 'v'
+  register: containerd_version
+
+- name: get containerd binaries
+  unarchive:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+  - { src: "https://github.com/containerd/containerd/releases/download/v1.3.2/containerd-1.3.2.linux-amd64.tar.gz", dest: / }
+  - { src: "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.17.0/crictl-v1.17.0-linux-amd64.tar.gz", dest: /usr/local/bin/ }
+  when: (containerd_bin.stat.exists == False) #or (containerd_version.stdout != k8s_versions.containerd)
+
+- name: render configs and services
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ item.target_dir }}/{{ item.file }}"
+  with_items:
+  - { file: config.toml, target_dir: /etc/containerd }
+  - { file: containerd.service, target_dir: /etc/systemd/system }
+
+- name: start services
+  systemd:
+    name: containerd
+    daemon_reload: yes
+    state: restarted
+    enabled: yes

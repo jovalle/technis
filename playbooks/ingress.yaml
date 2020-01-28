@@ -1,0 +1,7 @@
+- hosts: cluster
+  gather_facts: yes
+
+- hosts: masters[0]
+  become: yes
+  roles:
+  - ingress/contour

@@ -1,0 +1,3 @@
+site_feature_etcd: yes
+site_feature_ingress: yes
+site_feature_pv: no

@@ -1,0 +1,7 @@
+- import_playbook: rebuild.yaml
+- import_playbook: prepare.yaml
+- import_playbook: etcd.yaml
+- import_playbook: cri.yaml
+- import_playbook: kubeadm.yaml
+- import_playbook: cni.yaml
+- import_playbook: ingress.yaml

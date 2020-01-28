@@ -1,0 +1,7 @@
+terraform-provider-*
+*tfstate*
+lock.json
+key.json
+.DS_Store
+.vagrant
+*.log

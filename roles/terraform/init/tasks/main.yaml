@@ -1,0 +1,5 @@
+- name: terraform/init | initialize working dir
+  shell: |
+    pushd {{ ansible_inventory_sources[0] }} && \
+    terraform init && \
+    popd

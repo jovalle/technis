@@ -1,0 +1,9 @@
+- name: cni/flannel | deploy flannel
+  import_role:
+    name: kubectl
+  vars:
+    command: apply
+    target_list:
+      - "https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+    source_role: cni/flannel/deploy
+    file_type: remote
