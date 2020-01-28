@@ -1,0 +1,40 @@
+# thanks @aserhat for the inspiration
+- name: "{{ source_role }} | create temp dir"
+  tempfile:
+    state: directory
+  register: temp
+
+- name: render manifest
+  block:
+  - name: "{{ source_role }} | fetch manifest(s) from host"
+    copy:
+      src: "{{ item }}"
+      dest: "{{ temp.path }}/{{ item }}"
+    with_items:
+      - "{{ target_list }}"
+    when: file_type == 'static'
+
+  - name: "{{ source_role }} | render manifest(s) onto target host"
+    template:
+      src: "{{ item }}.j2"
+      dest: "{{ temp.path }}/{{ item }}"
+    with_items:
+      - "{{ target_list }}"
+    when: file_type == 'template'
+
+  - name: "{{ source_role }} | apply manifest(s)"
+    command: "kubectl {{ command | default('apply') }} -f {{ temp.path }}/{{ item }}"
+    with_items:
+      - "{{ target_list }}"
+    when: file_type != 'remote'
+
+  - name: "{{ source_role }} | apply manifest(s)"
+    command: "kubectl {{ command | default('apply') }} -f {{ item }}"
+    with_items:
+      - "{{ target_list }}"
+    when: file_type == 'remote'
+  always:
+  - name: "{{ source_role }} | clean up"
+    file:
+      path: "{{ temp.path }}"
+      state: absent

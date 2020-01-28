@@ -1,0 +1,6 @@
+- hosts: all
+  become: yes
+  roles:
+  - os/packages/update
+  - os/packages/install
+  - os/prepare

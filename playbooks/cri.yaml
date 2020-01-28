@@ -1,0 +1,7 @@
+- hosts: masters:nodes
+  become: yes
+  roles:
+  - role: cri/containerd
+    when: container_runtime is not defined or container_runtime == 'containerd'
+  - role: cri/docker
+    when: container_runtime is defined and container_runtime == 'docker'

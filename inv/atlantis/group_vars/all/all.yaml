@@ -1,0 +1,7 @@
+cluster: technis
+container_networking: calico
+container_runtime: docker
+default_interface: ens3
+domain: techn.is
+domain_apps: "apps.{{ domain }}"
+infrastructure_provisioner: terraform

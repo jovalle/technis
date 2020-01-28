@@ -1,0 +1,5 @@
+- name: vagrant/destroy | eradicate all created boxes
+  shell: |
+    pushd {{ ansible_inventory_sources[0] }} && \
+    vagrant destroy -f && \
+    popd

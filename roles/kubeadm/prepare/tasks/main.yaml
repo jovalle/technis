@@ -1,0 +1,30 @@
+- name: kubeadm/prepare | prepare repo for yum
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes Main Repository
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    enabled: yes
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: kubeadm/prepare | prepare repo for apt
+  block:
+    - name: kubeadm/prepare | onboard kubernetes repo gpg key
+      shell: |
+        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
+    - name: kubeadm/prepare | add kubernetes repo
+      shell: apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+    - name: kubeadm/prepare | update apt repos
+      shell: apt update
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: kubeadm/prepare | install core packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+  - kubeadm
+  - kubectl
+  - kubelet

@@ -1,0 +1,31 @@
+- hosts: etcd
+  become: yes
+  gather_facts: yes
+  tasks:
+  - setup:
+
+- hosts: etcd[0]
+  become: yes
+  vars:
+    cert_ca_host: "{{ groups.etcd[0] }}"
+    cert_common_name: technis-etcd-ca
+    cert_id: etcd-ca
+    cert_profile: ca
+    target_dir: /etc/etcd/pki
+  roles:
+  - os/certificate/generate
+
+- hosts: etcd
+  become: yes
+  vars:
+    cert_ca_host: "{{ groups.etcd[0] }}"
+    cert_ca_id: etcd-ca
+    cert_common_name: technis-etcd-peer
+    cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1"
+    cert_id: etcd-peer
+    cert_profile: peer
+    target_dir: /etc/etcd/pki
+  roles:
+  - os/certificate/generate
+  - etcd/deploy
+  - etcd/validate

@@ -1,0 +1,17 @@
+- hosts: etcd
+  tasks:
+  - setup:
+
+- hosts: masters[0]
+  become: yes
+  roles:
+  - role: cni/calico
+    when: container_networking is defined and container_networking == 'calico'
+  - role: cni/flannel
+    when: container_networking is defined and container_networking == 'flannel'
+
+- hosts: cluster
+  become: yes
+  roles:
+  - role: cni
+    when: container_networking is not defined or (container_networking is defined and container_networking == 'cni')

@@ -1,0 +1,9 @@
+cluster: technis
+container_networking: calico
+container_runtime: docker
+default_interface: eth1
+domain: shared
+domain_apps: apps.shared
+etcd_locale: remote
+infrastructure_provisioner: vagrant
+k8s_provisioner: kubeadm

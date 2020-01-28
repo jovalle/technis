@@ -1,0 +1,29 @@
+- name: create tmpdir
+  tempfile:
+    state: directory
+    path: /tmp
+  register: _tmpdir
+
+- name: deploy contour
+  block:
+
+  - name: deploy manifest
+    import_role:
+      name: kubectl
+    vars:
+      command: apply
+      target_list:
+      - contour.yaml
+      - kuard.yaml
+      source_role: ingress/contour
+      file_type: template
+
+  - name: check ingress
+    uri:
+      url: "http://kuard.{{ domain_apps }}"
+
+  always:
+  - name: cleanup tmpdir
+    file:
+      path: "{{ _tmpdir.path }}"
+      state: absent
