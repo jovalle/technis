@@ -1,16 +1,22 @@
 - name: cni/calico | get etcd TLS bundle
   block:
+
   - shell: cat /etc/kubernetes/pki/apiserver-etcd-client-key.pem | base64 -w 0
     register: etcd_key
+
   - set_fact:
       etcd_key: "{{ etcd_key.stdout }}"
     register: etcd_key
+
   - shell: cat /etc/kubernetes/pki/apiserver-etcd-client.pem | base64 -w 0
     register: etcd_cert
+
   - set_fact:
       etcd_cert: "{{ etcd_cert.stdout }}"
+
   - shell: cat /etc/kubernetes/pki/etcd-ca.pem | base64 -w 0
     register: etcd_ca
+    
   - set_fact:
       etcd_ca: "{{ etcd_ca.stdout }}"
 
@@ -23,3 +29,10 @@
     - calico-etcd.yaml
     source_role: cni/calico/deploy
     file_type: template
+
+- name: cni/calico | wait for calico-node readiness
+  shell: kubectl -n kube-system get ds calico-node -o jsonpath="{.status.numberReady}"
+  register: ready
+  retries: 6
+  delay: 10
+  until: ready.stdout == '6'
