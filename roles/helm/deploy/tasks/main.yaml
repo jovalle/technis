@@ -1,0 +1,15 @@
+- name: check binary
+  stat:
+    path: /usr/local/bin/helm
+  register: bin
+
+- name: deploy helm
+  block:
+
+  - name: run install script
+    shell: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    
+  - name: add official Helm stable charts
+    shell: helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+  
+  when: bin.stat.exists == False

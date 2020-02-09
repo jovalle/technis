@@ -5,3 +5,4 @@
 - import_playbook: kubeadm.yaml
 - import_playbook: cni.yaml
 - import_playbook: ingress.yaml
+- import_playbook: helm.yaml
