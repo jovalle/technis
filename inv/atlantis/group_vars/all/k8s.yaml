@@ -1,5 +1,1 @@
-k8s_api_fqdn: "api.{{ domain }}"
-k8s_api_port: 6443
-k8s_api_endpoint: "{{ k8s_api_fqdn }}:{{ k8s_api_port }}"
-k8s_pod_subnet: 10.16.0.0/16
-k8s_service_subnet: 10.32.0.0/16
+../../../group_vars/k8s.yaml
