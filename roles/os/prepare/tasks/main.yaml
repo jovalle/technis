@@ -87,3 +87,11 @@
     dest: "/root/.ssh/id_rsa"
     content: "{{ ssh_private_key }}"
     mode: 0600
+
+- name: os/prepare | personal touch
+  lineinfile:
+    path: /root/.bashrc
+    line: "{{ item }}"
+  with_items:
+  - "set -o vi"
+  - "export EDITOR=vim"

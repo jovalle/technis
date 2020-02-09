@@ -1,2 +1,2 @@
 dependencies:
-  - role: os/certificate/prepare
+- role: os/certificate/prepare
