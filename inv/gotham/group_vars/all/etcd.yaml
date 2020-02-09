@@ -1,1 +1,1 @@
-etcd_cert_path: /etc/etcd/pki
+../../../group_vars/etcd.yaml
