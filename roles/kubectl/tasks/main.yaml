@@ -6,6 +6,7 @@
 
 - name: render manifest
   block:
+  
   - name: "{{ source_role }} | fetch manifest(s) from host"
     copy:
       src: "{{ item }}"
@@ -33,6 +34,7 @@
     with_items:
       - "{{ target_list }}"
     when: file_type == 'remote'
+
   always:
   - name: "{{ source_role }} | clean up"
     file:

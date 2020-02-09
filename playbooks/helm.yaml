@@ -1,0 +1,5 @@
+- hosts: masters[0]
+  roles:
+  - helm/deploy
+  - { role: helm/install, helm_name: mysql, helm_chart: stable/mysql }
+  - { role: helm/uninstall, helm_name: mysql }
