@@ -12,6 +12,13 @@
 
 - hosts: cluster
   become: yes
+  tasks:
+  - name: cni/calico/ctl | get bin
+    get_url:
+      url: https://github.com/projectcalico/calicoctl/releases/download/v3.12.0/calicoctl
+      dest: /usr/local/bin/calicoctl
+      mode: 0755
+    when: container_networking is defined and container_networking == 'calico'
   roles:
   - role: cni
     when: container_networking is not defined or (container_networking is defined and container_networking == 'cni')
