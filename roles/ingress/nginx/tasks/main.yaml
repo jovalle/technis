@@ -1,0 +1,12 @@
+- name: deploy ingress controller
+  block:
+  - name: deploy manifest
+    import_role:
+      name: kubectl
+    vars:
+      command: apply
+      target_list:
+      - mandatory.yaml
+      - service.yaml
+      source_role: ingress/nginx
+      file_type: template

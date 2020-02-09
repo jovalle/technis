@@ -17,22 +17,23 @@ systemctl restart libvirtd
 ```
 curl -O https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz && \
 tar -C /usr/local -zxf go1.12.5.linux-amd64.tar.gz && \
-export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:/usr/local/go/bin \
+rm -f go1.12.5.linux-amd64.tar.gz
 ```
 #### Terraform
 ```
-curl -O https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip && \
-unzip terraform_0.11.13_linux_amd64.zip && \
+TERRAFORM_VERSION=0.12.20 && \
+curl -O https://releases.hashicorp.com/terraform/$TERRAFORM_VERSION/terraform_$TERRAFORM_VERSION_linux_amd64.zip && \
+unzip terraform_$TERRAFORM_VERSION_linux_amd64.zip && \
 mv terraform /usr/bin/
-rm -f terraform_0.11.13_linux_amd64.zip
+rm -f terraform_$TERRAFORM_VERSION_linux_amd64.zip
 ```
 #### Terraform Provider for libvirt
 ```
 pushd $HOME && \
 go get github.com/dmacvicar/terraform-provider-libvirt && \
-cd go/src/github.com/dmacvicar/terraform-provider-libvirt && \
-mkdir -p .terraform.d/plugins/linux_amd64 && \
-pushd .terraform/plugins/linux_amd64 && \
+mkdir -p $HOME/.terraform.d/plugins/linux_amd64 && \
+pushd $HOME/.terraform/plugins/linux_amd64 && \
 ln -s $GOPATH/bin/terraform-provider-libvirt && \
 popd
 ```

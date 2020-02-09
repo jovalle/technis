@@ -4,4 +4,6 @@ container_runtime: docker
 default_interface: ens3
 domain: techn.is
 domain_apps: "apps.{{ domain }}"
+etcd_locale: remote
 infrastructure_provisioner: terraform
+ingress_controller: nginx

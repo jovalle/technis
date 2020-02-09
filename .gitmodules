@@ -1,0 +1,3 @@
+[submodule "roles/examples/k8s"]
+	path = roles/examples/k8s
+	url = https://github.com/kubernetes/examples

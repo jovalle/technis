@@ -1,0 +1,14 @@
+- name: set ingress labels
+  block:
+  - name: check labels
+    command: kubectl get node {{ item }} -o custom-columns=ROLES:.metadata.labels --no-headers
+    register: _node
+    ignore_errors: yes
+    with_items:
+    - "{{ groups['ingress'] }}"
+  - name: set labels
+    command: kubectl label node {{ item }} node-role.kubernetes.io/ingress=
+    when: '"node-role.kubernetes.io/ingress" not in _node.stdout'
+    ignore_errors: yes
+    with_items:
+    - "{{ groups['ingress'] }}"
