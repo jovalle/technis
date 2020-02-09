@@ -4,6 +4,5 @@
 - hosts: masters[0]
   become: yes
   roles:
-  - ingress/label
   - role: ingress/nginx
     when: ingress_controller is defined and ingress_controller == 'nginx'

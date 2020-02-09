@@ -58,3 +58,14 @@
   - { role: os/certificate/generate, cert_id: apiserver-client, cert_common_name: "system:node:{{ inventory_hostname }}", cert_organization: "system:nodes", cert_hostname: "{{ inventory_hostname }},{{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}" }
   - { role: os/certificate/generate, cert_id: kube-proxy, cert_common_name: "system:kube-proxy", cert_organization: "system:node-proxier" }
   - kubeadm/add-node
+
+- hosts: cluster
+  become: yes
+  gather_facts: yes
+  tasks:
+  - include: labels.yaml node_name={{ item }} node_role=worker
+    with_items:
+    - "{{ groups['nodes'] }}"
+  - include: labels.yaml node_name={{ item }} node_role=ingress
+    with_items:
+    - "{{ groups['ingress'] }}"

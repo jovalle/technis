@@ -1,5 +1,6 @@
 - name: deploy ingress controller
   block:
+
   - name: deploy manifest
     import_role:
       name: kubectl
@@ -10,3 +11,10 @@
       - service.yaml
       source_role: ingress/nginx
       file_type: template
+
+- name: wait for nginx-ingress-controller readiness
+  shell: kubectl -n ingress-nginx get deployment nginx-ingress-controller -o jsonpath="{.status.readyReplicas}"
+  register: ready
+  retries: 3
+  delay: 10
+  until: ready.stdout == '1'
