@@ -1,0 +1,7 @@
+- name: minikube/rebuild | delete, start
+  include_role:
+    name: "{{ item }}"
+  with_items:
+  - minikube/delete
+  - minikube/start
+  - minikube/validate

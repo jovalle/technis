@@ -225,7 +225,11 @@ spec:
       serviceAccountName: nginx-ingress-serviceaccount
       nodeSelector:
         kubernetes.io/os: linux
+{% if node_type != 'local' %}
         node-role.kubernetes.io/ingress: ""
+{% else %}
+      hostNetwork: true
+{% endif %}
       containers:
         - name: nginx-ingress-controller
           image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.28.0

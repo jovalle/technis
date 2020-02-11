@@ -1,6 +1,7 @@
 - import_playbook: rebuild.yaml
 - import_playbook: prepare.yaml
 - import_playbook: etcd.yaml
+  when: etcd_locale is defined and etcd_locale == "remote"
 - import_playbook: cri.yaml
 - import_playbook: kubeadm.yaml
 - import_playbook: cni.yaml
