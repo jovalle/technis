@@ -1,0 +1,11 @@
+- name: check minikube health
+  shell: |
+    minikube status | grep ^{{ item }}:
+  register: host
+  delay: 30
+  retries: 10
+  until: 'host.stdout == "{{ item }}: Running"'
+  with_items:
+  - host
+  - kubelet
+  - apiserver
