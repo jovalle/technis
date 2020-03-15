@@ -1,4 +1,4 @@
-- hosts: masters:nodes
+- hosts: controllers:workers
   become: yes
   roles:
   - role: cri/containerd

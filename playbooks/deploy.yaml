@@ -1,4 +1,5 @@
 - import_playbook: rebuild.yaml
+  when: rebuild is not defined or (rebuild | bool)
 - import_playbook: prepare.yaml
 - import_playbook: etcd.yaml
   when: etcd_locale is defined and etcd_locale == "remote"
@@ -7,3 +8,4 @@
 - import_playbook: cni.yaml
 - import_playbook: ingress.yaml
 - import_playbook: helm.yaml
+- import_playbook: kuard.yaml

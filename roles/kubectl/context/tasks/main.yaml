@@ -1,0 +1,29 @@
+- block:
+
+  - name: kubectl/context | check if {{ target_context }} context exists
+    command: kubectl config get-contexts {{ target_context }} --no-headers
+    register: get_context
+    ignore_errors: yes
+
+  - name: kubectl/context | delete existing context
+    command: kubectl config delete-context {{ target_context }}
+    when: '"{{ target_context }}" in get_context.stdout'
+    ignore_errors: yes
+
+  - name: kubectl/context | get admin config for {{ cluster }}
+    become: yes
+    fetch:
+      src: /etc/kubernetes/admin.conf
+      dest: ~/.kube/{{ cluster }}
+      flat: yes
+    delegate_to: "{{ groups['controllers'][0] }}"
+
+  - name: kubectl/context | merge configs
+    shell: |
+      KUBECONFIG="${HOME}/.kube/config:${HOME}/.kube/{{ cluster }}" kubectl config view --merge --flatten > ${HOME}/.kube/config
+
+  always:
+  - name: kubectl/context | remove cluster-specific config
+    file:
+      path: "~/.kube/{{ cluster }}"
+      state: absent

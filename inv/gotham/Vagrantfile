@@ -1,48 +1,48 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-DOMAIN = "shared"
+DOMAIN = "j3o.me"
 SUBNET = "192.168.144"
 ETCD_COUNT = 3
-MASTER_COUNT = 3
-NODE_COUNT = 3
+CONTROLLER_COUNT = 3
+WORKER_COUNT = 3
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "debian/stretch64"
+  config.vm.box = "hashicorp/bionic64"
   config.ssh.insert_key = false
+  config.ssh.private_key_path = ['~/.vagrant.d/insecure_private_key']  # use static key
   config.vm.provider "virtualbox" do |vb|
+    vb.linked_clone = true
     vb.customize ["modifyvm", :id, "--audio", "none"]
     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
-    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
   end
   (1..ETCD_COUNT).each do |i|
     config.vm.provider "virtualbox" do |v|
       v.memory = 512
       v.cpus = 1
     end
-    config.vm.define "etcd#{i}" do |j|
-      j.vm.hostname = "etcd#{i}.#{DOMAIN}"
+    config.vm.define "etcd-#{i}" do |j|
+      j.vm.hostname = "etcd-#{i}.#{DOMAIN}"
       j.vm.network "private_network", ip: "#{SUBNET}.#{i+10}"
     end
   end
-  (1..MASTER_COUNT).each do |i|
+  (1..CONTROLLER_COUNT).each do |i|
     config.vm.provider "virtualbox" do |v|
       v.memory = 1024
       v.cpus = 2
     end
-    config.vm.define "master#{i}" do |j|
-      j.vm.hostname = "master#{i}.#{DOMAIN}"
+    config.vm.define "controller-#{i}" do |j|
+      j.vm.hostname = "controller-#{i}.#{DOMAIN}"
       j.vm.network "private_network", ip: "#{SUBNET}.#{i+20}"
     end
   end
-  (1..NODE_COUNT).each do |i|
+  (1..WORKER_COUNT).each do |i|
     config.vm.provider "virtualbox" do |v|
       v.memory = 2048
       v.cpus = 2
     end
-    config.vm.define "node#{i}" do |j|
-      j.vm.hostname = "node#{i}.#{DOMAIN}"
+    config.vm.define "worker-#{i}" do |j|
+      j.vm.hostname = "worker-#{i}.#{DOMAIN}"
       j.vm.network "private_network", ip: "#{SUBNET}.#{i+30}"
     end
   end

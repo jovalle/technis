@@ -1,24 +1,24 @@
 [etcd]
-etcd1.shared
-etcd2.shared
-etcd3.shared
+etcd-1.j3o.me
+etcd-2.j3o.me
+etcd-3.j3o.me
 
-[masters]
-master1.shared
-master2.shared
-master3.shared
+[controllers]
+controller-1.j3o.me
+controller-2.j3o.me
+controller-3.j3o.me
 
-[nodes]
-node1.shared
-node2.shared
-node3.shared
+[workers]
+worker-1.j3o.me
+worker-2.j3o.me
+worker-3.j3o.me
 
 [ingress]
-node1.shared
+worker-2.j3o.me
 
 [cluster:children]
-masters
-nodes
+controllers
+workers
 
 [all:vars]
 ansible_ssh_user=vagrant
