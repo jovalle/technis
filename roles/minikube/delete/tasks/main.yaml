@@ -1,3 +1,0 @@
-- name: minikube/delete | delete local cluster
-  shell: |
-    minikube delete 

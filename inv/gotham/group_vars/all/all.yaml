@@ -3,8 +3,8 @@ node_type: vm
 container_networking: calico
 container_runtime: docker
 default_interface: eth1
-domain: shared
-domain_apps: apps.shared
+domain: j3o.me
+domain_apps: j3o.me
 etcd_locale: remote
 infrastructure_provisioner: vagrant
 k8s_provisioner: kubeadm

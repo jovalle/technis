@@ -1,7 +1,7 @@
 - name: get join command
   command: kubeadm token create --print-join-command
   register: _join
-  delegate_to: "{{ groups['masters'][0] }}"
+  delegate_to: "{{ groups['controllers'][0] }}"
 
 - name: get join token
   debug:
@@ -21,6 +21,6 @@
   until: _kubelet.rc > 0
   ignore_errors: true
 
-- name: join node to cluster
+- name: join worker to cluster
   command: "{{ _join.stdout }}"
   when: _kubelet.rc > 0

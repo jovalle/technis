@@ -1,8 +1,0 @@
-cluster: metropolis
-node_type: local
-container_networking: calico
-container_runtime: containerd
-domain: nip.io
-domain_apps: "{{ domain }}"
-infrastructure_provisioner: hyperkit
-k8s_provisioner: minikube

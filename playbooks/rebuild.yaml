@@ -3,7 +3,6 @@
   roles:
   - { role: "terraform/rebuild", when: infrastructure_provisioner is defined and infrastructure_provisioner == 'terraform' }
   - { role: "vagrant/rebuild", when: infrastructure_provisioner is defined and infrastructure_provisioner == 'vagrant' }
-  - { role: "minikube/rebuild", when: k8s_provisioner is defined and k8s_provisioner == 'minikube' }
 
 - hosts: all
   gather_facts: no
