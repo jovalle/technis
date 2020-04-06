@@ -33,6 +33,6 @@
 - name: cni/calico | wait for calico-node readiness
   shell: kubectl -n kube-system get ds calico-node -o jsonpath="{.status.numberReady}"
   register: ready
-  retries: 6
+  retries: "{{ 6 * (groups['cluster'] | length) }}"
   delay: 10
   until: ready.stdout == '6'
