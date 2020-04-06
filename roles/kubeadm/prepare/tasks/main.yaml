@@ -22,7 +22,7 @@
 
 - name: kubeadm/prepare | install core packages
   package:
-    name: "{{ item }}"
+    name: "{{ item }}={{ k8s_version }}*"
     state: present
   with_items:
   - kubeadm

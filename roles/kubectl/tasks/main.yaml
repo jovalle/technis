@@ -6,7 +6,7 @@
 
 - name: render manifest
   block:
-  
+
   - name: "{{ source_role }} | fetch manifest(s) from host"
     copy:
       src: "{{ item }}"
@@ -20,20 +20,41 @@
       src: "{{ item }}.j2"
       dest: "{{ temp.path }}/{{ item }}"
     with_items:
-      - "{{ target_list }}"
+    - "{{ target_list }}"
     when: file_type == 'template'
 
-  - name: "{{ source_role }} | apply manifest(s)"
+  - name: "{{ source_role }} | clean slate for manifest(s)"
+    command: "kubectl delete -f {{ temp.path }}/{{ item }}"
+    with_items:
+      - "{{ target_list }}"
+    when: (mode is defined and mode == 'replace') and (file_type == 'static' or file_type == 'template')
+    ignore_errors: yes
+
+  - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
     command: "kubectl {{ command | default('apply') }} -f {{ temp.path }}/{{ item }}"
     with_items:
       - "{{ target_list }}"
-    when: file_type != 'remote'
+    when: file_type == 'static' or file_type == 'template'
 
-  - name: "{{ source_role }} | apply manifest(s)"
+  - name: "{{ source_role }} | clean slate for manifest(s)"
+    command: "kubectl delete -f {{ item }}"
+    with_items:
+    - "{{ target_list }}"
+    when: (mode is defined and mode == 'replace') and (file_type == 'remote')
+    ignore_errors: yes
+
+  - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
     command: "kubectl {{ command | default('apply') }} -f {{ item }}"
     with_items:
-      - "{{ target_list }}"
+    - "{{ target_list }}"
     when: file_type == 'remote'
+
+  - name: apply raw manifest
+    shell: |
+      cat <<EOF | kubectl apply -f -
+      {{ raw_manifest }}
+      EOF
+    when: file_type == 'raw' and raw_manifest is defined
 
   always:
   - name: "{{ source_role }} | clean up"
