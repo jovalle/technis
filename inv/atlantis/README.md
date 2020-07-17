@@ -79,7 +79,7 @@ iface br0 inet dhcp
 ```
 ###### netplan
 ```
-#/etc/netplan/bridged.yaml
+#/etc/netplan/bridged.yml
 network:
   version: 2
   renderer: networkd

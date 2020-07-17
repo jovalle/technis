@@ -55,6 +55,7 @@ controlPlaneEndpoint: "{{ k8s_api_endpoint }}"
 apiServer:
   extraArgs:
     authorization-mode: "Node,RBAC"
+    encryption-provider-config: "/etc/kubernetes/encryption-config.yml"
   certSANs:
   - "{{ k8s_api_fqdn }}"
   timeoutForControlPlane: 4m0s

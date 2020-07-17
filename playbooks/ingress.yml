@@ -3,3 +3,4 @@
   roles:
   - role: ingress/nginx
     when: ingress_controller is not defined or ingress_controller == 'nginx'
+  - role: ingress/validate

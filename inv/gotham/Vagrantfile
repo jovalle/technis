@@ -1,8 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-DOMAIN = "j3o.me"
-SUBNET = "192.168.144"
+DOMAIN = "k8s.cloud.local"
+SUBNET = "10.0.0"
 ETCD_COUNT = 3
 CONTROLLER_COUNT = 3
 WORKER_COUNT = 3
@@ -33,7 +33,7 @@ Vagrant.configure("2") do |config|
     end
     config.vm.define "controller-#{i}" do |j|
       j.vm.hostname = "controller-#{i}.#{DOMAIN}"
-      j.vm.network "private_network", ip: "#{SUBNET}.#{i+20}"
+      j.vm.network "private_network", ip: "#{SUBNET}.#{i+100}"
     end
   end
   (1..WORKER_COUNT).each do |i|
@@ -43,7 +43,7 @@ Vagrant.configure("2") do |config|
     end
     config.vm.define "worker-#{i}" do |j|
       j.vm.hostname = "worker-#{i}.#{DOMAIN}"
-      j.vm.network "private_network", ip: "#{SUBNET}.#{i+30}"
+      j.vm.network "private_network", ip: "#{SUBNET}.#{i+200}"
     end
   end
 end

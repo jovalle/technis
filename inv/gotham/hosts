@@ -1,20 +1,20 @@
 [etcd]
-etcd-1.j3o.me
-etcd-2.j3o.me
-etcd-3.j3o.me
+etcd-1.k8s.cloud.local
+etcd-2.k8s.cloud.local
+etcd-3.k8s.cloud.local
 
 [controllers]
-controller-1.j3o.me
-controller-2.j3o.me
-controller-3.j3o.me
+controller-1.k8s.cloud.local
+controller-2.k8s.cloud.local
+controller-3.k8s.cloud.local
 
 [workers]
-worker-1.j3o.me
-worker-2.j3o.me
-worker-3.j3o.me
+worker-1.k8s.cloud.local
+worker-2.k8s.cloud.local
+worker-3.k8s.cloud.local
 
 [ingress]
-worker-2.j3o.me
+worker-3.k8s.cloud.local
 
 [cluster:children]
 controllers

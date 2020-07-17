@@ -1,0 +1,12 @@
+---
+# Reference: https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/#encrypting-your-data
+
+- name: k8s/encryption | generate enc key
+  command: |
+    head -c 32 /dev/urandom | base64
+  register: enc_key
+
+- name: k8s/encryption | render EncryptionConfig
+  template:
+    src: encryption-config.yml.j2
+    dest: /etc/kubernetes/encryption-config.yml

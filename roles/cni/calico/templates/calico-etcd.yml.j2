@@ -1,5 +1,5 @@
 ---
-# Source: calico/templates/calico-etcd-secrets.yaml
+# Source: calico/templates/calico-etcd-secrets.yml
 # The following contains k8s Secrets for use with a TLS enabled etcd cluster.
 # For information on populating Secrets, see http://kubernetes.io/docs/user-guide/secrets/
 apiVersion: v1
@@ -18,7 +18,7 @@ data:
   etcd-cert: {{ etcd_cert }}
   etcd-ca: {{ etcd_ca }}
 ---
-# Source: calico/templates/calico-config.yaml
+# Source: calico/templates/calico-config.yml
 # This ConfigMap is used to configure a self-hosted Calico installation.
 kind: ConfigMap
 apiVersion: v1
@@ -76,7 +76,7 @@ data:
     }
 
 ---
-# Source: calico/templates/rbac.yaml
+# Source: calico/templates/rbac.yml
 
 # Include a clusterrole for the kube-controllers component,
 # and bind it to the calico-kube-controllers serviceaccount.
@@ -162,7 +162,7 @@ subjects:
   namespace: kube-system
 
 ---
-# Source: calico/templates/calico-node.yaml
+# Source: calico/templates/calico-node.yml
 # This manifest installs the calico-node container, as well
 # as the CNI plugins and network config on
 # each master and worker node in a Kubernetes cluster.
@@ -419,7 +419,7 @@ metadata:
   namespace: kube-system
 
 ---
-# Source: calico/templates/calico-kube-controllers.yaml
+# Source: calico/templates/calico-kube-controllers.yml
 
 # See https://github.com/projectcalico/kube-controllers
 apiVersion: apps/v1
@@ -515,11 +515,11 @@ metadata:
   name: calico-kube-controllers
   namespace: kube-system
 ---
-# Source: calico/templates/calico-typha.yaml
+# Source: calico/templates/calico-typha.yml
 
 ---
-# Source: calico/templates/configure-canal.yaml
+# Source: calico/templates/configure-canal.yml
 
 ---
-# Source: calico/templates/kdd-crds.yaml
+# Source: calico/templates/kdd-crds.yml
 

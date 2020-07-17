@@ -1,7 +1,7 @@
-- name: render config.yaml
+- name: render config.yml
   template:
-    src: config.yaml.j2
-    dest: "/etc/kubernetes/config.yaml"
+    src: config.yml.j2
+    dest: "/etc/kubernetes/config.yml"
 
 - name: enable kubelet service
   systemd:
@@ -15,7 +15,7 @@
   ignore_errors: true
 
 - name: kubeadm init
-  command: kubeadm init --config=/etc/kubernetes/config.yaml
+  command: kubeadm init --config=/etc/kubernetes/config.yml
   register: _init
   when: _kubelet.rc > 0
 

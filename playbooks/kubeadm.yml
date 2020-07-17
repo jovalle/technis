@@ -37,6 +37,7 @@
     target_dir: /etc/kubernetes/pki
   roles:
   - { role: os/certificate/generate, cert_id: apiserver-etcd-client, cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1,localhost" }
+  - k8s/encryption
   - kubeadm/init
 
 - hosts: controllers[1:]
@@ -63,10 +64,10 @@
   become: yes
   gather_facts: yes
   tasks:
-  - include: labels.yaml node_name={{ item }} node_role=worker
+  - include: labels.yml node_name={{ item }} node_role=worker
     with_items:
     - "{{ groups['workers'] }}"
-  - include: labels.yaml node_name={{ item }} node_role=ingress
+  - include: labels.yml node_name={{ item }} node_role=ingress
     with_items:
     - "{{ groups['ingress'] }}"
 

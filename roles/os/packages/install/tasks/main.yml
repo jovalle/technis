@@ -1,0 +1,23 @@
+- name: os/packages | install packages
+  package:
+    name: "{{ target_package | default(required_packages) }}"
+    state: present
+  when: os_agnostic is defined and os_agnostic
+
+- name: os/packages | install packages on RHEL-based OS
+  yum:
+    name: "{{ target_package | default(required_packages) }}"
+    state: present
+    allow_downgrade: yes
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: os/packages | install package on Debian-based OS
+  apt:
+    name: "{{ target_package | default(required_packages) }}"
+    state: present
+    force: yes
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: os/package | install pip modules
+  pip:
+    name: "{{ target_module | default(required_pip_modules) }}"

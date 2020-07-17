@@ -1,0 +1,10 @@
+- import_playbook: rebuild.yml
+  when: rebuild is not defined or (rebuild | bool)
+- import_playbook: prepare.yml
+- import_playbook: etcd.yml
+  when: etcd_locale is defined and etcd_locale == "remote"
+- import_playbook: cri.yml
+- import_playbook: kubeadm.yml
+- import_playbook: cni.yml
+- import_playbook: ingress.yml
+- import_playbook: helm.yml

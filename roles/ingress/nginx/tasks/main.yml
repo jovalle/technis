@@ -7,8 +7,8 @@
     vars:
       command: apply
       target_list:
-      - mandatory.yaml
-      - service.yaml
+      - mandatory.yml
+      - service.yml
       source_role: ingress/nginx
       file_type: template
 

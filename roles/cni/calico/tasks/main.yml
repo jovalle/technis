@@ -1,0 +1,78 @@
+- name: cni/calico | get etcd TLS bundle
+  block:
+
+  - shell: cat /etc/kubernetes/pki/apiserver-etcd-client-key.pem | base64 -w 0
+    register: etcd_key
+
+  - set_fact:
+      etcd_key: "{{ etcd_key.stdout }}"
+    register: etcd_key
+
+  - shell: cat /etc/kubernetes/pki/apiserver-etcd-client.pem | base64 -w 0
+    register: etcd_cert
+
+  - set_fact:
+      etcd_cert: "{{ etcd_cert.stdout }}"
+
+  - shell: cat /etc/kubernetes/pki/etcd-ca.pem | base64 -w 0
+    register: etcd_ca
+    
+  - set_fact:
+      etcd_ca: "{{ etcd_ca.stdout }}"
+
+- name: cni/calico | deploy manifest
+  import_role:
+    name: kubectl
+  vars:
+    command: apply
+    target_list:
+    - calico-etcd.yml
+    source_role: cni/calico/deploy
+    file_type: template
+
+- name: cni/calico | get calico-node desired replica count
+  shell: kubectl -n kube-system get ds calico-node -o jsonpath="{.status.desiredNumberScheduled}"
+  register: desired
+
+- name: cni/calico | wait for calico-node readiness
+  shell: kubectl -n kube-system get ds calico-node -o jsonpath="{.status.numberReady}"
+  register: ready
+  retries: "{{ 6 * (groups['cluster'] | length) }}"
+  delay: 10
+  until: ready.stdout == desired.stdout
+
+- name: cni/calico | test pod-to-pod communication
+  block:
+    - name: cni/calico/p2p | deploy alpha test pod
+      command: kubectl run pingtest-alpha --generator=run-pod/v1 --image=busybox -- sleep infinity
+      ignore_errors: yes
+    - name: cni/calico/p2p | wait for alpha readiness
+      shell: kubectl get pod pingtest-alpha -o jsonpath='{.status.phase}'
+      register: alpha_ready
+      retries: 6
+      delay: 5
+      until: alpha_ready.stdout == 'Running'
+    - name: cni/calico/p2p | deploy beta test pod
+      command: kubectl run pingtest-beta --generator=run-pod/v1 --image=busybox -- sleep infinity
+      ignore_errors: yes
+    - name: cni/calico/p2p | wait for beta readiness
+      shell: kubectl get pod pingtest-beta -o jsonpath='{.status.phase}'
+      register: beta_ready
+      retries: 6
+      delay: 5
+      until: beta_ready.stdout == 'Running'
+    - name: cni/calico/p2p | get beta podIP
+      command: kubectl get pod pingtest-beta -o jsonpath='{.status.podIP}'
+      register: beta_pod_ip
+    - name: cni/calico/p2p | test ping to beta
+      shell: kubectl exec -i pingtest-alpha -- /bin/ping -c1 -w1 {{ beta_pod_ip.stdout }}
+      register: p2p_test
+      retries: 5
+      delay: 2
+      until: p2p_test.rc == 0
+  always:
+    - name: cni/calico/p2p | cleanup pods
+      command: kubectl delete pod pingtest-{{ item }}
+      with_items:
+      - alpha
+      - beta
