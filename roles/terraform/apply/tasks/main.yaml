@@ -1,4 +1,4 @@
-- name: terraform/apply | apply changes to reach desired state
+- name: apply changes to reach desired state
   shell: |
     pushd {{ ansible_inventory_sources[0] }} && \
     terraform apply -auto-approve && \

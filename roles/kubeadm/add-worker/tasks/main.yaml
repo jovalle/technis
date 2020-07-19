@@ -1,7 +1,7 @@
 - name: get join command
   command: kubeadm token create --print-join-command
   register: _join
-  delegate_to: "{{ groups['controllers'][0] }}"
+  delegate_to: "{{ groups['captains'][0] }}"
 
 - name: get join token
   debug:

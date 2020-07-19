@@ -1,8 +1,8 @@
 - import_playbook: rebuild.yaml
-  when: rebuild is not defined or (rebuild | bool)
+  when: rebuild | default('yes') | bool
 - import_playbook: prepare.yaml
 - import_playbook: etcd.yaml
-  when: etcd_locale is defined and etcd_locale == "remote"
+  when: etcd_locale == "remote" | default('local')
 - import_playbook: cri.yaml
 - import_playbook: kubeadm.yaml
 - import_playbook: cni.yaml

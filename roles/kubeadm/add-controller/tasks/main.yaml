@@ -1,5 +1,5 @@
 - name: sync kubernetes certs
-  shell: rsync -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" {{ groups.controllers[0] }}:/etc/kubernetes/pki /etc/kubernetes
+  shell: rsync -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" {{ groups.captains[0] }}:/etc/kubernetes/pki /etc/kubernetes
 
 - name: render config.yaml
   template:

@@ -1,4 +1,4 @@
-- name: kubeadm/prepare | prepare repo for yum
+- name: prepare repo for yum
   yum_repository:
     name: kubernetes
     description: Kubernetes Main Repository
@@ -9,22 +9,42 @@
     gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: kubeadm/prepare | prepare repo for apt
+- name: prepare repo for apt
   block:
-    - name: kubeadm/prepare | onboard kubernetes repo gpg key
-      shell: |
-        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
-    - name: kubeadm/prepare | add kubernetes repo
-      shell: apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
-    - name: kubeadm/prepare | update apt repos
-      shell: apt update
+  - name: onboard kubernetes repo gpg key
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+  - name: add kubernetes repo
+    apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+  - name: update repos
+    apt:
+      force_apt_get: yes
+      update_cache: yes
+      autoremove: yes
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
-- name: kubeadm/prepare | install core packages
-  package:
-    name: "{{ item }}={{ k8s_version }}*"
-    state: present
+- name: install core packages for K8s
+  include_role:
+    name: os/package/install
+  vars:
+    target_package: "{{ item }}"
   with_items:
-  - kubeadm
-  - kubectl
-  - kubelet
+  - "{{ k8s_packages }}"
+
+- name: fix IP connectivity in vagrant clusters
+  block:
+  - name: update kubelet config to include manually defined --node-ip
+    lineinfile:
+      path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+      line: Environment="KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}"
+      insertafter: '^EnvironmentFile'
+    register: node_ip_fix
+  - name: update and restart kubelet to actuate changes
+    systemd:
+      name: kubelet
+      daemon_reload: yes
+      state: restarted
+      enabled: yes
+    when: node_ip_fix is changed
+  when: infrastructure_provisioner == 'vagrant'

@@ -1,11 +1,9 @@
 - hosts: cluster
-  gather_facts: yes
   become: yes
   roles:
   - kubeadm/reset
 
 - hosts: etcd[0]
-  gather_facts: yes
   become: yes
   roles:
   - etcd/reset

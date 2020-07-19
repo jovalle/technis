@@ -1,4 +1,4 @@
-- name: cni/calico | get etcd TLS bundle
+- name: get etcd TLS bundle
   block:
 
   - shell: cat /etc/kubernetes/pki/apiserver-etcd-client-key.pem | base64 -w 0
@@ -20,7 +20,7 @@
   - set_fact:
       etcd_ca: "{{ etcd_ca.stdout }}"
 
-- name: cni/calico | deploy manifest
+- name: deploy manifest
   import_role:
     name: kubectl
   vars:
@@ -30,9 +30,15 @@
     source_role: cni/calico/deploy
     file_type: template
 
-- name: cni/calico | wait for calico-node readiness
+- name: wait for calico-node readiness
   shell: kubectl -n kube-system get ds calico-node -o jsonpath="{.status.numberReady}"
   register: ready
   retries: "{{ 6 * (groups['cluster'] | length) }}"
   delay: 10
   until: ready.stdout == '6'
+
+- name: get bin
+  get_url:
+    url: https://github.com/projectcalico/calicoctl/releases/download/v3.11.2/calicoctl-linux-amd64
+    dest: /usr/local/bin/calicoctl
+    mode: 0755

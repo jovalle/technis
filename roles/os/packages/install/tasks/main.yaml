@@ -1,8 +1,0 @@
-- name: os/package | install packages
-  package:
-    name: "{{ target_package | default(required_packages) }}"
-    state: present
-
-- name: os/package | install pip modules
-  pip:
-    name: "{{ target_module | default(required_pip_modules) }}"

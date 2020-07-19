@@ -1,5 +1,6 @@
-- hosts: controllers[0]
+- hosts: captains
   become: yes
-  roles:
-  - role: ingress/nginx
-    when: ingress_controller is not defined or ingress_controller == 'nginx'
+  run_once: yes
+  tasks:
+  - include_role:
+      name: "ingress/{{ ingress_controller | default('nginx')}}"

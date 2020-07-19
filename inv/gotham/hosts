@@ -1,24 +1,24 @@
 [etcd]
-etcd-1.j3o.me
-etcd-2.j3o.me
-etcd-3.j3o.me
+engineer-1
+engineer-2
+engineer-3
 
-[controllers]
-controller-1.j3o.me
-controller-2.j3o.me
-controller-3.j3o.me
+[captains]
+captain-1
+captain-2
+captain-3
 
-[workers]
-worker-1.j3o.me
-worker-2.j3o.me
-worker-3.j3o.me
+[stewards]
+steward-1
+steward-2
+steward-3
 
 [ingress]
-worker-2.j3o.me
+steward-2
 
 [cluster:children]
-controllers
-workers
+captains
+stewards
 
 [all:vars]
 ansible_ssh_user=vagrant

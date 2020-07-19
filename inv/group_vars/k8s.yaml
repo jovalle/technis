@@ -1,9 +1,17 @@
-k8s_api_fqdn: "api.{{ domain }}"
+k8s_api_fqdn: "api.{{ domain_k8s }}"
 k8s_api_port: 6443
 k8s_api_endpoint: "{{ k8s_api_fqdn }}:{{ k8s_api_port }}"
+
 k8s_pod_subnet: 10.16.0.0/16
 k8s_service_subnet: 10.32.0.0/16
-k8s_ingress_domain: "{{ domain_apps }}"
+
+k8s_ingress_domain: "{{ domain_k8s }}"
 k8s_ingress_cert: "{{ custom_cert | default(technis_ingress_cert_vaulted) }}"
 k8s_ingress_key: "{{ custom_key | default(technis_ingress_key_vaulted) }}"
+
 k8s_version: 1.17.4
+k8s_package_version: "{{ k8s_version }}-00"
+k8s_packages:
+- "kubeadm={{ k8s_package_version }}"
+- "kubectl={{ k8s_package_version }}"
+- "kubelet={{ k8s_package_version }}"

@@ -1,17 +1,16 @@
-- name: os/packages | upgrade rhel os packages
+- name: update rhel os
   yum:
-    name: "*"
-    state: latest
+    autoremove: yes
     update_cache: yes
+    update_only: yes
   register: yum
   until: yum is success
   retries: 5
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: os/packages | upgrade debian os packages
+- name: update debian os
   apt:
     force_apt_get: yes
-    upgrade: "yes"
     update_cache: yes
     autoremove: yes
   register: apt

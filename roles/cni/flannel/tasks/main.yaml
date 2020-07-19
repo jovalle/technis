@@ -1,4 +1,4 @@
-- name: cni/flannel | deploy flannel
+- name: deploy flannel
   import_role:
     name: kubectl
   vars:

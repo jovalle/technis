@@ -1,18 +1,18 @@
-- name: kubeadm/reset | revert cluster deployment
+- name: revert cluster deployment
   shell: kubeadm reset -f
 
-- name: kubeadm/reset | remove CNI configuration
+- name: remove CNI configuration
   file:
     path: /etc/cni/net.d
     state: absent
 
-- name: kubeadm/reset | stop kubelet
+- name: stop kubelet
   systemd:
     name: kubelet
     state: stopped
     enabled: no
 
-- name: kubeadm/reset | iptables
+- name: iptables
   command: "{{ item }}"
   with_items:
   - iptables -F
