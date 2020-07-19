@@ -1,22 +1,13 @@
 - hosts: all
-  gather_facts: yes
-
-- hosts: etcd
-  become: yes
-  gather_facts: yes
-  tasks:
-  - setup:
 
 - hosts: cluster
   become: yes
-  gather_facts: yes
   roles:
   - kubeadm/prepare
   - { role: kubeadm/vagrant, when: infrastructure_provisioner == 'vagrant' }
 
-- hosts: controllers[0]
+- hosts: captains[0]
   become: yes
-  gather_facts: yes
   vars:
     cert_ca_id: ca
     target_dir: /etc/kubernetes/pki
@@ -25,11 +16,10 @@
   - { role: os/certificate/generate, cert_id: kube-controller-manager, cert_common_name: "system:kube-controller-manager", cert_organization: "system:kube-controller-manager" }
   - { role: os/certificate/generate, cert_id: kube-scheduler, cert_common_name: "system:kube-scheduler", cert_organization: "system:kube-scheduler" }
   - { role: os/certificate/generate, cert_id: service-account, cert_common_name: service-accounts, cert_organization: Kubernetes }
-  - { role: os/certificate/generate, cert_id: kubernetes, cert_organization: Kubernetes, cert_hostname: "10.32.0.1,{% for i in groups['controllers'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local,{{ k8s_api_fqdn }}" }
+  - { role: os/certificate/generate, cert_id: kubernetes, cert_organization: Kubernetes, cert_hostname: "10.32.0.1,{% for i in groups['captains'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local,{{ k8s_api_fqdn }}" }
 
-- hosts: controllers[0]
+- hosts: captains[0]
   become: yes
-  gather_facts: yes
   vars:
     cert_ca_id: etcd-ca
     cert_ca_host: "{{ groups.etcd[0] }}"
@@ -39,38 +29,45 @@
   - { role: os/certificate/generate, cert_id: apiserver-etcd-client, cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1,localhost" }
   - kubeadm/init
 
-- hosts: controllers[1:]
+- hosts: captains[1:]
   become: yes
-  gather_facts: yes
   roles:
   - kubeadm/add-controller
 
-- hosts: workers
+- hosts: stewards
   become: yes
-  gather_facts: yes
   vars:
     cert_ca_id: ca
-    cert_ca_host: "{{ groups.controllers[0] }}"
+    cert_ca_host: "{{ groups.captains[0] }}"
     src_dir: /etc/kubernetes/pki
     target_dir: /usr/share/ca-certificates
-    join_cmd: "{{ hostvars[groups['controllers'][0]]['join_cmd'] }}"
+    join_cmd: "{{ hostvars[groups['captains'][0]]['join_cmd'] }}"
   roles:
   - { role: os/certificate/generate, cert_id: apiserver-client, cert_common_name: "system:node:{{ inventory_hostname }}", cert_organization: "system:nodes", cert_hostname: "{{ inventory_hostname }},{{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}" }
   - { role: os/certificate/generate, cert_id: kube-proxy, cert_common_name: "system:kube-proxy", cert_organization: "system:node-proxier" }
   - kubeadm/add-worker
 
-- hosts: cluster
+- hosts: captains
   become: yes
-  gather_facts: yes
+  run_once: yes
   tasks:
-  - include: labels.yaml node_name={{ item }} node_role=worker
+  - name: set labels for stewards
+    include_role:
+      name: kubectl/label
+    vars:
+      node_name: "{{ item }}"
+      node_role: "worker"
     with_items:
-    - "{{ groups['workers'] }}"
-  - include: labels.yaml node_name={{ item }} node_role=ingress
+    - "{{ groups['stewards'] }}"
+  - name: set labels for ingress nodes
+    include_role:
+      name: kubectl/label
+    vars:
+      node_name: "{{ item }}"
+      node_role: "ingress"
     with_items:
     - "{{ groups['ingress'] }}"
 
 - hosts: localhost
-  gather_facts: yes
   roles:
   - { role: kubectl/context, target_context: "kubernetes-admin@{{ cluster }}" }

@@ -1,6 +1,5 @@
 - hosts: etcd
   become: yes
-  gather_facts: yes
   tasks:
   - setup:
 

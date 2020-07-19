@@ -1,6 +1,0 @@
-- name: vagrant/rebuild | destroy, start
-  include_role:
-    name: "{{ item }}"
-  with_items:
-  - vagrant/destroy
-  - vagrant/up

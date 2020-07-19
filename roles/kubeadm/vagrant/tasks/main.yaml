@@ -1,10 +1,10 @@
-- name: vagrant/kubelet | update kubelet config
+- name: update kubelet config
   lineinfile:
     path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
     line: Environment="KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}"
     insertafter: '^EnvironmentFile'
 
-- name: vagrant/kubelet | update and restart kubelet
+- name: update and restart kubelet
   systemd:
     name: kubelet
     daemon_reload: yes

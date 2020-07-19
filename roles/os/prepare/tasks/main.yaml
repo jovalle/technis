@@ -1,26 +1,25 @@
-- name: os/prepare | set hostname
+- name: set hostname
   hostname:
     name: "{{ inventory_hostname }}"
 
-- name: os/prepare | update /etc/hostname
+- name: update /etc/hostname
   shell: 'echo "{{ inventory_hostname }}" > /etc/hostname '
 
-- name: os/prepare | update /etc/hosts
+- name: update /etc/hosts
   lineinfile:
     dest: /etc/hosts
-    regexp: '.*{{ item }}$'
-    line: "{{ hostvars[item].ansible_host }} {{ item }}"
+    regexp: "^{{ hostvars[item]['ansible_' + default_interface]['ipv4']['address'] }}.*$"
+    line: "{{ hostvars[item]['ansible_' + default_interface]['ipv4']['address'] }} {{ hostvars[item].ansible_fqdn }} {{ item }}"
     state: present
-  when: hostvars[item].ansible_host is defined
   with_items: "{{ groups['all'] }}"
 
-- name: os/prepare | set selinux to permissive
+- name: set selinux to permissive
   selinux:
     policy: targeted
     state: permissive
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: os/prepare | disable swap
+- name: disable swap
   block:
     - shell: "swapoff -a"
     - replace:
@@ -28,7 +27,7 @@
         regexp: '^(.* swap .*)'
         replace: '#\1'
 
-- name: os/prepare | enable kernel modules
+- name: enable kernel modules
   modprobe:
     name: "{{ item }}"
     state: present
@@ -40,7 +39,7 @@
   - ip_vs_wrr
   - nf_conntrack_ipv4
 
-- name: os/prepare | set kernel params
+- name: set kernel params
   sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
@@ -51,44 +50,44 @@
   - { name: "net.netfilter.nf_conntrack_tcp_timeout_close_wait", value: '3600' }
   - { name: "net.netfilter.nf_conntrack_tcp_timeout_established", value: '86400' }
 
-- name: os/prepare | enable ntpd
+- name: enable ntpd
   systemd:
     name: ntpd
     state: restarted
     enabled: yes
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: os/prepare | enable ntp
+- name: enable ntp
   systemd:
     name: ntp
     state: restarted
     enabled: yes
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
-- name: os/prepare | create .ssh dir if missing
+- name: create .ssh dir if missing
   file:
     path: /root/.ssh
     mode: 0700
     state: directory
 
-- name: os/prepare | create authorized_keys if missing
+- name: create authorized_keys if missing
   file:
     path: /root/.ssh/authorized_keys
     mode: 0600
     state: touch
 
-- name: os/prepare | render SSH authorized_keys
+- name: render SSH authorized_keys
   lineinfile:
     path: /root/.ssh/authorized_keys
     line: "{{ ssh_public_key }}"
 
-- name: os/prepare | render SSH key
+- name: render SSH key
   copy:
     dest: "/root/.ssh/id_rsa"
     content: "{{ ssh_private_key }}"
     mode: 0600
 
-- name: os/prepare | personal touch
+- name: personal touch
   lineinfile:
     path: /root/.bashrc
     line: "{{ item }}"

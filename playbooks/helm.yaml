@@ -1,5 +1,6 @@
-- hosts: controllers[0]
+- hosts: captains
   become: yes
+  run_once: yes
   roles:
   - helm/deploy
   - { role: helm/install, helm_name: mysql, helm_chart: stable/mysql }

@@ -1,36 +1,64 @@
-- hosts: controllers[0]
+- hosts: captains
   become: yes
-  gather_facts: yes
+  run_once: yes
   tasks:
   - block:
-
-    - name: apply deployment
-      import_role:
-        name: kubectl
-      vars:
-        command: apply
-        source_role: kuard
-        file_type: template
-        target_list:
-        - kuard.yaml
-
+    - name: deploy kuard
+      shell:
+        cmd: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: kuard
+            labels:
+              app: kuard-test
+          spec:
+            containers:
+            - image: gcr.io/kuar-demo/kuard-amd64:1
+              name: kuard
+              ports:
+              - containerPort: 8080
+                name: http
+                protocol: TCP
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: kuard
+          spec:
+            selector:
+              app: kuard-test
+            ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 8080
+          ---
+          apiVersion: networking.k8s.io/v1beta1
+          kind: Ingress
+          metadata:
+            name: kuard
+            annotations:
+              nginx.ingress.kubernetes.io/rewrite-target: /
+          spec:
+            rules:
+            - host: kuard.{{ domain_k8s }}
+              http:
+                paths:
+                - path: /
+                  backend:
+                    serviceName: kuard
+                    servicePort: 80
+          EOF
     - name: validate ingress
       uri:
-        url: https://kuard.{{ domain_apps }}
+        url: http://kuard.{{ domain_k8s }}
         status_code: 200
-      register: curl_validation
-      until: curl_validation.status == 200
+      register: curl
+      until: curl.status == 200
       retries: 6
       delay: 10
-
     always:
-    - name: delete deployment
-      import_role:
-        name: kubectl
-      vars:
-        command: delete
-        source_role: kuard
-        file_type: template
-        target_list:
-        - kuard.yaml
+    - name: cleanup kuard resources
+      shell: kubectl delete pod,service,ingress kuard
       ignore_errors: yes

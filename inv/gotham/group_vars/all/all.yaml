@@ -1,11 +1,11 @@
 cluster: technis
-node_type: vm
 container_networking: calico
-container_runtime: docker
+container_runtime: containerd
 default_interface: eth1
-domain: j3o.me
-domain_apps: j3o.me
+domain_k8s: k8s.technis.io
+domain: technis.io
 etcd_locale: remote
 infrastructure_provisioner: vagrant
-k8s_provisioner: kubeadm
 ingress_controller: nginx
+k8s_provisioner: kubeadm
+node_type: vm

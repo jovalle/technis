@@ -1,7 +1,5 @@
-- hosts: controllers:workers
+- hosts: cluster
   become: yes
-  roles:
-  - role: cri/containerd
-    when: container_runtime is not defined or container_runtime == 'containerd'
-  - role: cri/docker
-    when: container_runtime is defined and container_runtime == 'docker'
+  tasks:
+  - include_role:
+      name: "cri/{{ container_runtime | default('containerd')}}"

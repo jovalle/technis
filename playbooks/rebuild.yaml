@@ -1,10 +1,10 @@
 - hosts: localhost
-  gather_facts: yes
-  roles:
-  - { role: "terraform/rebuild", when: infrastructure_provisioner is defined and infrastructure_provisioner == 'terraform' }
-  - { role: "vagrant/rebuild", when: infrastructure_provisioner is defined and infrastructure_provisioner == 'vagrant' }
+  tasks:
+  - include_role:
+      name: "{{ infrastructure_provisioner | default('terraform') }}/destroy"
+  - include_role:
+      name: "{{ infrastructure_provisioner | default('terraform') }}/up"
 
 - hosts: all
-  gather_facts: no
   roles:
   - os/wait-for-server

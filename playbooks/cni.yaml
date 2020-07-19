@@ -1,24 +1,8 @@
 - hosts: etcd
-  tasks:
-  - setup:
 
-- hosts: controllers[0]
+- hosts: captains
   become: yes
-  roles:
-  - role: cni/calico
-    when: container_networking is defined and container_networking == 'calico'
-  - role: cni/flannel
-    when: container_networking is defined and container_networking == 'flannel'
-
-- hosts: cluster
-  become: yes
+  run_once: yes
   tasks:
-  - name: cni/calico/ctl | get bin
-    get_url:
-      url: https://github.com/projectcalico/calicoctl/releases/download/v3.11.2/calicoctl-linux-amd64
-      dest: /usr/local/bin/calicoctl
-      mode: 0755
-    when: container_networking is defined and container_networking == 'calico'
-  roles:
-  - role: cni
-    when: container_networking is not defined or (container_networking is defined and container_networking == 'cni')
+  - include_role:
+      name: "cni/{{ container_networking | default('calico')}}"
