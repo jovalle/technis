@@ -2,5 +2,7 @@
   become: yes
   roles:
   - os/package/update
+  - role: os/package/upgrade
+    when: upgrade | default(False) | bool
   - os/package/install
   - os/prepare

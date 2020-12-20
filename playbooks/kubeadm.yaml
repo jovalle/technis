@@ -27,12 +27,12 @@
     target_dir: /etc/kubernetes/pki
   roles:
   - { role: os/certificate/generate, cert_id: apiserver-etcd-client, cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1,localhost" }
-  - kubeadm/init
+  - kubeadm/add-captain
 
 - hosts: captains[1:]
   become: yes
   roles:
-  - kubeadm/add-controller
+  - kubeadm/add-captain
 
 - hosts: stewards
   become: yes
@@ -45,7 +45,7 @@
   roles:
   - { role: os/certificate/generate, cert_id: apiserver-client, cert_common_name: "system:node:{{ inventory_hostname }}", cert_organization: "system:nodes", cert_hostname: "{{ inventory_hostname }},{{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}" }
   - { role: os/certificate/generate, cert_id: kube-proxy, cert_common_name: "system:kube-proxy", cert_organization: "system:node-proxier" }
-  - kubeadm/add-worker
+  - kubeadm/add-steward
 
 - hosts: captains
   become: yes

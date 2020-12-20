@@ -1,0 +1,22 @@
+- name: deploy ingress controller
+  block:
+  - name: deploy manifest
+    import_role:
+      name: kubectl
+    vars:
+      command: apply
+      target_list:
+      - contour.yaml
+      source_role: ingress/contour
+      file_type: template
+
+- name: get envoy ready count
+  shell: kubectl -n projectcontour get daemonset envoy -o jsonpath="{.status.desiredNumberScheduled}"
+  register: desired_ready
+
+- name: wait for envoy readiness
+  shell: kubectl -n projectcontour get daemonset envoy -o jsonpath="{.status.numberReady}"
+  register: ready_count
+  retries: 12
+  delay: 10
+  until: ready_count.stdout == desired_ready.stdout

@@ -1,11 +1,20 @@
-- import_playbook: rebuild.yaml
-  when: rebuild | default('yes') | bool
-- import_playbook: prepare.yaml
-- import_playbook: etcd.yaml
+- name: build VMs anew
+  import_playbook: rebuild.yaml
+  when: rebuild | default(True) | bool
+- name: prepare host
+  import_playbook: prepare.yaml
+- name: install KV datastore
+  import_playbook: etcd.yaml
   when: etcd_locale == "remote" | default('local')
-- import_playbook: cri.yaml
-- import_playbook: kubeadm.yaml
-- import_playbook: cni.yaml
-- import_playbook: ingress.yaml
-- import_playbook: helm.yaml
-- import_playbook: kuard.yaml
+- name: install container runtime
+  import_playbook: cri.yaml
+- name: init kubernetes cluster using kubeadm
+  import_playbook: kubeadm.yaml
+- name: install container networking interface
+  import_playbook: cni.yaml
+- name: deploy ingress controller
+  import_playbook: ingress.yaml
+- name: deploy k8s package manager
+  import_playbook: helm.yaml
+- name: smoke test
+  import_playbook: validate.yaml
