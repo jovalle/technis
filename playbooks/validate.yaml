@@ -1,4 +1,4 @@
-- hosts: captains
+- hosts: control_plane
   become: yes
   run_once: yes
   tasks:

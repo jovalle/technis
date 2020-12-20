@@ -1,0 +1,22 @@
+- hosts: all
+  gather_facts: yes
+  become: yes
+  tasks:
+  - name: install apt-cacher-ng
+    package:
+      name: apt-cacher-ng
+      state: present
+    delegate_to: "{{ groups['all'][0] }}"
+    run_once: yes
+  - name: configure apt cache clients
+    block:
+    - name: ensure config file exists
+      file:
+        path: /etc/apt/apt.conf.d/proxy
+        state: touch
+    - name: add apt proxy configuration
+      lineinfile:
+        path: /etc/apt/apt.conf.d/proxy
+        regexp: 'Proxy'
+        line: Acquire::http { Proxy "http://{{ hostvars[groups['all'][0]]['ansible_' + default_interface]['ipv4']['address'] }}:3142"; }
+    when: inventory_hostname != groups['all'][0]

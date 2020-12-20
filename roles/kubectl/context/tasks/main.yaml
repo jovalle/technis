@@ -16,7 +16,7 @@
       src: /etc/kubernetes/admin.conf
       dest: ~/.kube/{{ cluster }}
       flat: yes
-    delegate_to: "{{ groups['captains'][0] }}"
+    delegate_to: "{{ groups['control_plane'][0] }}"
 
   - name: merge configs
     shell: |
