@@ -7,7 +7,7 @@
 
   - name: delete existing context
     command: kubectl config delete-context {{ target_context }}
-    when: '"{{ target_context }}" in get_context.stdout'
+    when: target_context in get_context.stdout
     ignore_errors: yes
 
   - name: get admin config for {{ cluster }}

@@ -1,7 +1,7 @@
 - name: create tmpdir
   tempfile:
     state: directory
-  register: tmp
+  register: tempdir
 
 - name: check binaries
   stat:
@@ -13,20 +13,20 @@
   - name: download binaries from src
     unarchive:
       src: "https://storage.googleapis.com/etcd/v3.3.18/etcd-v3.3.18-linux-amd64.tar.gz"
-      dest: "{{ tmp.path }}"
+      dest: "{{ tempdir.path }}"
       remote_src: yes
       mode: 0755
       owner: root
       group: root
   - name: mv binaries to /usr/local/bin
-    command: "mv {{ tmp.path }}/etcd-v3.3.18-linux-amd64/{{ item }} /usr/local/bin/"
+    command: "mv {{ tempdir.path }}/etcd-v3.3.18-linux-amd64/{{ item }} /usr/local/bin/"
     with_items:
     - etcd
     - etcdctl
   always:
-  - name: clean up tmp dir
+  - name: clean up tempdir
     file:
-      path: "{{ tmp.path }}"
+      path: "{{ tempdir.path }}"
       state: absent
   when: bin.stat.exists == False
 

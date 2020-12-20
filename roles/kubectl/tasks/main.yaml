@@ -2,7 +2,7 @@
 - name: "{{ source_role }} | create temp dir"
   tempfile:
     state: directory
-  register: temp
+  register: tempdir
 
 - name: render manifest
   block:
@@ -10,7 +10,7 @@
   - name: "{{ source_role }} | fetch manifest(s) from host"
     copy:
       src: "{{ item }}"
-      dest: "{{ temp.path }}/{{ item }}"
+      dest: "{{ tempdir.path }}/{{ item }}"
     with_items:
       - "{{ target_list }}"
     when: file_type == 'static'
@@ -18,20 +18,20 @@
   - name: "{{ source_role }} | render manifest(s) onto target host"
     template:
       src: "{{ item }}.j2"
-      dest: "{{ temp.path }}/{{ item }}"
+      dest: "{{ tempdir.path }}/{{ item }}"
     with_items:
     - "{{ target_list }}"
     when: file_type == 'template'
 
   - name: "{{ source_role }} | clean slate for manifest(s)"
-    command: "kubectl delete -f {{ temp.path }}/{{ item }}"
+    command: "kubectl delete -f {{ tempdir.path }}/{{ item }}"
     with_items:
       - "{{ target_list }}"
     when: (mode is defined and mode == 'replace') and (file_type == 'static' or file_type == 'template')
     ignore_errors: yes
 
   - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
-    command: "kubectl {{ command | default('apply') }} -f {{ temp.path }}/{{ item }}"
+    command: "kubectl {{ command | default('apply') }} -f {{ tempdir.path }}/{{ item }}"
     with_items:
       - "{{ target_list }}"
     when: file_type == 'static' or file_type == 'template'
@@ -59,5 +59,5 @@
   always:
   - name: "{{ source_role }} | clean up"
     file:
-      path: "{{ temp.path }}"
+      path: "{{ tempdir.path }}"
       state: absent

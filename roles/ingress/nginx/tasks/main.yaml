@@ -1,6 +1,5 @@
 - name: deploy ingress controller
   block:
-
   - name: deploy manifest
     import_role:
       name: kubectl

@@ -6,6 +6,6 @@ domain_k8s: k8s.technis.io
 domain: technis.io
 etcd_locale: remote
 infrastructure_provisioner: vagrant
-ingress_controller: nginx
+ingress_controller: contour
 k8s_provisioner: kubeadm
 node_type: vm
