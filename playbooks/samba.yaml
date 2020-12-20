@@ -1,0 +1,22 @@
+- hosts: all
+  gather_facts: yes
+  become: yes
+  vars_prompt:
+  - name: smb_username
+    prompt: username
+    private: no
+  - name: smb_password
+    prompt: password
+    private: yes
+    confirm: yes
+  tasks:
+  - block:
+      - template:
+          src: files/smb.conf
+          dest: /etc/samba/smb.conf
+      - command: 'smbpasswd -a {{ smb_username }} -w "{{ smb_password }}"'
+        no_log: yes
+      - systemd:
+          name: smbd
+          state: restarted
+    delegate_to: "{{ samba_server }}"

@@ -1,0 +1,14 @@
+- hosts: zfs
+  gather_facts: yes
+  become: yes
+  tasks:
+  - block:
+      - name: install zfs
+        package:
+          name: "{{ item }}"
+        with_items:
+        - zfs-dkms
+        - zfsutils-linux
+      - name: import all available zpools
+        command: zpool import -a -f
+    delegate_to: "{{ zfs_server }}"
