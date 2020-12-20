@@ -7,7 +7,9 @@
   block:
 
   - name: run install script
-    shell: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    shell: 
+      cmd: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+      warn: no
   
   when: bin.stat.exists == False
 

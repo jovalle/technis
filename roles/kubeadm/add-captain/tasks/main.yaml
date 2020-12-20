@@ -1,6 +1,6 @@
 - name: sync kubernetes certs
-  shell: rsync -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" {{ groups.captains[0] }}:/etc/kubernetes/pki /etc/kubernetes
-  when: inventory_hostname in groups['captains'][1:]
+  shell: rsync -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" {{ groups.control_plane[0] }}:/etc/kubernetes/pki /etc/kubernetes
+  when: inventory_hostname in groups['control_plane'][1:]
 
 - name: render config.yaml
   template:
@@ -53,4 +53,4 @@
     when: '"node-role.kubernetes.io/master" not in node_labels.stdout'
     ignore_errors: yes
   run_once: yes
-  when: inventory_hostname is groups['captains'][0]
+  when: inventory_hostname is groups['control_plane'][0]

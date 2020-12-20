@@ -3,12 +3,12 @@ cyborg001
 cyborg002
 cyborg003
 
-[captains]
+[control_plane]
 cyborg004
 cyborg005
 cyborg006
 
-[stewards]
+[nodes]
 cyborg007
 cyborg008
 cyborg009
@@ -17,8 +17,8 @@ cyborg009
 cyborg007
 
 [cluster:children]
-captains
-stewards
+control_plane
+nodes
 
 [cluster:vars]
 ansible_ssh_user=root

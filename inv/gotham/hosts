@@ -3,12 +3,12 @@ engineer-1
 engineer-2
 engineer-3
 
-[captains]
+[control_plane]
 captain-1
 captain-2
 captain-3
 
-[stewards]
+[nodes]
 steward-1
 steward-2
 steward-3
@@ -17,8 +17,8 @@ steward-3
 steward-2
 
 [cluster:children]
-captains
-stewards
+control_plane
+nodes
 
 [all:vars]
 ansible_ssh_user=vagrant
