@@ -17,6 +17,6 @@
       lineinfile:
         path: /etc/apt/apt.conf.d/proxy
         regexp: 'Proxy'
-        line: Acquire::http { Proxy "http://{{ hostvars[groups['all'][0]]['ansible_' + default_interface]['ipv4']['address'] }}:3142"; }
+        line: Acquire::http { Proxy "http://{{ hostvars[groups['all'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:3142"; }
         
     when: inventory_hostname != groups['all'][0]

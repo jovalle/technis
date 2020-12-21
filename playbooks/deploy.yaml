@@ -1,8 +1,8 @@
-# - name: build VMs anew
-#   import_playbook: rebuild.yaml
-#   when: rebuild | default(True) | bool
-# - name: prepare host
-#   import_playbook: prepare.yaml
+- name: build VMs anew
+  import_playbook: rebuild.yaml
+  when: (rebuild | default(False) | bool) and ((infrastructure_provisioner | default('none')) != 'none')
+- name: prepare host
+  import_playbook: prepare.yaml
 - name: install KV datastore
   import_playbook: etcd.yaml
   when: etcd_locale == "remote" | default('local')

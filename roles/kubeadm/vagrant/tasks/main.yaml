@@ -1,7 +1,7 @@
 - name: update kubelet config
   lineinfile:
     path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    line: Environment="KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['ansible_' + default_interface]['ipv4']['address'] }}"
+    line: Environment="KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}"
     insertafter: '^EnvironmentFile'
 
 - name: update and restart kubelet

@@ -1,4 +1,3 @@
-apt_cache_server: jarvis.techn.is
 cert_country: "US"
 cert_state: "New York"
 cert_locality: "Gotham"
@@ -43,5 +42,6 @@ cert_ca_cfg: |
       }
     }
   }
+cluster: technis
 ssh_public_key: "{{ technis_public_key_vaulted }}"
 ssh_private_key: "{{ technis_private_key_vaulted }}"
