@@ -20,7 +20,7 @@
     cert_ca_host: "{{ groups.etcd[0] }}"
     cert_ca_id: etcd-ca
     cert_common_name: technis-etcd-peer
-    cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }},{% endfor %}127.0.0.1"
+    cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + (default_interface | default('eth0')]['ipv4']['address'] }},{% endfor %}127.0.0.1"
     cert_id: etcd-peer
     cert_profile: peer
     target_dir: /etc/etcd/pki
