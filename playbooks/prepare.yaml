@@ -2,6 +2,7 @@
   become: yes
   roles:
   - os/package/update
+  - os/apt-cacher
   - role: os/package/upgrade
     when: upgrade | default(False) | bool
   - os/package/install
