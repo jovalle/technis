@@ -1,0 +1,5 @@
+- name: init k3s cluster
+  shell: >
+    curl -sfL https://get.k3s.io | K3S_TOKEN={{ cluster_token | default('technis') }} INSTALL_K3S_EXEC="--cluster-init" sh -
+  args:
+    warn: no
