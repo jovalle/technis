@@ -1,7 +1,10 @@
 - hosts: cluster
   become: yes
   roles:
-  - kubeadm/reset
+  - name: k3s/reset
+    when: (k8s_provider | default('kubeadm')) == 'k3s'
+  - name: kubeadm/reset
+    when: (k8s_provider | default('kubeadm')) == 'kubeadm'
 
 - hosts: etcd[0]
   become: yes

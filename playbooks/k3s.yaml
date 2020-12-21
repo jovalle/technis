@@ -1,0 +1,19 @@
+- hosts: all
+  become: yes
+  roles:
+  - k3s
+
+- hosts: control_plane[0]
+  become: yes
+  roles:
+  - k3s/init-cluster
+
+- hosts: control_plane[1:]
+  become: yes
+  roles:
+  - k3s/join-server
+  
+- hosts: nodes
+  become: yes
+  roles:
+  - k3s/join-agent
