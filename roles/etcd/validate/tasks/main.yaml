@@ -1,12 +1,12 @@
 - name: etcd health check command
   debug: 
-    msg: ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert {{ target_dir | default(etcd_cert_path) }}/etcd-ca.pem --cert {{ target_dir | default(etcd_cert_path) }}/etcd-peer.pem --key {{ target_dir | default(etcd_cert_path) }}/etcd-peer-key.pem endpoint health --cluster
+    msg: ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert {{ target_dir | default('/etc/etcd/pki') }}/etcd-ca.pem --cert {{ target_dir | default('/etc/etcd/pki') }}/etcd-peer.pem --key {{ target_dir | default('/etc/etcd/pki') }}/etcd-peer-key.pem endpoint health --cluster
   run_once: yes
   delegate_to: "{{ groups['etcd'][0] }}"
 
 - name: etcd health check
   shell: |
-    ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + default_interface]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert {{ target_dir | default(etcd_cert_path) }}/etcd-ca.pem --cert {{ target_dir | default(etcd_cert_path) }}/etcd-peer.pem --key {{ target_dir | default(etcd_cert_path) }}/etcd-peer-key.pem endpoint health --cluster
+    ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert {{ target_dir | default('/etc/etcd/pki') }}/etcd-ca.pem --cert {{ target_dir | default('/etc/etcd/pki') }}/etcd-peer.pem --key {{ target_dir | default('/etc/etcd/pki') }}/etcd-peer-key.pem endpoint health --cluster
   register: etcd_cluster_health
   delay: 30
   retries: 4

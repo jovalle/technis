@@ -1,10 +1,7 @@
-cluster: technis
 container_networking: calico
 container_runtime: docker
 default_interface: ens3
 domain_k8s: k8s.techn.is
 domain: techn.is
 etcd_locale: remote
-infrastructure_provisioner: terraform
 ingress_controller: nginx
-node_type: vm
