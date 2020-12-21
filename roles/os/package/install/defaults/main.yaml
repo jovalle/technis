@@ -2,11 +2,13 @@ required_packages:
 - apt-transport-https
 - build-essential
 - curl
+- dnsutils
 - git
 - ipvsadm
 - libffi-dev
 - libssl-dev
 - lvm2
+- net-tools
 - ntp
 - ntpdate
 - python
