@@ -15,4 +15,20 @@
 
 - name: reboot to actuate change(s)
   reboot:
+    reboot_timeout: 300
   when: cgroups.changed
+
+- name: create /etc/kubernetes/admin.conf in k3s
+  block:
+  - file:
+      path: /etc/kubernetes/
+      state: directory
+  - copy:
+      src: /etc/rancher/k3s/k3s.yaml
+      dest: /etc/kubernetes/admin.conf
+      remote_src: yes
+  - replace:
+      path: /etc/kubernetes/admin.conf
+      regexp: '127.0.0.1'
+      replace: 'api.{{ domain_k8s }}'
+  when: inventory_hostname in groups['control_plane']

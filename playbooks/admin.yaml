@@ -1,0 +1,5 @@
+- hosts: all
+
+- hosts: localhost
+  roles:
+  - { role: kubectl/context }

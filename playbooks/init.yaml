@@ -1,6 +1,0 @@
-- hosts: all
-  gather_facts: yes
-  become: yes
-  roles:
-  - os/wait-for-server
-  - os/init

@@ -1,4 +1,5 @@
-- block:
+- name: set kubeconfig admin context
+  block:
 
   - name: check if {{ target_context }} context exists
     command: kubectl config get-contexts {{ target_context }} --no-headers

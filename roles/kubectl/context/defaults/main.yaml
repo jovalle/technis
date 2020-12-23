@@ -1,0 +1,2 @@
+cluster: technis
+target_context: kubernetes-admin@{{ cluster }}
