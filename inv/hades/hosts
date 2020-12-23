@@ -1,8 +1,13 @@
-[raspi]
+[arm64]
 asphodel
 tartarus
-elysium
 zagreus
+
+[x86_64]
+elysium
+
+[apt_cacher]
+elysium
 
 [control_plane]
 asphodel
@@ -10,6 +15,7 @@ tartarus
 elysium
 
 [nodes]
+orpheus
 zagreus
 
 [cluster:children]

@@ -1,8 +1,8 @@
 - hosts: all
   become: yes
   roles:
-  - os/package/update
   - os/apt-cacher
+  - os/package/update
   - role: os/package/upgrade
     when: upgrade | default(False) | bool
   - os/package/install
