@@ -1,12 +1,31 @@
   - name: install apt-cacher-ng
-    package:
-      name: apt-cacher-ng
-      state: present
-    delegate_to: "{{ groups['all'][0] }}"
+    block:
+    - file:
+        name: /etc/apt/apt.conf.d/proxy
+        state: absent
+      register: demotion
+    - import_role: 
+        name: os/package/update
+      when: demotion.changed
+    - package:
+        name: apt-cacher-ng
+        state: present
+    - lineinfile:
+        path: /etc/apt-cacher-ng/acng.conf
+        line: 'PassThroughPattern: ^(.*):443$'
+    - systemd:
+        name: apt-cacher-ng
+        state: restarted
+    delegate_to: "{{ groups['apt_cacher'][0] | default(groups['all'][0]) }}"
     run_once: yes
-  
+
   - name: configure apt cache clients
     block:
+
+    - name: remove apt-cacher-ng on clients
+      apt:
+        name: apt-cacher-ng
+        state: absent
 
     - name: ensure config file exists
       file:
@@ -17,6 +36,6 @@
       lineinfile:
         path: /etc/apt/apt.conf.d/proxy
         regexp: 'Proxy'
-        line: Acquire::http { Proxy "http://{{ hostvars[groups['all'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:3142"; }
+        line: Acquire::http { Proxy "http://{{ groups['apt_cacher'][0] | default(groups['all'][0]) }}.{{ domain }}:3142"; }
         
-    when: inventory_hostname != groups['all'][0]
+    when: inventory_hostname != (groups['apt_cacher'][0] | default(groups['all'][0]))
