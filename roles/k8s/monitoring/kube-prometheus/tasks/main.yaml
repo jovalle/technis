@@ -1,0 +1,60 @@
+- name: deploy prometheus-operator
+  import_role:
+    name: kubectl
+  vars:
+    target_list:
+    - prometheus-operator.yaml
+    source_role: k8s/monitoring/kube-prometheus/operator
+    file_type: static
+
+- name: validate operator readiness
+  include_tasks: validate-resource.yaml
+  vars:
+    name: '{{ item }}'
+    namespace: monitoring
+    kind: deployment
+  loop:
+  - prometheus-operator
+  - prometheus-adapter
+
+- name: deploy kube-prometheus components
+  import_role:
+    name: kubectl
+  vars:
+    target_list:
+    - prometheus.yaml
+    - alertmanager.yaml
+    - kube-state-metrics.yaml
+    - node-exporter.yaml
+    - grafana.yaml
+    source_role: k8s/monitoring/kube-prometheus/components
+    file_type: static
+
+- name: validate component readiness
+  include_tasks: validate-resource.yaml
+  vars:
+    name: '{{ item }}'
+    namespace: monitoring
+    kind: deployment
+  loop:
+  - grafana
+  - kube-state-metrics
+
+- name: validate node-exporter readiness
+  include_tasks: validate-resource.yaml
+  vars:
+    name: '{{ item }}'
+    namespace: monitoring
+    kind: daemonset
+  loop:
+  - node-exporter
+
+- name: deploy ingress resources
+  import_role:
+    name: kubectl
+  vars:
+    target_list:
+    - prometheus-ingress.yaml
+    - grafana-ingress.yaml
+    source_role: k8s/monitoring/kube-prometheus/ingress
+    file_type: template
