@@ -8,7 +8,7 @@
       target_list:
       - mandatory.yaml
       - service.yaml
-      title: ingress/nginx
+      source_role: ingress/nginx
       file_type: template
 
 - name: wait for nginx-ingress-controller readiness

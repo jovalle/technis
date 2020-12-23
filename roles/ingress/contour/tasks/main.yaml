@@ -7,7 +7,7 @@
       command: apply
       target_list:
       - contour.yaml
-      title: ingress/contour
+      source_role: ingress/contour
       file_type: template
 
 - name: get envoy ready count
