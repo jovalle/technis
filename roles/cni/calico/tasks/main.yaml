@@ -4,7 +4,7 @@
   vars:
     target_list:
     - https://docs.projectcalico.org/manifests/tigera-operator.yaml
-    title: cni/calico/deploy
+    source_role: cni/calico/deploy
     file_type: remote
 
 - name: wait for tigera-operator readiness
@@ -20,7 +20,7 @@
   vars:
     target_list:
     - custom-resources.yaml
-    title: cni/calico/deploy
+    source_role: cni/calico/deploy
     file_type: template
 
 - name: wait for calico-node readiness
