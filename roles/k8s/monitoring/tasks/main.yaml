@@ -1,0 +1,7 @@
+- name: check for monitoring namespace
+  shell: kubectl get namespace monitoring
+  register: get_namespace
+
+- name: create monitoring namespace
+  shell: kubectl create namespace monitoring
+  when: get_namespace.rc != 0
