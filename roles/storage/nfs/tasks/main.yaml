@@ -1,0 +1,21 @@
+- import_tasks: ensure-namespace.yaml
+  vars:
+    namespace: '{{ nfs_provisioner_namespace }}'
+
+- name: deploy nfs-client-provisioner
+  import_role:
+    name: kubectl
+  vars:
+    target_list:
+    - rbac.yaml
+    - deployment.yaml
+    - storageclass.yaml
+    source_role: storage/nfs
+    file_type: template
+
+- name: validate readiness
+  include_tasks: validate-resource.yaml
+  vars:
+    name: nfs-client-provisioner
+    namespace: '{{ nfs_provisioner_namespace }}'
+    kind: deployment

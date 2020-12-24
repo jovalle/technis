@@ -1,0 +1,6 @@
+nfs_provisioner_namespace: nastradamus
+nfs_provisioner_name: techn.is/nas
+nfs_provisioner_image: jovalle/nfs-subdir-external-provisioner
+nfs_server: cerberus.techn.is
+nfs_path: /nas
+storageclass_name: illmatic

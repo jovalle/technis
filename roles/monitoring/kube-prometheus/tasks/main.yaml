@@ -4,7 +4,7 @@
   vars:
     target_list:
     - prometheus-operator.yaml
-    source_role: k8s/monitoring/kube-prometheus/operator
+    source_role: monitoring/kube-prometheus/operator
     file_type: static
 
 - name: validate operator readiness
@@ -27,7 +27,7 @@
     - kube-state-metrics.yaml
     - node-exporter.yaml
     - grafana.yaml
-    source_role: k8s/monitoring/kube-prometheus/components
+    source_role: monitoring/kube-prometheus/components
     file_type: static
 
 - name: validate component readiness
@@ -56,5 +56,5 @@
     target_list:
     - prometheus-ingress.yaml
     - grafana-ingress.yaml
-    source_role: k8s/monitoring/kube-prometheus/ingress
+    source_role: monitoring/kube-prometheus/ingress
     file_type: template
