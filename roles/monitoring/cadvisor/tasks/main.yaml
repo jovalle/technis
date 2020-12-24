@@ -4,7 +4,7 @@
   vars:
     target_list:
     - cadvisor.yaml
-    title: k8s/monitoring/cadvisor
+    title: monitoring/cadvisor
     file_type: template
 
 - name: get cadvisor desired count
@@ -30,5 +30,5 @@
   vars:
     target_list:
     - servicemonitor.yaml
-    title: k8s/monitoring/cadvisor
+    title: monitoring/cadvisor
     file_type: template
