@@ -1,13 +1,23 @@
 [arm64]
 asphodel
 tartarus
+elysium
 zagreus
 
-[x86_64]
-elysium
+[amd64]
+cerberus
 
 [apt_cacher]
-elysium
+cerberus
+
+[nfs_server]
+cerberus
+
+[samba_server]
+cerberus
+
+[zfs_server]
+cerberus
 
 [control_plane]
 asphodel
@@ -15,7 +25,7 @@ tartarus
 elysium
 
 [nodes]
-orpheus
+cerberus
 zagreus
 
 [cluster:children]
