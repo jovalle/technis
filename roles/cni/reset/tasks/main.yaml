@@ -1,0 +1,21 @@
+- name: remove CNI configuration
+  file:
+    path: /etc/cni/net.d
+    state: absent
+
+- name: stop kubelet
+  systemd:
+    name: kubelet
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: iptables
+  command: "{{ item }}"
+  with_items:
+  - iptables -F
+  - iptables -t nat -F
+  - iptables -t mangle -F
+  - iptables -X
+  - iptables --flush
+  ignore_errors: yes
