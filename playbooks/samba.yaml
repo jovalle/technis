@@ -1,6 +1,4 @@
-- hosts: all
-  gather_facts: yes
-  become: yes
+- hosts: samba_server
   vars_prompt:
   - name: smb_username
     prompt: username
@@ -10,13 +8,18 @@
     private: yes
     confirm: yes
   tasks:
-  - block:
-      - template:
-          src: files/smb.conf
-          dest: /etc/samba/smb.conf
-      - command: 'smbpasswd -a {{ smb_username }} -w "{{ smb_password }}"'
-        no_log: yes
-      - systemd:
-          name: smbd
-          state: restarted
-    delegate_to: "{{ samba_server }}"
+  - name: install samba
+    apt:
+      name: samba
+      state: present
+  - name: render samba config
+    template:
+      src: files/smb.conf
+      dest: /etc/samba/smb.conf
+  - name: create samba user
+    command: 'smbpasswd -a {{ smb_username }} -w "{{ smb_password }}"'
+    no_log: yes
+  - name: restart samba server
+    systemd:
+      name: smbd
+      state: restarted

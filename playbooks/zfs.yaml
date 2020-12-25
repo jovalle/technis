@@ -1,14 +1,24 @@
-- hosts: zfs
-  gather_facts: yes
-  become: yes
+- hosts: zfs_server
   tasks:
-  - block:
-      - name: install zfs
-        package:
-          name: "{{ item }}"
-        with_items:
-        - zfs-dkms
-        - zfsutils-linux
-      - name: import all available zpools
-        command: zpool import -a -f
-    delegate_to: "{{ zfs_server }}"
+  # apt_repository is primitive. doesn't aggregate
+  - name: onboard buster-backports repo
+    lineinfile:
+      path: /etc/apt/sources.list
+      regex: ^{{ item }} http://deb.debian.org/debian buster-backports
+      line: '{{ item }} http://deb.debian.org/debian buster-backports main contrib'
+    loop:
+    - deb
+    - deb-src
+  - name: update repo
+    apt:
+      force_apt_get: yes
+      update_cache: yes
+      autoremove: yes
+  - name: install zfs
+    package:
+      name: "{{ item }}"
+    with_items:
+    - zfs-dkms
+    - zfsutils-linux
+  - name: import all available zpools
+    command: zpool import -a -f

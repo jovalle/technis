@@ -1,6 +1,4 @@
 - hosts: all
-  gather_facts: yes
-  become: yes
   tasks:
   - name: setup nfs server
     block:
@@ -9,8 +7,8 @@
         state: present
     - lineinfile:
         path: /etc/exports
-        regex: ^/var/lib/media
-        line: /var/lib/media *(rw,sync,no_subtree_check,no_root_squash)
+        regex: ^/hulkpool
+        line: /hulkpool *(rw,sync,no_subtree_check,no_root_squash)
     - command: exportfs
     - systemd:
         name: nfs-kernel-server
@@ -22,11 +20,11 @@
         name: nfs-common
         state: present
     - file:
-        path: /var/lib/media
+        path: /hulkpool
         state: directory
     - lineinfile:
         path: /etc/fstab
-        regex: "^{{ nfs_server }}:/var/lib/media"
-        line: "{{ nfs_server }}:/var/lib/media /var/lib/media nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
-    - command: mount /var/lib/media
+        regex: "^{{ nfs_server }}:/hulkpool"
+        line: "{{ nfs_server }}:/hulkpool /hulkpool nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
+    - command: mount /hulkpool
     delegate_to: "{{ nfs_clients }}"
