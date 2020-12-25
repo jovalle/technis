@@ -1,13 +1,13 @@
 - hosts: cluster
-  become: yes
   roles:
   - name: k3s/reset
     when: (k8s_provisioner | default('kubeadm')) == 'k3s'
   - name: kubeadm/reset
     when: (k8s_provisioner | default('kubeadm')) == 'kubeadm'
+  - name: cni/reset
+    when: container_networking is defined
 
 - hosts: etcd[0]
-  become: yes
   roles:
   - etcd/reset
   - etcd/validate
