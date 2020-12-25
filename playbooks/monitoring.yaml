@@ -1,5 +1,4 @@
 - hosts: control_plane[0]
-  become: yes
   roles:
   - monitoring
   - monitoring/kube-prometheus

@@ -1,5 +1,4 @@
 - hosts: control_plane
-  become: yes
   run_once: yes
   tasks:
   - block:
@@ -32,7 +31,7 @@
             namespace: kuard
           spec:
             rules:
-            - host: kuard.{{ domain_k8s }}
+            - host: kuard.{{ k8s_domain }}
               http:
                 paths:
                 - backend:
@@ -62,7 +61,7 @@
           EOF
     - name: validate ingress
       uri:
-        url: http://kuard.{{ domain_k8s }}
+        url: http://kuard.{{ k8s_domain }}
         status_code: 200
       register: http_test
       until: http_test.status == 200

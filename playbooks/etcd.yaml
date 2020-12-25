@@ -1,10 +1,8 @@
 - hosts: etcd
-  become: yes
   tasks:
   - setup:
 
 - hosts: etcd[0]
-  become: yes
   vars:
     cert_ca_host: "{{ groups.etcd[0] }}"
     cert_common_name: technis-etcd-ca
@@ -15,7 +13,6 @@
   - os/certificate/generate
 
 - hosts: etcd
-  become: yes
   vars:
     cert_ca_host: "{{ groups.etcd[0] }}"
     cert_ca_id: etcd-ca

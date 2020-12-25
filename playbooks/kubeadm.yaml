@@ -1,13 +1,11 @@
 - hosts: all
 
 - hosts: cluster
-  become: yes
   roles:
   - kubeadm/prepare
   - { role: kubeadm/vagrant, when: infrastructure_provisioner == 'vagrant' }
 
 - hosts: control_plane[0]
-  become: yes
   vars:
     cert_ca_id: ca
     target_dir: /etc/kubernetes/pki
@@ -19,7 +17,6 @@
   - { role: os/certificate/generate, cert_id: kubernetes, cert_organization: Kubernetes, cert_hostname: "10.32.0.1,{% for i in groups['control_plane'] %}{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }},{% endfor %}127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local,{{ k8s_api_fqdn }}" }
 
 - hosts: control_plane[0]
-  become: yes
   vars:
     cert_ca_id: etcd-ca
     cert_ca_host: "{{ groups.etcd[0] }}"
@@ -30,12 +27,10 @@
   - kubeadm/add-captain
 
 - hosts: control_plane[1:]
-  become: yes
   roles:
   - kubeadm/add-captain
 
 - hosts: nodes
-  become: yes
   vars:
     cert_ca_id: ca
     cert_ca_host: "{{ groups.control_plane[0] }}"
@@ -48,7 +43,6 @@
   - kubeadm/add-steward
 
 - hosts: control_plane
-  become: yes
   run_once: yes
   tasks:
   - name: set labels for node
