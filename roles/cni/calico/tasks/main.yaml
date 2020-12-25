@@ -1,31 +1,33 @@
-- name: deploy tigera operator
-  import_role:
-    name: kubectl
-  vars:
-    target_list:
-    - https://docs.projectcalico.org/manifests/tigera-operator.yaml
-    source_role: cni/calico/deploy
-    file_type: remote
-
-- name: wait for tigera-operator readiness
-  shell: kubectl -n tigera-operator get deployment tigera-operator -o jsonpath="{.status.readyReplicas}"
-  register: ready
-  retries: 6
-  delay: 10
-  until: ready.stdout == '1'
+- name: tigera operator install
+  block:
+  - name: deploy tigera operator
+    import_role:
+      name: kubectl
+    vars:
+      target_list:
+      - https://docs.projectcalico.org/manifests/tigera-operator.yaml
+      source_role: cni/calico/deploy
+      file_type: remote
+  - name: wait for tigera-operator readiness
+    shell: kubectl -n tigera-operator get deployment tigera-operator -o jsonpath="{.status.readyReplicas}"
+    register: ready
+    retries: 6
+    delay: 10
+    until: ready.stdout == '1'
+  when: tigera_operator_install == True
 
 - name: deploy custom installation
   import_role:
     name: kubectl
   vars:
     target_list:
-    - custom-resources.yaml
+    - '{{ "calico.yaml" if tigera_operator_install == False else "custom-resources.yaml" }}'
     source_role: cni/calico/deploy
     file_type: template
 
-- name: wait for calico-node readiness
-  shell: kubectl -n calico-system get ds calico-node -o jsonpath="{.status.numberReady}"
-  register: ready
-  retries: "{{ 6 * (groups['cluster'] | length) }}"
-  delay: 10
-  until: ready.stdout == '6'
+- name: validate calico-node readiness
+  include_tasks: validate-resource.yaml
+  vars:
+    name: calico-node
+    namespace: kube-system
+    kind: daemonset
