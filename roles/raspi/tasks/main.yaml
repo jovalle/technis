@@ -1,0 +1,5 @@
+- name: disable wifi
+  command: rfkill block wifi
+
+- name: disable bluetooth
+  command: rfkill block bluetooth
