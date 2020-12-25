@@ -1,7 +1,5 @@
 container_networking: calico
 container_runtime: containerd
 default_interface: eth1
-domain_k8s: k8s.technis.io
-domain: technis.io
 etcd_locale: remote
 ingress_controller: contour
