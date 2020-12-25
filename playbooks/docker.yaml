@@ -1,5 +1,4 @@
 - hosts: all
-  become: yes
   tasks:
   - name: uninstall old versions
     apt:

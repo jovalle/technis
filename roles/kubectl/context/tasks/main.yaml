@@ -12,7 +12,6 @@
     ignore_errors: yes
 
   - name: get admin config for {{ cluster }}
-    become: yes
     fetch:
       src: /etc/kubernetes/admin.conf
       dest: ~/.kube/{{ cluster }}

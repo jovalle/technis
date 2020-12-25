@@ -8,6 +8,7 @@ required_packages:
 - libffi-dev
 - libssl-dev
 - lvm2
+- ncdu
 - net-tools
 - ntp
 - ntpdate

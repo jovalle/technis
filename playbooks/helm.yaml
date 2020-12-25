@@ -1,5 +1,4 @@
 - hosts: control_plane
-  become: yes
   run_once: yes
   roles:
   - helm/deploy
