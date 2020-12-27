@@ -1,5 +1,0 @@
-- name: os/wait-for-server | wait for ssh availability
-  wait_for_connection:
-    delay: 30
-    timeout: 300
-  when: (node_type | default('remote')) != 'local'

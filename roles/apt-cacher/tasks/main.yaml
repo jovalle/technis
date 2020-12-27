@@ -1,0 +1,7 @@
+  - name: install apt-cacher-ng on server
+    include_tasks: install.yaml
+    when: inventory_hostname == apt_cacher_main_server
+
+  - name: configure apt-cacher clients
+    include_tasks: configure.yaml
+    when: inventory_hostname != apt_cacher_main_server

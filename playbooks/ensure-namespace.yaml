@@ -1,8 +1,0 @@
-- name: check for {{ namespace }} namespace
-  shell: kubectl get namespace {{ namespace }}
-  register: get_namespace
-  ignore_errors: yes
-
-- name: create {{ namespace }} namespace
-  shell: kubectl create namespace {{ namespace }}
-  when: get_namespace.rc != 0

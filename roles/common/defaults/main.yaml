@@ -1,0 +1,17 @@
+common_timezone: America/New_York
+common_packages:
+- apt-transport-https
+- ca-certificates
+- curl
+- git
+- gpg
+- gnupg-agent
+- ipset
+- jq
+- net-tools
+- netcat
+- python3-openssl
+- software-properties-common
+- telnet
+- vim
+- zip

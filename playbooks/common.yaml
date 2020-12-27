@@ -1,0 +1,6 @@
+- hosts: all
+  roles:
+  - apt-cacher
+  - common
+  - cri
+  - k8s

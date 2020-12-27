@@ -10,6 +10,7 @@
     cmd: vagrant status | egrep 'running' | wc -l | awk '{print $1}'
   register: vm_count
 
-- fail:
+- name: check for lingering VMs
+  fail:
     msg: "VMs have lingered. ({{ vm_count.stdout }}) May need manual cleanup"
   when: vm_count.stdout != '0'

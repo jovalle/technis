@@ -1,54 +1,18 @@
-- name: create install dirs
-  file:
-    path: "{{ item }}"
-    state: directory
-  with_items:
-  - /etc/cni/net.d
-  - /opt/cni/bin
+- name: reset {{ cni_plugin }} container networking interface (cni)
+  include_role:
+    name: cni/reset
+  when:
+  - cni_reset is defined
+  - cni_reset
 
-- name: check binaries
-  stat:
-    path: "/opt/cni/bin/tuning"
-  register: bin
+- name: setup {{ cni_plugin }} container networking interface (cni)
+  include_role:
+    name: cni/{{ cni_plugin }}
+  when:
+  - inventory_hostname == cluster_main_control_plane
+  - cni_plugin != 'none'
 
-- name: get binaries
-  unarchive:
-    src: "{{ item }}"
-    dest: "/opt/cni/bin/"
-    remote_src: yes
-    mode: 0755
-    owner: root
-    group: root
-  with_items:
-  - "https://github.com/containernetworking/plugins/releases/download/v0.8.4/cni-plugins-amd64-v0.8.4.tgz"
-  when: bin.stat.exists == False
-
-- name: render configs
-  template:
-    src: "{{ item.file }}.j2"
-    dest: "{{ item.target_dir }}/{{ item.file }}"
-  with_items:
-  - { file: 10-bridge.conf, target_dir: /etc/cni/net.d/ }
-  - { file: 99-loopback.conf, target_dir: /etc/cni/net.d/ }
-
-- name: check kubelet
-  shell: "systemctl status kubelet"
-  register: kubelet
-  ignore_errors: yes
-
-- name: restart kubelet
-  systemd:
-    name: "kubelet"
-    state: restarted
-  when: kubelet.rc == 0
-
-- name: check kube-proxy
-  shell: "systemctl status kube-proxy"
-  register: kube_proxy
-  ignore_errors: yes
-
-- name: restart kube-proxy
-  systemd:
-    name: "kube-proxy"
-    state: restarted
-  when: kube_proxy.rc == 0
+- name: setup bare container networking interface (cni)
+  include_tasks: cni.yaml
+  when:
+  - cni_plugin == 'none'

@@ -1,7 +1,0 @@
-- hosts: etcd
-
-- hosts: control_plane
-  run_once: yes
-  tasks:
-  - include_role:
-      name: "cni/{{ container_networking | default('calico')}}"

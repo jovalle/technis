@@ -11,4 +11,4 @@ Terraform + libvirt + KVM
 Vagrant + Virtualbox
 
 ### Hades
-k3s + Raspberry Pis (arm64)
+Baremetal, hybrid (arm64/amd64)

@@ -10,7 +10,7 @@
   with_items:
   - cgroup_memory=1
   - cgroup_enable=memory
-  when: machine_hw_name.stdout == 'aarch64'
+  when: ansible_architecture | regex_search('arm|aarch')
   register: cgroups
 
 - name: reboot to actuate change(s)

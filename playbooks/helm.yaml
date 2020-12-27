@@ -1,6 +1,0 @@
-- hosts: control_plane
-  run_once: yes
-  roles:
-  - helm/deploy
-  - { role: helm/install, helm_name: mysql, helm_chart: stable/mysql }
-  - { role: helm/uninstall, helm_name: mysql }

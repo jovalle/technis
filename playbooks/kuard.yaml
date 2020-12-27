@@ -1,0 +1,73 @@
+- hosts: control_plane
+  run_once: yes
+  tasks:
+  - block:
+    - name: deploy kuard
+      shell:
+        cmd: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: kuard
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: kuard
+            namespace: kuard
+          spec:
+            selector:
+              app: kuard
+            ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 8080
+          ---
+          apiVersion: networking.k8s.io/v1beta1
+          kind: Ingress
+          metadata:
+            name: kuard
+            namespace: kuard
+          spec:
+            rules:
+            - host: kuard.{{ k8s_domain }}
+              http:
+                paths:
+                - backend:
+                    serviceName: kuard
+                    servicePort: 80
+          ---
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: kuard
+            namespace: kuard
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: kuard
+            template:
+              metadata:
+                labels:
+                  app: kuard
+              spec:
+                containers:
+                - name: kuard
+                  image: gcr.io/kuar-demo/kuard
+                  ports:
+                  - containerPort: 8080
+          EOF
+    - name: validate ingress
+      uri:
+        url: http://kuard.{{ k8s_domain }}
+        status_code: 200
+      register: http_test
+      until: http_test.status == 200
+      retries: 6
+      delay: 10
+    always:
+    - name: cleanup kuard resources
+      shell: kubectl delete namespace kuard
+      ignore_errors: yes

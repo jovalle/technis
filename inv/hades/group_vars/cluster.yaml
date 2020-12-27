@@ -1,0 +1,4 @@
+cluster_keepalived_vip: '192.168.0.100'
+cluster_extra_sans:
+- api.k8s.techn.is
+cluster_control_plane_endpoint: "api.k8s.techn.is:8443"

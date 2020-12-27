@@ -1,0 +1,77 @@
+- name: reset cluster
+  block:
+  - include_tasks: reset.yaml
+  - include_role:
+      name: k8s
+  when:
+  - cluster_reset is defined
+  - cluster_reset
+
+- name: set node hostname
+  hostname:
+    name: '{{ inventory_hostname }}'
+
+- name: set node /etc/hostname
+  copy:
+    content: '{{ inventory_hostname }}'
+    dest: /etc/hostname
+
+- name: check node status
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: k8s_kubelet_conf
+
+- name: set node status fact
+  set_fact:
+    cluster_node_configured: "{{ k8s_kubelet_conf.stat.exists }}"
+
+- name: verify cluster status
+  fail:
+    msg: "cluster_main_control_plane '{{ cluster_main_control_plane }}' is not configured, while other control_plane(s) are!"
+  when:
+  - not hostvars[cluster_main_control_plane].cluster_node_configured
+  - hostvars[item].cluster_node_configured
+  loop: "{{ groups['control_plane'] }}"
+
+- name: set cluster control plane default
+  set_fact:
+    cluster_control_plane_endpoint: "{{ cluster_keepalived_vip }}:8443"
+  run_once: true
+  delegate_to: "{{ cluster_main_control_plane }}"
+  when:
+  - cluster_control_plane_endpoint | length < 1
+
+- name: set cluster initialize fact
+  set_fact:
+    cluster_initialized: true
+  run_once: true
+
+- name: initialize cluster
+  include_tasks: init.yaml
+  when:
+  - inventory_hostname == cluster_main_control_plane
+  - not cluster_node_configured
+
+#TODO update cert key and join cmd once
+- name: refresh certs to create a new join command
+  block:
+  - name: upload latest certs
+    command: kubeadm init phase upload-certs --upload-certs
+    register: kubeadm_upload_certs
+    notify:
+    - update remote admin config
+    - update local admin config
+  - name: flush handlers
+    meta: flush_handlers
+  - name: create token and print join command
+    shell: kubeadm token create --print-join-command
+    register: kubeadm_join_command_raw
+  run_once: yes
+  delegate_to: '{{ cluster_main_control_plane }}'
+
+- name: join cluster
+  include_tasks: join.yaml
+  vars:
+    kubeadm_join_command: '{{ kubeadm_join_command_raw.stdout }}'
+    kubeadm_certificate_key: '{{ kubeadm_upload_certs.stdout_lines[-1] }}'
+  when: inventory_hostname != cluster_main_control_plane

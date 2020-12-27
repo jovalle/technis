@@ -1,13 +1,21 @@
 - hosts: cluster
   roles:
   - name: k3s/reset
-    when: (k8s_provisioner | default('kubeadm')) == 'k3s'
-  - name: kubeadm/reset
-    when: (k8s_provisioner | default('kubeadm')) == 'kubeadm'
-  - name: cni/reset
-    when: container_networking is defined
+    when: k8s_provisioner == 'k3s'
+  - name: k8s/reset
+    when: k8s_provisioner == 'kubeadm'
 
-- hosts: etcd[0]
+- hosts: etcd
   roles:
   - etcd/reset
-  - etcd/validate
+
+- hosts: localhost
+  tasks:
+  - include_role:
+      name: "{{ infrastructure_provisioner | default('terraform') }}/destroy"
+  - include_role:
+      name: "{{ infrastructure_provisioner | default('terraform') }}/up"
+
+- hosts: all
+  roles:
+  - wait-for-server

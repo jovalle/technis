@@ -1,4 +1,0 @@
-- hosts: cluster
-  tasks:
-  - include_role:
-      name: "cri/{{ container_runtime | default('containerd')}}"

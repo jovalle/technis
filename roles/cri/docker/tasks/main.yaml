@@ -1,66 +1,53 @@
-- name: install prereqs in debian
-  package:
-    name: "{{ item }}"
-    state: present
-  with_items:
-  - apt-transport-https
-  - ca-certificates
-  - curl
-  - gnupg-agent
-  - software-properties-common
-  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
-
-- name: add docker repo in rhel
-  yum_repository:
-    name: docker-ce
-    description: Docker Repository
-    baseurl: https://download.docker.com/linux/centos/7/x86_64/stable
-    enabled: yes
-    gpgcheck: yes
-    repo_gpgcheck: yes
-    gpgkey: https://download.docker.com/linux/centos/gpg
-  ignore_errors: yes
-  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
-
-- name: add docker repo in debian
-  block:
-    - shell: 'curl -fsSL https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg | sudo apt-key add -'
-    - shell: 'apt-add-repository "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} $(lsb_release -cs) stable"'
-    - shell: 'apt update'
-  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
-
-- name: ensure docker-common and co uninstalled
-  package:
-    name: "{{ item }}"
-    state: absent
-  with_items:
-  - docker
-  - docker-client
-  - docker-client-latest
-  - docker-common
-  - docker-latest
-  - docker-latest-logrotate
-  - docker-logrotate
-  - docker-engine
-
-- name: docker install
-  package:
-    name: docker-ce
+- name: add an apt signing key for docker
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
     state: present
 
-- name: render docker daemon
-  template:
+- name: add docker apt repo
+  apt_repository:
+    repo: deb https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable
+    state: present
+
+# cleanup:
+#   dpkg --configure -a
+#   apt-get -f install
+#   apt remove -y docker* containerd*
+#   apt autoclean -y && apt autoremove -y
+#   rm -rf /etc/systemd/system/docker*
+
+- name: update repo
+  apt:
+    force_apt_get: yes
+    update_cache: yes
+    autoremove: yes
+
+- name: install docker and its dependencies
+  apt:
+    name: 
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    state: present
+
+- name: create docker directories
+  file:
+    path: '{{ item }}'
+    state: directory
+    mode: 0755
+  loop:
+  - /etc/docker
+  - /etc/systemd/system/docker.service.d
+
+- name: render docker daemon config
+  copy:
     src: daemon.json
     dest: /etc/docker/daemon.json
+    mode: 0644
+  notify: restart docker
 
-- name: create service dir
-  file:
-    path: /etc/systemd/system/docker.service.d
-    state: directory
-
-- name: docker reload/enable/restart
+- name: start docker
   systemd:
     name: docker
-    state: restarted
-    enabled: yes
     daemon_reload: yes
+    state: started
+    enabled: yes
