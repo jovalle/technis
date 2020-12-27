@@ -1,2 +1,0 @@
-- name: uninstall {{ helm_name }} chart
-  shell: helm uninstall {{ helm_name }}

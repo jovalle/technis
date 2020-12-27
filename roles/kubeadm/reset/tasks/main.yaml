@@ -1,3 +1,0 @@
-- name: revert cluster deployment
-  shell: kubeadm reset -f
-  ignore_errors: yes

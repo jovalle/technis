@@ -1,0 +1,19 @@
+- name: delete node {{ inventory_hostname }}
+  command: kubectl delete node {{ inventory_hostname }} --ignore-not-found=true
+  delegate_to: '{{ cluster_main_control_plane }}'
+  ignore_errors: yes
+
+- name: revert cluster deployment
+  shell: kubeadm reset -f
+  ignore_errors: yes
+
+- name: stop kubelet
+  systemd:
+    name: kubelet
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: reset cni
+  import_role: 
+    name: cni/reset

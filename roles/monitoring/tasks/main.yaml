@@ -1,3 +1,0 @@
-- import_tasks: ensure-namespace.yaml
-  vars:
-    namespace: monitoring

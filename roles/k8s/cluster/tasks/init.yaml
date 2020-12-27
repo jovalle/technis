@@ -1,0 +1,10 @@
+- name: generate kubeadm configuration
+  template:
+    src: config.yaml.j2
+    dest: /etc/kubernetes/config.yaml
+    mode: 0644
+
+- name: initialize cluster
+  command:
+    cmd: kubeadm init --config /etc/kubernetes/config.yaml --upload-certs
+    creates: /etc/kubernetes/admin.conf

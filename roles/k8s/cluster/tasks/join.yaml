@@ -1,0 +1,4 @@
+- name: join node to cluster
+  command:
+    cmd: "{{ kubeadm_join_command }}{% if inventory_hostname in groups['control_plane'] %} --control-plane --certificate-key {{ kubeadm_certificate_key }}{% endif %}"
+    creates: /etc/kubernetes/{{ 'admin.conf' if inventory_hostname in groups['control_plane'] else 'kubelet.conf' }}

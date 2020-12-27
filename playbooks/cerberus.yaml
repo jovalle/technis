@@ -1,0 +1,255 @@
+- hosts: cerberus
+  tasks:
+  # apt_repository is primitive. doesn't aggregate
+  - name: onboard buster-backports repo
+    lineinfile:
+      path: /etc/apt/sources.list
+      regex: ^{{ item }} http://deb.debian.org/debian buster-backports
+      line: '{{ item }} http://deb.debian.org/debian buster-backports main contrib'
+    loop:
+    - deb
+    - deb-src
+  - name: apt upgrade
+    apt:
+      upgrade: full
+      update_cache: yes
+      cache_valid_time: 3600
+      force_apt_get: true
+      autoclean: yes
+      autoremove: yes
+    register: apt_upgrade
+    retries: 5
+    until: apt_upgrade is success
+  - name: install zfs
+    package:
+      name: '{{ item }}'
+    with_items:
+    - zfs-dkms
+    - zfsutils-linux
+  - name: import all available zpools
+    command:
+      cmd: zpool import -a -f
+      creates: /hulkpool
+
+- hosts: cerberus
+  tasks:
+  - name: setup nfs server
+    block:
+    - name: install nfs server package
+      package:
+        name: nfs-kernel-server
+        state: present
+    - name: create export mountpoints if missing
+      file:
+        path: '{{ item }}'
+        state: directory
+      loop:
+      - /hulkpool
+      - /nas
+    - name: add exports
+      lineinfile:
+        path: /etc/exports
+        regex: ^{{ item }}
+        line: '{{ item }} *(rw,sync,no_subtree_check,no_root_squash)'
+      loop:
+      - /hulkpool
+      - /nas
+    - name: get exports
+      command: exportfs
+    - name: restart nfs service
+      systemd:
+        name: nfs-kernel-server
+        state: restarted
+
+- hosts: nfs_clients
+  tasks:
+  - name: setup nfs clients
+    block:
+    - name: install nfs client package
+      package:
+        name: nfs-common
+        state: present
+    - name: create export mountpoints if missing
+      file:
+        path: '{{ item }}'
+        state: directory
+      loop:
+      - /hulkpool
+      - /nas
+    - name: create exports in /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regex: "^{{ hostvars[groups['nfs_server'][0]]['ansible_fqdn'] }}:/{{ item }}"
+        line: "{{ hostvars[groups['nfs_server'][0]]['ansible_fqdn'] }}:/{{ item }} /{{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
+      loop:
+      - /hulkpool
+      - /nas
+    - name: mount nfs exports
+      command: mount /{{ item }}
+      loop:
+      - /hulkpool
+      - /nas
+    delegate_to: "{{ nfs_clients }}"
+
+- hosts: cerberus
+  vars_prompt:
+  - name: smb_username
+    prompt: username
+    private: no
+  - name: smb_password
+    prompt: password
+    private: yes
+    confirm: yes
+  tasks:
+  - name: install samba
+    apt:
+      name: samba
+      state: present
+  - name: render samba config
+    template:
+      src: files/smb.conf
+      dest: /etc/samba/smb.conf
+  - name: create samba user
+    shell: "(echo '{{ smb_password }}'; echo '{{ smb_password }}') | smbpasswd -a -s {{ smb_username }}"
+    no_log: yes
+  - name: restart samba server
+    systemd:
+      name: smbd
+      state: restarted
+
+- hosts: cerberus
+  pre_tasks:
+  - name: check host has an nvidia card
+    shell: >
+      lspci | grep -i nvidia | wc -l
+    register: nvidia_check
+    failed_when: nvidia_check.stdout == '0'
+  - name: check driver version
+    shell: >
+      nvidia-smi | grep 'NVIDIA-SMI' | awk '{print $3}'
+    register: nvidia_driver_version
+    ignore_errors: yes
+  tasks:
+  - name: install nvidia drivers
+    block:
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: create modprobe config to disable nouveau
+      file:
+        path: /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
+        state: touch
+    - name: disable nouveau
+      lineinfile:
+        path: /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
+        line: '{{ item }}'
+      loop:
+      - blacklist nouveau
+      - options nouveau modeset=0
+      register: modprobe_disable_nouvaeu
+    - name: reboot host to reflect modprobe change
+      reboot:
+      when: modprobe_disable_nouvaeu.changed
+    - name: download nvidia 455.45.01 driver
+      get_url:
+        url: https://international.download.nvidia.com/XFree86/Linux-x86_64/455.45.01/NVIDIA-Linux-x86_64-455.45.01.run
+        dest: '{{ tempdir.path }}'
+        mode: 0755
+    - name: stealth run driver install
+      shell: '{{ tempdir.path }}/NVIDIA-Linux-x86_64-455.45.01.run -q -s --dkms'
+    - name: run nvidia-smi to confirm successful install
+      shell: nvidia-smi
+    always:
+    - name: cleanup temp dir
+      file:
+        path: '{{ tempdir.path }}'
+        state: absent
+    when: nvidia_driver_version is not defined or nvidia_driver_version.stdout != '455.45.01'
+  - name: patch nvidia transcoder
+    block:
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: clone nvidia patch repo
+      git:
+        repo: https://github.com/keylase/nvidia-patch
+        dest: '{{ tempdir.path }}'
+    - name: run nvidia patch
+      shell: '{{ tempdir.path }}/patch.sh'
+    always:
+    - name: cleanup temp dir
+      file:
+        path: '{{ tempdir.path }}'
+        state: absent
+  - name: check for nvidia-container-runtime bin
+    stat:
+      path: /usr/bin/nvidia-container-runtime
+    register: nvidia_container_runtime
+  - name: install nvidia runtime for docker
+    block:
+    - name: add an apt signing key for nvidia
+      apt_key:
+        url: https://nvidia.github.io/nvidia-docker/gpgkey
+        state: present
+    - name: add nvidia apt repo
+      shell:
+        cmd: >
+          curl -s -L https://nvidia.github.io/nvidia-docker/debian10/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+        args:
+          warn: no
+        creates: /etc/apt/sources.list.d/nvidia-docker.list
+    - name: install nvidia-docker2
+      apt:
+        force_apt_get: yes
+        update_cache: yes
+        autoremove: yes
+        name: nvidia-docker2
+        state: present
+      register: nvidia_docker
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted
+      when: nvidia_docker.changed
+    when: nvidia_container_runtime.stat.exists == False
+  - name: check for nvtop bin
+    stat:
+      path: /usr/local/bin/nvtop
+    register: nvtop
+  - name: install nvtop
+    block:
+    - name: install prerequisites for nvtop
+      apt:
+        name: ['cmake', 'libncurses5-dev', 'libncursesw5-dev', 'git']
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: clone nvtop repo
+      git:
+        repo: https://github.com/Syllo/nvtop
+        dest: '{{ tempdir.path }}'
+    - name: create build dir
+      file:
+        path: '{{ tempdir.path }}/build'
+        state: directory
+    - name: build from source
+      shell:
+        chdir: '{{ tempdir.path }}/build'
+        cmd: cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
+    - name: run make
+      shell:
+        chdir: '{{ tempdir.path }}/build'
+        cmd: make
+    - name: run make install
+      shell:
+        chdir: '{{ tempdir.path }}/build'
+        cmd: make install
+    always:
+    - name: cleanup temp dir
+      file:
+        path: '{{ tempdir.path }}'
+        state: absent
+    when: nvtop.stat.exists == False

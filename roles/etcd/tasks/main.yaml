@@ -1,0 +1,70 @@
+- name: create tmpdir
+  tempfile:
+    state: directory
+  register: tempdir
+
+#TODO check version and update if necessary
+- name: check binaries
+  stat:
+    path: /usr/local/bin/etcd
+  register: bin
+
+- name: install etcd binaries
+  block:
+  - name: download binaries from src
+    unarchive:
+      src: "https://storage.googleapis.com/etcd/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
+      dest: "{{ tempdir.path }}"
+      remote_src: yes
+      mode: 0755
+      owner: root
+      group: root
+  - name: mv binaries to /usr/local/bin
+    command: "mv {{ tempdir.path }}/etcd-{{ etcd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}/{{ item }} /usr/local/bin/"
+    with_items:
+    - etcd
+    - etcdctl
+  always:
+  - name: clean up tempdir
+    file:
+      path: "{{ tempdir.path }}"
+      state: absent
+  when: bin.stat.exists == False
+
+- name: create etcd dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+  - /etc/etcd/pki
+  - /var/lib/etcd
+
+- name: render systemd unit
+  template:
+    src: etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+  register: systemd
+  notify: restart etcd
+
+- name: start etcd
+  systemd:
+    name: etcd
+    daemon_reload: yes
+    state: started
+    enabled: yes
+
+- name: print etcd cluster health check command
+  debug: 
+    msg: ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert /etc/etcd/pki/etcd-ca.pem --cert /etc/etcd/pki/etcd-peer.pem --key /etc/etcd/pki/etcd-peer-key.pem endpoint health --cluster
+  run_once: yes
+  delegate_to: "{{ etcd_main_member }}"
+
+- name: check etcd cluster health
+  shell: |
+    ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert /etc/etcd/pki/etcd-ca.pem --cert /etc/etcd/pki/etcd-peer.pem --key /etc/etcd/pki/etcd-peer-key.pem endpoint health --cluster
+  register: etcd_cluster_health
+  delay: 30
+  retries: 4
+  until: etcd_cluster_health.rc == 0
+  run_once: yes
+  delegate_to: "{{ etcd_main_member }}"

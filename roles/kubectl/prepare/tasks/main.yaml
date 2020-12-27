@@ -1,4 +1,4 @@
 - name: install kubectl
   package:
     name: kubernetes-cli
-    
+    state: present

@@ -10,15 +10,6 @@ cerberus
 [apt_cacher]
 cerberus
 
-[nfs_server]
-cerberus
-
-[samba_server]
-cerberus
-
-[zfs_server]
-cerberus
-
 [control_plane]
 asphodel
 tartarus
@@ -36,4 +27,5 @@ nodes
 ansible_ssh_user=root
 ansible_ssh_private_key_file=~/.ssh/technis
 infrastructure_provisioner=none
-k8s_provisioner=k3s
+k8s_provisioner=kubeadm
+lan_network=192.168.0.0/24

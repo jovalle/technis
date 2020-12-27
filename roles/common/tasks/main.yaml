@@ -1,0 +1,100 @@
+- name: apt upgrade
+  apt:
+    upgrade: full
+    update_cache: yes
+    cache_valid_time: 3600
+    force_apt_get: true
+    autoclean: yes
+    autoremove: yes
+  register: apt_upgrade
+  retries: 5
+  until: apt_upgrade is success
+
+- name: install common packages
+  apt:
+    name: '{{ common_packages }}'
+    install_recommends: false
+    update_cache: yes
+    cache_valid_time: 3600
+    force_apt_get: true
+    autoclean: yes
+    autoremove: yes
+  register: apt_install_common
+  retries: 5
+  until: apt_install_common is success
+
+- name: disable swap
+  command: swapoff -a
+
+- name: disable swap in /etc/fstab
+  replace:
+    dest: /etc/fstab
+    regexp: '^(.* swap .*)'
+    replace: '#\1'
+
+- name: start time services
+  service:
+    name: systemd-timesyncd
+    state: started
+    enabled: yes
+
+- name: run timedatectl status
+  command: /usr/bin/timedatectl show
+  changed_when: False
+  check_mode: no
+  register: timedatectl_result
+
+- name: copy timesyncd config
+  copy:
+    content: |
+      [Time]
+      NTP={{ common_ntp_servers | join(' ') }}
+      FallbackNTP={{ common_fallback_ntp_servers | join(' ') }}
+    dest: /etc/systemd/timesyncd.conf
+    mode: 0644
+
+- name: set timezone
+  command: /usr/bin/timedatectl set-timezone {{ common_timezone }}
+  when: common_timezone not in timedatectl_result.stdout_lines[0]
+
+- name: enable ntp
+  command: /usr/bin/timedatectl set-ntp true
+  when: "'NTP=no' in timedatectl_result.stdout"
+
+- name: create ~/.ssh dir if missing
+  file:
+    path: ~/.ssh
+    mode: 0700
+    state: directory
+  when:
+  - ssh_public_key is defined
+  - ssh_private_key is defined
+
+- name: create ~/.ssh/authorized_keys if missing
+  file:
+    path: ~/.ssh/authorized_keys
+    state: touch
+    mode: 0600
+  when: ssh_public_key is defined
+
+- name: allow public SSH key for administration
+  lineinfile:
+    path: ~/.ssh/authorized_keys
+    line: "{{ ssh_public_key }}"
+  when: ssh_public_key is defined
+
+- name: render SSH key for host to host
+  copy:
+    content: "{{ ssh_private_key }}"
+    dest: ~/.ssh/id_rsa
+    mode: 0600
+  when: ssh_private_key is defined
+
+- name: personal touch
+  lineinfile:
+    path: '{{ ansible_user_dir }}/.bashrc'
+    line: '{{ item }}'
+  loop:
+  - set -o vi
+  - export EDITOR=vim
+  - alias k=kubectl

@@ -1,0 +1,23 @@
+- name: stop apt-cacher-ng
+  systemd:
+    name: apt-cacher-ng
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+  no_log: yes
+
+- name: remove apt-cacher-ng
+  apt:
+    name: apt-cacher-ng
+    state: absent
+
+- name: ensure config file exists
+  file:
+    path: /etc/apt/apt.conf.d/proxy
+    state: touch
+
+- name: add apt proxy configuration
+  lineinfile:
+    path: /etc/apt/apt.conf.d/proxy
+    regexp: 'Proxy'
+    line: Acquire::http { Proxy "http://{{ apt_cacher_main_server_fqdn }}:3142"; }

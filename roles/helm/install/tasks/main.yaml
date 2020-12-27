@@ -1,3 +1,0 @@
-- name: install {{ helm_chart }} chart
-  shell: helm install {{ helm_name }} {{ helm_chart }}
-  ignore_errors: yes

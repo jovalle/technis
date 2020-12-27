@@ -1,0 +1,2 @@
+ingress_controller: contour
+cluster_main_control_plane: "{{ groups['control_plane'][0] }}"

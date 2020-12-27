@@ -1,4 +1,0 @@
-- hosts: localhost
-  tasks:
-  - include_role:
-      name: "{{ infrastructure_provisioner | default('terraform') }}/destroy"

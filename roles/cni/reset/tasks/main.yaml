@@ -1,8 +1,3 @@
-- name: remove CNI configuration
-  file:
-    path: /etc/cni/net.d
-    state: absent
-
 - name: stop kubelet
   systemd:
     name: kubelet
@@ -10,8 +5,18 @@
     enabled: no
   ignore_errors: yes
 
-- name: iptables
-  command: "{{ item }}"
+- name: remove CNI files
+  file:
+    path: '{{ item }}'
+    state: absent
+  loop:
+  - /etc/cni/net.d
+  - /opt/cni
+  - /var/lib/calico
+  - /var/log/calico
+
+- name: clear iptables
+  command: '{{ item }}'
   with_items:
   - iptables -F
   - iptables -t nat -F
@@ -19,3 +24,10 @@
   - iptables -X
   - iptables --flush
   ignore_errors: yes
+
+- name: clear ipvsadm
+  command: '{{ item }}'
+  with_items:
+  - ipvsadm --clear
+  ignore_errors: yes
+  no_log: yes
