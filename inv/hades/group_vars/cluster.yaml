@@ -1,4 +1,8 @@
-cluster_keepalived_vip: '192.168.0.100'
+cluster_domain: k8s.{{ lan_domain }}
+cluster_api_keepalived_vip: 192.168.0.100
+cluster_ingress_keepalived_vip: 192.168.0.200
 cluster_extra_sans:
-- api.k8s.techn.is
-cluster_control_plane_endpoint: "api.k8s.techn.is:8443"
+- api.{{ cluster_domain }}
+cluster_control_plane_endpoint: api.{{ cluster_domain }}:8443
+cluster_main_control_plane: "{{ groups['control_plane'][0] }}"
+ingress_controller: traefik

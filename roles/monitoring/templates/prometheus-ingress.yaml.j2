@@ -1,19 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: grafana
+  name: prometheus
   namespace: monitoring
-  annotations:
-    kubernetes.io/ingress.class: {{ ingress_provisioner | default('traefik') }}
 spec:
   rules:
-  - host: grafana.{{ k8s_domain }}
+  - host: prometheus.{{ cluster_domain }}
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: grafana
+            name: prometheus-k8s
             port:
-              number: 3000
+              number: 9090

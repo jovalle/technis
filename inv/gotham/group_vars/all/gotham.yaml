@@ -1,2 +1,2 @@
-custom_cert: "{{ gotham_ingress_cert_vaulted }}"
-custom_key: "{{ gotham_ingress_key_vaulted }}"
+custom_cert: '{{ gotham_ingress_cert_vaulted }}'
+custom_key: '{{ gotham_ingress_key_vaulted }}'

@@ -7,9 +7,13 @@
   command: kubectl -n kube-system set env daemonset/calico-node IP_AUTODETECTION_METHOD=cidr={{ lan_network }}
   when: lan_network is defined
 
+- name: count cluster members
+  set_fact:
+    cluster_count: "{{ groups['cluster'] | length }}"
+
 - name: wait until calico-node is ready
   command: kubectl -n kube-system get ds calico-node -o jsonpath='{.status.numberReady}'
   register: number_ready
-  retries: 6
+  retries: 12
   delay: 10
-  until: number_ready.stdout == "{{ groups['cluster'] | length }}"
+  until: number_ready.stdout == cluster_count

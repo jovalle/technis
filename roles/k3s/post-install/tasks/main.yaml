@@ -10,5 +10,5 @@
   - replace:
       path: /etc/kubernetes/admin.conf
       regexp: '127.0.0.1'
-      replace: 'api.{{ k8s_domain }}'
+      replace: 'api.{{ cluster_domain }}'
   when: inventory_hostname in groups['control_plane']

@@ -1,0 +1,35 @@
+- name: deploy kube-prometheus
+  import_role:
+    name: kubectl
+  vars:
+    source_role: monitoring/kube-prometheus
+    file_type: static
+    target_list:
+    - namespace.yaml
+    - prometheus-operator.yaml
+    - prometheus.yaml
+    - alertmanager.yaml
+    - kube-state-metrics.yaml
+    - node-exporter.yaml
+    - grafana.yaml
+
+- name: count control plane members
+  set_fact:
+    control_plane_count: "{{ groups['control_plane'] | length }}"
+
+- name: wait for prometheus-operator readiness
+  shell: kubectl -n monitoring get deployment prometheus-operator -o jsonpath='{.status.readyReplicas}'
+  register: ready_count
+  retries: 6
+  delay: 10
+  until: ready_count.stdout | int == 1
+
+- name: deploy kube-prometheus ingress
+  import_role:
+    name: kubectl
+  vars:
+    source_role: monitoring/kube-prometheus
+    file_type: template
+    target_list:
+    - prometheus-ingress.yaml
+    - grafana-ingress.yaml

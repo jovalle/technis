@@ -85,11 +85,11 @@
       - /hulkpool
       - /nas
     - name: mount nfs exports
-      command: mount /{{ item }}
+      command: mount {{ item }}
       loop:
       - /hulkpool
       - /nas
-    delegate_to: "{{ nfs_clients }}"
+    delegate_to: '{{ nfs_clients }}'
 
 - hosts: cerberus
   vars_prompt:
