@@ -25,5 +25,5 @@
   always:
   - name: remove cluster-specific config
     file:
-      path: "~/.kube/{{ cluster }}"
+      path: ~/.kube/{{ cluster }}
       state: absent

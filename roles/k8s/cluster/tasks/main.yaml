@@ -23,7 +23,7 @@
 
 - name: set node status fact
   set_fact:
-    cluster_node_configured: "{{ k8s_kubelet_conf.stat.exists }}"
+    cluster_node_configured: '{{ k8s_kubelet_conf.stat.exists }}'
 
 - name: verify cluster status
   fail:
@@ -35,9 +35,9 @@
 
 - name: set cluster control plane default
   set_fact:
-    cluster_control_plane_endpoint: "{{ cluster_keepalived_vip }}:8443"
+    cluster_control_plane_endpoint: '{{ cluster_api_keepalived_vip }}:8443'
   run_once: true
-  delegate_to: "{{ cluster_main_control_plane }}"
+  delegate_to: '{{ cluster_main_control_plane }}'
   when:
   - cluster_control_plane_endpoint | length < 1
 

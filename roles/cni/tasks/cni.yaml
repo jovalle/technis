@@ -8,7 +8,7 @@
 
 - name: check binaries
   stat:
-    path: "/opt/cni/bin/tuning"
+    path: /opt/cni/bin/tuning
   register: bin
 
 - name: get binaries

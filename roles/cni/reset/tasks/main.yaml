@@ -24,10 +24,3 @@
   - iptables -X
   - iptables --flush
   ignore_errors: yes
-
-- name: clear ipvsadm
-  command: '{{ item }}'
-  with_items:
-  - ipvsadm --clear
-  ignore_errors: yes
-  no_log: yes
