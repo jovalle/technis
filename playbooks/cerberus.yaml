@@ -79,8 +79,8 @@
     - name: create exports in /etc/fstab
       lineinfile:
         path: /etc/fstab
-        regex: "^{{ hostvars[groups['nfs_server'][0]]['ansible_fqdn'] }}:/{{ item }}"
-        line: "{{ hostvars[groups['nfs_server'][0]]['ansible_fqdn'] }}:/{{ item }} /{{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
+        regex: "^{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }}"
+        line: "{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }} /{{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
       loop:
       - /hulkpool
       - /nas
