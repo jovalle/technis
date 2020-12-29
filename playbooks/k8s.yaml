@@ -1,0 +1,6 @@
+- hosts: control_plane[0]
+  roles:
+  - cni
+  - storage
+  - ingress
+  - monitoring

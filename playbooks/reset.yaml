@@ -8,14 +8,3 @@
 - hosts: etcd
   roles:
   - etcd/reset
-
-- hosts: localhost
-  tasks:
-  - include_role:
-      name: "{{ infrastructure_provisioner | default('terraform') }}/destroy"
-  - include_role:
-      name: "{{ infrastructure_provisioner | default('terraform') }}/up"
-
-- hosts: all
-  roles:
-  - wait-for-server
