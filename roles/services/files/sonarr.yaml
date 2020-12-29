@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarr
+  namespace: sonarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarr
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: sonarr
+    spec:
+      containers:
+      - name: sonarr
+        image: ghcr.io/linuxserver/sonarr:preview
+        imagePullPolicy: Always
+        env:
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+        - name: TZ
+          value: "America/New_York"
+        - name: UMASK_SET
+          value: "022"
+        ports:
+        - containerPort: 8989
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: downloads
+          mountPath: /downloads
+        - name: tv
+          mountPath: /tv
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        livenessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          timeoutSeconds: 5
+          tcpSocket:
+            port: 8989
+        readinessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          timeoutSeconds: 5
+          tcpSocket:
+            port: 8989
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 500m
+            memory: 1000Mi
+      restartPolicy: Always
+      volumes:
+      - name: config
+        nfs:
+          path: /hulkpool/config/sonarr
+          server: cerberus.techn.is
+      - name: downloads
+        nfs:
+          path: /hulkpool/downloads
+          server: cerberus.techn.is
+      - name: tv
+        nfs:
+          path: /hulkpool/shows
+          server: cerberus.techn.is
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarr
+  namespace: sonarr
+spec:
+  selector:
+    app: sonarr
+  ports:
+  - port: 8989
+    protocol: TCP
+    targetPort: 8989
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarr
+  namespace: sonarr
+spec:
+  rules:
+  - host: sonarr.k8s.techn.is
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sonarr
+            port:
+              number: 8989
