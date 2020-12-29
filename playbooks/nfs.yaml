@@ -1,3 +1,0 @@
-- hosts: cluster_main_control_plane
-  roles:
-  - storage/nfs

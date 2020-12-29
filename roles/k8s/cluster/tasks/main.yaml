@@ -1,12 +1,3 @@
-- name: reset cluster
-  block:
-  - include_tasks: reset.yaml
-  - include_role:
-      name: k8s
-  when:
-  - cluster_reset is defined
-  - cluster_reset
-
 - name: set node hostname
   hostname:
     name: '{{ inventory_hostname }}'

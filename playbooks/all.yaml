@@ -1,3 +1,4 @@
 - import_playbook: common.yaml
 - import_playbook: control-plane.yaml
 - import_playbook: cluster.yaml
+- import_playbook: k8s.yaml
