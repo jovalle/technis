@@ -1,5 +1,4 @@
-- hosts: control_plane
-  run_once: yes
+- hosts: control_plane[0]
   tasks:
   - block:
     - name: deploy kuard
