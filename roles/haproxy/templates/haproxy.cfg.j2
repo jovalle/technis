@@ -19,9 +19,7 @@ backend kube-api
 
 frontend ingress-proxy
     bind {{ cluster_ingress_keepalived_vip }}:80
-    bind {{ cluster_ingress_keepalived_vip }}:443
     bind 127.0.0.1:80
-    bind 127.0.0.1:443
     mode tcp
     option tcplog
     timeout client 4h
@@ -37,4 +35,24 @@ backend kube-ingress
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
 {% for host in groups['control_plane'] %}
     server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}:80 check cookie {{ hostvars[host]['ansible_hostname'] }}
+{% endfor %}
+
+frontend ingress-proxy-tls
+    bind {{ cluster_ingress_keepalived_vip }}:443
+    bind 127.0.0.1:443
+    mode tcp
+    option tcplog
+    timeout client 4h
+    default_backend kube-ingress
+
+backend kube-ingress-tls
+    mode http
+    option httpchk HEAD /
+    timeout connect 10s
+    timeout server 4h
+    balance roundrobin
+    cookie SERVERUSED insert indirect nocache
+    default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+{% for host in groups['control_plane'] %}
+    server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}:443 check cookie {{ hostvars[host]['ansible_hostname'] }}
 {% endfor %}
