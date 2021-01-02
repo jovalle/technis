@@ -1,5 +1,7 @@
 - hosts: cerberus
   tasks:
+  - name: taint node for special HTPC workloads
+    command: kubectl taint node cerberus node-role.techn.is/watchtower=:NoSchedule
   # apt_repository is primitive. doesn't aggregate
   - name: onboard buster-backports repo
     lineinfile:
