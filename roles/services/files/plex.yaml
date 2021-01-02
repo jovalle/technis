@@ -87,6 +87,10 @@ spec:
             memory: 24000Mi # out of 32GiB
             nvidia.com/gpu: 1 # nvidia/k8s-device-plugin, scheduled onto host with exposed gpu
       restartPolicy: Always
+      tolerations:
+      - key: "node-role.techn.is/watchtower"
+        operator: "Exists"
+        effect: "NoSchedule"
       volumes: # using hostPath for performance
       - name: config
         hostPath:
