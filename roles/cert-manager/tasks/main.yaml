@@ -1,0 +1,8 @@
+- name: deploy cert-manager
+  import_role:
+    name: kubectl
+  vars:
+    source_role: cert-manager
+    file_type: static
+    target_list:
+    - cert-manager.yaml
