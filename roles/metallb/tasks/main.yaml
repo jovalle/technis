@@ -1,0 +1,18 @@
+- name: deploy metallb {{ metallb_version }}
+  command: '{{ item }}'
+  loop:
+  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/namespace.yaml
+  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/metallb.yaml
+
+- name: check for memberlist secret
+  command: kubectl -n metallb-system get secret memberlist
+  notify: generate memberlist secret
+
+- name: set config
+  import_role:
+    name: kubectl
+  vars:
+    source_role: metallb
+    file_type: template
+    target_list:
+    - config.yaml
