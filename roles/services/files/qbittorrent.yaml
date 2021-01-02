@@ -54,9 +54,9 @@ spec:
         - configMapRef:
             name: qbittorrent-config
             optional: false
-        - secretRef:
-            name: vpn-credentials
-            optional: false
+        # - secretRef:
+        #     name: vpn-credentials
+        #     optional: false
         ports:
         - containerPort: 8080
         - containerPort: 8999
@@ -135,7 +135,7 @@ metadata:
   namespace: qbittorrent
 spec:
   rules:
-  - host: qbittorrent.example.com
+  - host: qbittorrent.k8s.techn.is
     http:
       paths:
       - path: /
