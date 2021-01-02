@@ -8,3 +8,4 @@
     src: /etc/kubernetes/admin.conf
     dest: ~/.kube/config
     flat: yes
+    mode: 0600
