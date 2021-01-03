@@ -12,6 +12,7 @@ vrrp_instance VI_1 {
         {{ cluster_api_keepalived_vip }}
     }
 }
+{% if cluster_ingress_keepalived_vip is defined %}
 vrrp_instance VI_2 {
     state  {{ 'MASTER' if hostvars[groups['control_plane'][0]] else 'BACKUP' }}
     interface {{ keepalived_interface }}
@@ -26,3 +27,4 @@ vrrp_instance VI_2 {
         {{ cluster_ingress_keepalived_vip }}
     }
 }
+{% endif %}
