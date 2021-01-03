@@ -1,4 +1,0 @@
-- name: deploy all services
-  comamnd: kubectl apply -f {{ item }}
-  with_fileglob:
-  - files/*.yaml
