@@ -6,7 +6,12 @@
 
 - name: check for memberlist secret
   command: kubectl -n metallb-system get secret memberlist
-  notify: generate memberlist secret
+  register: get_memberlist
+
+- name: generate memberlist secret
+  shell: |
+    kubectl -n metallb-system create secret generic memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+  when: get_memberlist.rc != 0
 
 - name: set config
   import_role:
