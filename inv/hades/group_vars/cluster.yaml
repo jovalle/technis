@@ -1,8 +1,14 @@
+cluster_name: technis
 cluster_domain: k8s.{{ lan_domain }}
 cluster_api_keepalived_vip: 192.168.0.100
-cluster_ingress_keepalived_vip: 192.168.0.200
+# cluster_ingress_keepalived_vip: 192.168.0.200
 cluster_extra_sans:
 - api.{{ cluster_domain }}
 cluster_control_plane_endpoint: api.{{ cluster_domain }}:8443
 cluster_main_control_plane: "{{ groups['control_plane'][0] }}"
+
+loadbalancer_provider: metallb
+loadbalancer_ingress_ip: 192.168.0.200
+
 ingress_controller: traefik
+ingress_default_cert_secret_name: technis-cert

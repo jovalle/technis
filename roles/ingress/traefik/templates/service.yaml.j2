@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: {{ ingress_controller_namespace }}
+spec:
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+  - name: websecure
+    port: 443
+    protocol: TCP
+  - name: traefik
+    port: 8080
+    protocol: TCP
+  selector:
+    app: traefik
+{% if loadbalancer_provider is defined and loadbalancer_provider != 'none' %}
+  loadBalancerIP: {{ loadbalancer_ingress_ip }}
+  type: LoadBalancer
+{% endif %}

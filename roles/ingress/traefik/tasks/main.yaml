@@ -7,14 +7,16 @@
     target_list:
     - namespace.yaml
     - rbac.yaml
+    - service.yaml
     - deployment.yaml
+    - ingress.yaml
 
 - name: count control plane members
   set_fact:
     control_plane_count: "{{ groups['control_plane'] | length }}"
 
 - name: wait for traefik readiness
-  shell: kubectl -n traefik get daemonset traefik-ingress-controller -o jsonpath='{.status.numberReady}'
+  shell: kubectl -n traefik get daemonset traefik -o jsonpath='{.status.numberReady}'
   register: ready_count
   retries: 6
   delay: 10
