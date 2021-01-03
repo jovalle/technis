@@ -2,4 +2,4 @@
 - import_playbook: control-plane.yaml
 - import_playbook: cluster.yaml
 - import_playbook: k8s.yaml
-- import_playbook: services.yaml
+- import_playbook: apps.yaml
