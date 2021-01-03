@@ -17,6 +17,7 @@ backend kube-api
     server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}:6443 check
 {% endfor %}
 
+{% if cluster_ingress_keepalived_vip is defined %}
 frontend ingress-proxy
     bind {{ cluster_ingress_keepalived_vip }}:80
     bind 127.0.0.1:80
@@ -56,3 +57,4 @@ backend kube-ingress-tls
 {% for host in groups['control_plane'] %}
     server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}:443 check cookie {{ hostvars[host]['ansible_hostname'] }}
 {% endfor %}
+{% endif %}
