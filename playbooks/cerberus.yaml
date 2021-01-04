@@ -1,7 +1,10 @@
 - hosts: cerberus
   tasks:
-  - name: taint node for special HTPC workloads
-    command: kubectl taint node cerberus node-role.techn.is/watchtower=:NoSchedule
+  - name: add labels
+    command: kubectl label node cerberus {{ item }}
+    loop:
+    - gpu=nvidia
+    - node-role.techn.is/watchtower=
   # apt_repository is primitive. doesn't aggregate
   - name: onboard buster-backports repo
     lineinfile:
