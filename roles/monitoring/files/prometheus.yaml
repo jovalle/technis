@@ -2795,7 +2795,7 @@ spec:
     - kube-system
   selector:
     matchLabels:
-      app.kubernetes.io/name: kube-controller-manager
+      component: kube-controller-manager
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -2818,7 +2818,7 @@ spec:
     - kube-system
   selector:
     matchLabels:
-      app.kubernetes.io/name: kube-scheduler
+      component: kube-scheduler
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
