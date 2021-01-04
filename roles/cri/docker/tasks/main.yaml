@@ -38,9 +38,14 @@
   - /etc/docker
   - /etc/systemd/system/docker.service.d
 
+- name: check for nvidia runtime
+  stat:
+    path: /usr/bin/nvidia-container-runtime
+  register: nvidia_runtime
+
 - name: render docker daemon config
-  copy:
-    src: daemon.json
+  template:
+    src: daemon.json.j2
     dest: /etc/docker/daemon.json
     mode: 0644
   notify: restart docker
