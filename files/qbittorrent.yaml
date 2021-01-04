@@ -19,20 +19,6 @@ data:
   KUBERNETES_ENABLED: "yes"
   POD_NETWORK: "10.244.0.0/16"
   SVC_NETWORK: "10.96.0.0/16"
-#
-# create the secret manually!
-#
-# ---
-# apiVersion: v1
-# kind: Secret
-# metadata:
-#   name: vpn-credentials
-#   namespace: qbittorrent
-# spec:
-#   type: Opaque
-#   data:
-#     VPN_USERNAME: YWRtaW4K
-#     VPN_PASSWORD: YWRtaW5hZG1pbgo=
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -51,6 +37,8 @@ spec:
       labels:
         app: qbittorrent
     spec:
+      nodeSelector:
+        techn.is/role: watchtower
       containers:
       - name: qbittorrent
         image: jovalle/qbittorrent-openvpn:latest
@@ -59,9 +47,6 @@ spec:
         - configMapRef:
             name: qbittorrent-config
             optional: false
-        # - secretRef:
-        #     name: vpn-credentials
-        #     optional: false
         ports:
         - containerPort: 8080
         - containerPort: 8999
@@ -87,13 +72,13 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 5
           tcpSocket:
-            port: 8999
+            port: 8080
         readinessProbe:
           initialDelaySeconds: 60
           periodSeconds: 5
           timeoutSeconds: 5
           tcpSocket:
-            port: 8999
+            port: 8080
         resources:
           requests:
             cpu: 100m
