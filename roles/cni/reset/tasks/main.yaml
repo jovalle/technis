@@ -1,18 +1,16 @@
-- name: stop kubelet
-  systemd:
-    name: kubelet
-    state: stopped
-    enabled: no
-  ignore_errors: yes
+- name: delete any virtual interfaces
+  shell: >
+    ip a | grep -e 'inet.*cali.*$' | awk '{print $NF}' | xargs -I {} ip link delete {}
 
 - name: remove CNI files
   file:
     path: '{{ item }}'
     state: absent
   loop:
-  - /etc/cni/net.d
+  - /etc/cni
   - /opt/cni
   - /var/lib/calico
+  - /var/lib/cni
   - /var/log/calico
 
 - name: clear iptables
