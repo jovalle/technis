@@ -1,11 +1,42 @@
-- name: applying calico
-  command:
-    cmd: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-    creates: /etc/cni/net.d/10-calico.conflist
+- name: install calicoctl
+  include_tasks: calicoctl.yaml
 
-- name: detect interface by cidr
-  command: kubectl -n kube-system set env daemonset/calico-node IP_AUTODETECTION_METHOD=cidr={{ lan_network }}
-  when: lan_network is defined
+- name: update kube-api route to LB endpoint
+  import_role:
+    name: kubectl
+  vars:
+    source_role: calico
+    file_type: template
+    target_list:
+    - k8s-svc-endpoints.yaml
+
+# - name: applying upstream calico manifest
+#   command:
+#     cmd: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+#     creates: /etc/cni/net.d/10-calico.conflist
+
+- name: deploy calico
+  import_role:
+    name: kubectl
+  vars:
+    source_role: calico
+    file_type: template
+    target_list:
+    - calico.yaml
+
+- name: enable eBPF mode
+  block:
+  - name: disable kube-proxy (replaced by Calico eBPF DP)
+    shell: |
+      kubectl patch ds -n kube-system kube-proxy -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": "true"}}}}}'
+  - name: check felixconfiguration CRD is available
+    command: kubectl get felixconfigurations.crd.projectcalico.org default
+    retries: 12
+    delay: 10
+  - name: enable eBPF
+    shell: |
+      calicoctl patch felixconfiguration default --patch='{"spec": {"bpfEnabled": true}}'
+  when: calico_ebpf_mode
 
 - name: count cluster members
   set_fact:
