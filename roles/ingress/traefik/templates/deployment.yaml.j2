@@ -33,7 +33,7 @@ spec:
         args:
         - --accesslog
         - --api.insecure
-        - --entrypoints.traefik.Address=:8080
+        - --entrypoints.traefik.Address=:9000
         - --entrypoints.web.Address=:80
         - --entrypoints.web.http.redirections.entryPoint.to=websecure
         - --entrypoints.websecure.Address=:443
@@ -44,10 +44,19 @@ spec:
         ports:
         - name: web
           containerPort: 80
+{% if loadbalancer_ingress_ip is not defined %}
+          hostPort: 80
+{% endif %}
         - name: websecure
           containerPort: 443
+{% if loadbalancer_ingress_ip is not defined %}
+          hostPort: 443
+{% endif %}
         - name: traefik
-          containerPort: 8080
+          containerPort: 9000
+{% if loadbalancer_ingress_ip is not defined %}
+          hostPort: 9000
+{% endif %}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: TLSOption
@@ -56,14 +65,14 @@ metadata:
   namespace: default
 spec:
   minVersion: VersionTLS13
-{% if ingress_default_cert_secret_name is defined %}
+{% if ingress_default_cert_secret.name is defined %}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: TLSStore
 metadata:
   name: default
-  namespace: default
+  namespace: {{ ingress_default_cert_secret.namespace }}
 spec:
   defaultCertificate:
-    secretName: {{ ingress_default_cert_secret_name }}
+    secretName: {{ ingress_default_cert_secret.name }}
 {% endif %}

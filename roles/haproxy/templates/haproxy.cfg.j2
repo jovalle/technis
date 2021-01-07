@@ -44,7 +44,7 @@ frontend ingress-proxy-tls
     mode tcp
     option tcplog
     timeout client 4h
-    default_backend kube-ingress
+    default_backend kube-ingress-tls
 
 backend kube-ingress-tls
     mode http
