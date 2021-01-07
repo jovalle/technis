@@ -12,11 +12,11 @@ spec:
     port: 443
     protocol: TCP
   - name: traefik
-    port: 8080
+    port: 9000
     protocol: TCP
   selector:
     app: traefik
-{% if loadbalancer_provider is defined and loadbalancer_provider != 'none' %}
+{% if loadbalancer_ingress_ip is defined %}
   loadBalancerIP: {{ loadbalancer_ingress_ip }}
   type: LoadBalancer
 {% endif %}

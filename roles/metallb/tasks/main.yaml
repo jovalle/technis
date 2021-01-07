@@ -1,12 +1,13 @@
-- name: deploy metallb {{ metallb_version }}
+- name: deploy metallb {{ loadbalancer_metallb_version }}
   command: '{{ item }}'
   loop:
-  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/namespace.yaml
-  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/metallb.yaml
+  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ loadbalancer_metallb_version }}/manifests/namespace.yaml
+  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ loadbalancer_metallb_version }}/manifests/metallb.yaml
 
 - name: check for memberlist secret
   command: kubectl -n metallb-system get secret memberlist
   register: get_memberlist
+  ignore_errors: yes
 
 - name: generate memberlist secret
   shell: |
