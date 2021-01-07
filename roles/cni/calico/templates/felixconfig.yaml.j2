@@ -1,0 +1,13 @@
+apiVersion: projectcalico.org/v3
+kind: FelixConfiguration
+metadata:
+  name: default
+spec:
+  ipv6Support: false
+  prometheusMetricsEnabled: true
+{% if calico_ebpf_mode %}
+  ipipEnabled: false
+  bpfEnabled: true
+  bpfLogLevel: info
+  bpfKubeProxyIptablesCleanupEnabled: true
+{% endif %}
