@@ -2,6 +2,8 @@
   roles:
   - cni
   - storage
-  - metallb
+  - name: metallb
+    when: (loadbalancer_provider | default('none')) == 'metallb'
+  - cert-manager
   - ingress
   - monitoring
