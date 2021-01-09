@@ -30,21 +30,19 @@
     shell: |
       kubectl patch ds -n kube-system kube-proxy -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": "true"}}}}}'
   - name: check felixconfiguration CRD is available
-    command: kubectl get felixconfigurations.crd.projectcalico.org default
+    command: kubectl get felixconfiguration default
+    register: felix_crd
     retries: 12
     delay: 10
+    until: felix_crd.rc == 0
   - name: enable eBPF
     shell: |
       calicoctl patch felixconfiguration default --patch='{"spec": {"bpfEnabled": true}}'
   when: calico_ebpf_mode
-
-- name: count cluster members
-  set_fact:
-    cluster_count: "{{ groups['cluster'] | length }}"
 
 - name: wait until calico-node is ready
   command: kubectl -n kube-system get ds calico-node -o jsonpath='{.status.numberReady}'
   register: number_ready
   retries: 12
   delay: 10
-  until: number_ready.stdout == cluster_count
+  until: number_ready.stdout == "{{ groups['cluster'] | length }}"
