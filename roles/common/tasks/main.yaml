@@ -9,6 +9,7 @@
   register: apt_upgrade
   retries: 5
   until: apt_upgrade is success
+  when: apt_upgrade | default('no') | bool
 
 - name: install common packages
   apt:
@@ -23,14 +24,23 @@
   retries: 5
   until: apt_install_common is success
 
-- name: disable swap
-  command: swapoff -a
-
 - name: disable swap in /etc/fstab
   replace:
     dest: /etc/fstab
     regexp: '^(.* swap .*)'
     replace: '#\1'
+
+- name: disable swap
+  command: swapoff -a
+
+- name: disable swap in /etc/dphys-swapfile
+  block:
+  - replace:
+      dest: /etc/dphys-swapfile
+      regexp: '^(CONF_.*)'
+      replace: '#\1'
+  - command: dphys-swapfile swapoff
+  when: inventory_hostname in groups['arm64']
 
 - name: start time services
   service:
