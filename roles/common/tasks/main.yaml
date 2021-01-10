@@ -40,7 +40,7 @@
       regexp: '^(CONF_.*)'
       replace: '#\1'
   - command: dphys-swapfile swapoff
-  when: inventory_hostname in groups['arm64']
+  when: inventory_hostname in groups['rpi']
 
 - name: start time services
   service:
