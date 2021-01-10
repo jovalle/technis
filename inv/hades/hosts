@@ -1,10 +1,10 @@
-[arm64]
+[rpi]
 asphodel
 tartarus
 elysium
 zagreus
 
-[amd64]
+[generic]
 cerberus
 
 [apt_cacher]
