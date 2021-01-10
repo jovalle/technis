@@ -93,6 +93,7 @@ spec:
           limits:
             cpu: 3000m # out of 4 cores
             memory: 24000Mi # out of 32GiB
+            nvidia.com/gpu: 1
       restartPolicy: Always
       volumes: # using hostPath for performance
       - name: config
