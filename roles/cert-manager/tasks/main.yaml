@@ -6,3 +6,10 @@
     file_type: static
     target_list:
     - cert-manager.yaml
+
+- name: wait for cert-manager readiness
+  shell: kubectl -n cert-manager get deployment cert-manager-webhook -o jsonpath='{.status.readyReplicas}'
+  register: ready_count
+  retries: 6
+  delay: 10
+  until: ready_count.stdout | int == 1
