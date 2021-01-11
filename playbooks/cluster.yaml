@@ -1,3 +1,9 @@
 - hosts: cluster
   roles:
   - k8s/cluster
+  
+- hosts: control_plane[0]
+  tasks:
+  - name: allow scheduling to control plane
+    command: kubectl taint nodes --all node-role.kubernetes.io/master-
+    ignore_errors: yes

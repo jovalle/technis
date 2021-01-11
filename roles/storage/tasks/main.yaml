@@ -1,7 +1,3 @@
-- name: allow scheduling to control plane
-  command: kubectl taint nodes --all node-role.kubernetes.io/master-
-  ignore_errors: yes
-
 - name: setup {{ storage_provisioner }} storage provisioner
   include_role:
     name: storage/{{ storage_provisioner }}
