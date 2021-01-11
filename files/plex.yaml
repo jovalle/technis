@@ -8,6 +8,9 @@ kind: Deployment
 metadata:
   name: plex
   namespace: plex
+  labels:
+    app: plex
+    tier: watchtower
 spec:
   replicas: 1
   selector:
@@ -19,6 +22,7 @@ spec:
     metadata:
       labels:
         app: plex
+        tier: watchtower
     spec:
       hostname: watchtower
       nodeSelector:
@@ -122,6 +126,9 @@ kind: Service
 metadata:
   name: plex
   namespace: plex
+  labels:
+    app: plex
+    tier: watchtower
 spec:
   selector:
     app: plex
@@ -137,6 +144,9 @@ kind: Ingress
 metadata:
   name: plex
   namespace: plex
+  labels:
+    app: plex
+    tier: watchtower
 spec:
   rules:
   - host: plex.k8s.techn.is

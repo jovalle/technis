@@ -3,11 +3,30 @@ kind: Namespace
 metadata:
   name: radarr
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: radarr-pvc
+  namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: radarr
   namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
 spec:
   replicas: 1
   selector:
@@ -19,6 +38,7 @@ spec:
     metadata:
       labels:
         app: radarr
+        tier: watchtower
     spec:
       containers:
       - name: radarr
@@ -38,6 +58,8 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /config
+        - name: config-bak
+          mountPath: /config-bak
         - name: downloads
           mountPath: /downloads
         - name: movies
@@ -46,13 +68,13 @@ spec:
           mountPath: /etc/localtime
           readOnly: true
         livenessProbe:
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 5
           timeoutSeconds: 5
           tcpSocket:
             port: 7878
         readinessProbe:
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 5
           timeoutSeconds: 5
           tcpSocket:
@@ -67,6 +89,9 @@ spec:
       restartPolicy: Always
       volumes:
       - name: config
+        persistentVolumeClaim:
+          claimName: radarr-pvc
+      - name: config-bak
         nfs:
           path: /hulkpool/config/radarr
           server: cerberus.techn.is
@@ -88,6 +113,9 @@ kind: Service
 metadata:
   name: radarr
   namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
 spec:
   selector:
     app: radarr
@@ -100,6 +128,9 @@ kind: Ingress
 metadata:
   name: radarr
   namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
 spec:
   rules:
   - host: radarr.k8s.techn.is
