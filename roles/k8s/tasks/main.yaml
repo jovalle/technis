@@ -61,6 +61,15 @@
     value: '1'
     state: present
 
+- name: tweak conntrack timeouts
+  sysctl:
+    name: '{{ item.name }}'
+    value: '{{ item.value }}'
+    state: present
+  loop:
+  - { name: net.netfilter.nf_conntrack_tcp_timeout_established, value: 86400 }
+  - { name: net.netfilter.nf_conntrack_tcp_timeout_close_wait, value: 3600 }
+
 - name: ensure k8s directories
   file:
     path: '{{ item }}'
