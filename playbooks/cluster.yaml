@@ -2,7 +2,7 @@
   roles:
   - k8s/cluster
   - k8s/labels
-  
+
 - hosts: control_plane[0]
   tasks:
   - name: allow scheduling to control plane

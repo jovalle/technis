@@ -25,7 +25,7 @@
   register: root_ca
 
 - name: render root CA from vault
-  copy: 
+  copy:
     content: "{{ item.content }}"
     dest: "{{ item.dest }}"
   with_items:

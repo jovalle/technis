@@ -15,5 +15,5 @@
   ignore_errors: yes
 
 - name: reset cni
-  import_role: 
+  import_role:
     name: cni/reset

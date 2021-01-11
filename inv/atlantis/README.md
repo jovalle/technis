@@ -42,7 +42,7 @@ popd
 ```
 #~/.ssh/config
 Host cyborg*
-  User root 
+  User root
   IdentityFile ~/.ssh/technis
   StrictHostKeyChecking no
 ```
