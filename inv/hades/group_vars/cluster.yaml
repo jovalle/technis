@@ -16,3 +16,9 @@ ingress_controller: traefik
 ingress_default_cert_secret:
   name: technis-cert
   namespace: default
+
+labels:
+  node:
+    cerberus:
+    - gpu=nvidia
+    - techn.is/role=watchtower

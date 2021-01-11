@@ -10,32 +10,11 @@
 - name: check node status
   stat:
     path: /etc/kubernetes/kubelet.conf
-  register: k8s_kubelet_conf
+  register: kubelet_conf
 
 - name: set node status fact
   set_fact:
-    cluster_node_configured: '{{ k8s_kubelet_conf.stat.exists }}'
-
-- name: verify cluster status
-  fail:
-    msg: "cluster_main_control_plane '{{ cluster_main_control_plane }}' is not configured, while other control_plane(s) are!"
-  when:
-  - not hostvars[cluster_main_control_plane].cluster_node_configured
-  - hostvars[item].cluster_node_configured
-  loop: "{{ groups['control_plane'] }}"
-
-- name: set cluster control plane default
-  set_fact:
-    cluster_control_plane_endpoint: '{{ cluster_api_keepalived_vip }}:8443'
-  run_once: true
-  delegate_to: '{{ cluster_main_control_plane }}'
-  when:
-  - cluster_control_plane_endpoint | length < 1
-
-- name: set cluster initialize fact
-  set_fact:
-    cluster_initialized: true
-  run_once: true
+    cluster_node_configured: '{{ kubelet_conf.stat.exists }}'
 
 - name: initialize cluster
   include_tasks: init.yaml
@@ -52,11 +31,13 @@
     notify:
     - update remote admin config
     - update local admin config
+    when: not cluster_node_configured
   - name: flush handlers
     meta: flush_handlers
   - name: create token and print join command
     shell: kubeadm token create --print-join-command
     register: kubeadm_join_command_raw
+    when: not cluster_node_configured
   run_once: yes
   delegate_to: '{{ cluster_main_control_plane }}'
 
@@ -65,4 +46,6 @@
   vars:
     kubeadm_join_command: '{{ kubeadm_join_command_raw.stdout }}'
     kubeadm_certificate_key: '{{ kubeadm_upload_certs.stdout_lines[-1] }}'
-  when: inventory_hostname != cluster_main_control_plane
+  when:
+  - inventory_hostname != cluster_main_control_plane
+  - not cluster_node_configured
