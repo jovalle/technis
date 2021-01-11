@@ -16,4 +16,4 @@
   register: ready_count
   retries: 6
   delay: 10
-  until: ready_count.stdout == cluster_node_count
+  until: ready_count.stdout == control_plane_node_count
