@@ -1,11 +1,11 @@
 - name: force destroy all VMs defined in Vagrantfile
-  shell: 
+  shell:
     chdir: "{{ ansible_inventory_sources[0] }}"
     cmd: vagrant destroy -f
   ignore_errors: yes
 
 - name: verify no remaining VMs
-  shell: 
+  shell:
     chdir: "{{ ansible_inventory_sources[0] }}"
     cmd: vagrant status | egrep 'running' | wc -l | awk '{print $1}'
   register: vm_count

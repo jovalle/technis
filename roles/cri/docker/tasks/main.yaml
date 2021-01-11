@@ -23,7 +23,7 @@
 
 - name: install docker and its dependencies
   apt:
-    name: 
+    name:
     - docker-ce
     - docker-ce-cli
     - containerd.io
