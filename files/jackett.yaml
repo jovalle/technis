@@ -3,11 +3,30 @@ kind: Namespace
 metadata:
   name: jackett
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jackett-pvc
+  namespace: jackett
+  labels:
+    app: jackett
+    tier: watchtower
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jackett
   namespace: jackett
+  labels:
+    app: jackett
+    tier: watchtower
 spec:
   replicas: 1
   selector:
@@ -19,6 +38,7 @@ spec:
     metadata:
       labels:
         app: jackett
+        tier: watchtower
     spec:
       containers:
       - name: jackett
@@ -40,19 +60,21 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /config
+        - name: config-bak
+          mountPath: /config-bak
         - name: downloads
           mountPath: /downloads
         - name: localtime
           mountPath: /etc/localtime
           readOnly: true
         livenessProbe:
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 5
           timeoutSeconds: 5
           tcpSocket:
             port: 9117
         readinessProbe:
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 5
           timeoutSeconds: 5
           tcpSocket:
@@ -67,6 +89,9 @@ spec:
       restartPolicy: Always
       volumes:
       - name: config
+        persistentVolumeClaim:
+          claimName: jackett-pvc
+      - name: config-bak
         nfs:
           path: /hulkpool/config/jackett
           server: cerberus.techn.is
@@ -84,6 +109,9 @@ kind: Service
 metadata:
   name: jackett
   namespace: jackett
+  labels:
+    app: jackett
+    tier: watchtower
 spec:
   selector:
     app: jackett
@@ -96,6 +124,9 @@ kind: Ingress
 metadata:
   name: jackett
   namespace: jackett
+  labels:
+    app: jackett
+    tier: watchtower
 spec:
   rules:
   - host: jackett.k8s.techn.is
