@@ -9,9 +9,9 @@
   loop:
   - /etc/cni
   - /opt/cni
-  - /var/lib/calico
+  - /var/lib/{{ cni_plugin | default('calico') }}
   - /var/lib/cni
-  - /var/log/calico
+  - /var/log/{{ cni_plugin | default('calico') }}
 
 - name: clear iptables
   command: '{{ item }}'
