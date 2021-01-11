@@ -34389,9 +34389,11 @@ spec:
         app: grafana
     spec:
       containers:
-      - env: []
+      - name: grafana
         image: grafana/grafana:7.3.5
-        name: grafana
+        env:
+        - name: GF_INSTALL_PLUGINS
+          value: grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-kubernetes-app
         ports:
         - containerPort: 3000
           name: http
