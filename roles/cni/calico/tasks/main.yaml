@@ -45,4 +45,4 @@
   register: number_ready
   retries: 12
   delay: 10
-  until: number_ready.stdout == "{{ groups['cluster'] | length }}"
+  until: number_ready.stdout == cluster_node_count

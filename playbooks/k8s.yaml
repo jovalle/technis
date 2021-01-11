@@ -1,4 +1,6 @@
 - hosts: control_plane[0]
+  vars:
+    cluster_node_count: "{{ groups['cluster'] | length }}"
   roles:
   - cni
   - storage
