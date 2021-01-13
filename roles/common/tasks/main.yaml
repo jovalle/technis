@@ -33,14 +33,27 @@
 - name: disable swap
   command: swapoff -a
 
+- name: check for dphys-swapfile
+  stat:
+    path: /etc/dphys-swapfile
+  register: dphys_swapfile
+
 - name: disable swap in /etc/dphys-swapfile
   block:
-  - replace:
+  - name: nullify swap size config
+    replace:
       dest: /etc/dphys-swapfile
-      regexp: '^(CONF_.*)'
-      replace: '#\1'
-  - command: dphys-swapfile swapoff
-  when: inventory_hostname in groups['rpi']
+      regexp: '^.*(CONF_SWAPSIZE.*)$'
+      replace: 'CONF_SWAPSIZE=0'
+  - name: turn off swap via cli
+    command: dphys-swapfile swapoff
+  - name: delete swap file
+    file:
+      path: /var/swap
+      state: absent
+  when:
+  - inventory_hostname in groups['rpi']
+  - dphys_swapfile.stat.exists
 
 - name: start time services
   service:
