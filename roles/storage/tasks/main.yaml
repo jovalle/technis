@@ -1,4 +1,4 @@
 - name: setup {{ storage_provisioner }} storage provisioner
   include_role:
     name: storage/{{ storage_provisioner }}
-  when: inventory_hostname == cluster_main_control_plane
+  when: inventory_hostname == cluster_control_plane_leader

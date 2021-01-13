@@ -44,17 +44,17 @@ spec:
         ports:
         - name: web
           containerPort: 80
-{% if loadbalancer_ingress_ip is not defined %}
+{% if ingress_loadbalancer_ip is not defined %}
           hostPort: 80
 {% endif %}
         - name: websecure
           containerPort: 443
-{% if loadbalancer_ingress_ip is not defined %}
+{% if ingress_loadbalancer_ip is not defined %}
           hostPort: 443
 {% endif %}
         - name: traefik
           containerPort: 9000
-{% if loadbalancer_ingress_ip is not defined %}
+{% if ingress_loadbalancer_ip is not defined %}
           hostPort: 9000
 {% endif %}
 ---

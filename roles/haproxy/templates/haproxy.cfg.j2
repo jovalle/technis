@@ -1,5 +1,5 @@
 frontend api-proxy
-    bind {{ cluster_api_keepalived_vip }}:8443
+    bind {{ cluster_keepalived_api_vip }}:8443
     bind 127.0.0.1:8443
     mode tcp
     option tcplog
@@ -17,9 +17,9 @@ backend kube-api
     server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}:6443 check
 {% endfor %}
 
-{% if cluster_ingress_keepalived_vip is defined %}
+{% if cluster_keepalived_ingress_vip is defined %}
 frontend ingress-proxy
-    bind {{ cluster_ingress_keepalived_vip }}:80
+    bind {{ cluster_keepalived_ingress_vip }}:80
     bind 127.0.0.1:80
     mode tcp
     option tcplog
@@ -39,7 +39,7 @@ backend kube-ingress
 {% endfor %}
 
 frontend ingress-proxy-tls
-    bind {{ cluster_ingress_keepalived_vip }}:443
+    bind {{ cluster_keepalived_ingress_vip }}:443
     bind 127.0.0.1:443
     mode tcp
     option tcplog
