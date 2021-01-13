@@ -1,8 +1,8 @@
 cluster_name: technis
-cluster_api_keepalived_vip: 192.168.0.100
-cluster_control_plane_endpoint: '{{ cluster_api_keepalived_vip }}:8443'
+cluster_keepalived_api_vip: 192.168.0.100
+cluster_control_plane_endpoint: '{{ cluster_keepalived_api_vip }}:8443'
 cluster_sans:
-- '{{ cluster_api_keepalived_vip }}'
-cluster_main_control_plane: "{{ groups['control_plane'][0] }}"
+- '{{ cluster_keepalived_api_vip }}'
+cluster_control_plane_leader: "{{ groups['control_plane'][0] }}"
 cluster_etcd_mode: local
 k8s_difficulty_mode: easy

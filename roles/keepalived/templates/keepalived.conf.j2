@@ -9,10 +9,10 @@ vrrp_instance VI_1 {
         auth_pass kubernetes
     }
     virtual_ipaddress {
-        {{ cluster_api_keepalived_vip }}
+        {{ cluster_keepalived_api_vip }}
     }
 }
-{% if cluster_ingress_keepalived_vip is defined %}
+{% if cluster_keepalived_ingress_vip is defined %}
 vrrp_instance VI_2 {
     state  {{ 'MASTER' if hostvars[groups['control_plane'][0]] else 'BACKUP' }}
     interface {{ keepalived_interface }}
@@ -24,7 +24,7 @@ vrrp_instance VI_2 {
         auth_pass ingress
     }
     virtual_ipaddress {
-        {{ cluster_ingress_keepalived_vip }}
+        {{ cluster_keepalived_ingress_vip }}
     }
 }
 {% endif %}

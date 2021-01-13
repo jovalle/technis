@@ -1,2 +1,2 @@
 cni_plugin: calico
-cluster_main_control_plane: "{{ groups['control_plane'][0] }}"
+cluster_control_plane_leader: "{{ groups['control_plane'][0] }}"

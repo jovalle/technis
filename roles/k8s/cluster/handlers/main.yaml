@@ -3,11 +3,11 @@
     src: /etc/kubernetes/admin.conf
     dest: ~/.kube/config
     remote_src: yes
-  delegate_to: '{{ cluster_main_control_plane }}'
+  delegate_to: '{{ cluster_control_plane_leader }}'
 - name: update local admin config
   fetch:
     src: /etc/kubernetes/admin.conf
     dest: ~/.kube/config
     flat: yes
     mode: 0600
-  delegate_to: '{{ cluster_main_control_plane }}'
+  delegate_to: '{{ cluster_control_plane_leader }}'

@@ -16,7 +16,7 @@ spec:
     protocol: TCP
   selector:
     app: traefik
-{% if loadbalancer_ingress_ip is defined %}
-  loadBalancerIP: {{ loadbalancer_ingress_ip }}
+{% if ingress_loadbalancer_ip is defined %}
+  loadBalancerIP: {{ ingress_loadbalancer_ip }}
   type: LoadBalancer
 {% endif %}

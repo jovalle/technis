@@ -2,4 +2,4 @@
   command: kubectl label node {{ inventory_hostname }} {{ item }} --overwrite
   with_items:
   - "{{ labels.node[inventory_hostname] | default([]) }}"
-  delegate_to: '{{ cluster_main_control_plane }}'
+  delegate_to: '{{ cluster_control_plane_leader }}'
