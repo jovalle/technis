@@ -37,6 +37,20 @@ spec:
     targetPort: 8080
     protocol: TCP
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuard-lb
+  namespace: kuard
+spec:
+  selector:
+    app: kuard
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: LoadBalancer
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -52,5 +66,15 @@ spec:
         backend:
           service:
             name: kuard
+            port:
+              number: 80
+  - host: kuard-lb.k8s.techn.is
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kuard-lb
             port:
               number: 80
