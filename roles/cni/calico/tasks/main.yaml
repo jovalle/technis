@@ -1,6 +1,3 @@
-- name: install calicoctl
-  include_tasks: calicoctl.yaml
-
 - name: update kube-api route to LB endpoint
   import_role:
     name: kubectl
