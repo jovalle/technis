@@ -1,0 +1,14 @@
+---
+
+- hosts: control_plane
+  tasks:
+  - name: install calicoctl
+    block:
+    - name: get binary
+      command: curl -L https://github.com/projectcalico/calicoctl/releases/download/v3.17.1/calicoctl-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }} -o /usr/local/bin/calicoctl
+      args:
+        creates: /usr/local/bin/calicoctl
+    - name: ensure binary is executable
+      file:
+        path: /usr/local/bin/calicoctl
+        mode: 0755
