@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: traefik
   namespace: {{ ingress_controller_namespace }}
+  labels:
+    app: traefik
 spec:
   ports:
   - name: web
