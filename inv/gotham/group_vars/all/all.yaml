@@ -1,5 +1,0 @@
-container_networking: calico
-container_runtime: containerd
-default_interface: eth1
-etcd_locale: remote
-ingress_controller: contour

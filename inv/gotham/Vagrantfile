@@ -1,49 +1,239 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-DOMAIN = "technis.io"
-SUBNET = "192.168.144"
-ENGINEER_COUNT = 3
-CAPTAIN_COUNT = 3
-STEWARD_COUNT = 3
+$configure_common=<<-SHELL
 
-Vagrant.configure("2") do |config|
-  config.vm.box = "hashicorp/bionic64"
-  config.ssh.insert_key = false
-  config.ssh.private_key_path = ['~/.vagrant.d/insecure_private_key']  # use static key
-  config.vm.provider "virtualbox" do |vb|
-    vb.linked_clone = true
-    vb.customize ["modifyvm", :id, "--audio", "none"]
-    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+  # install cni plugins
+  mkdir -p /opt/cni/bin
+  curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz | tar xzf - -C /opt/cni/bin
+
+  # set permanent route to aux network
+  route add -net 192.168.2.0/24 gw 192.168.1.1
+  cat <<EOF > /etc/rc.local
+#!/bin/sh
+route add -net 192.168.2.0/24 gw 192.168.1.1
+exit 0
+EOF
+  chmod 0755 /etc/rc.local
+
+  # enable cni bridge for iptables proxy (kube-proxy)
+  [[ -z $(grep '^net.bridge.bridge-nf-call-iptables=1' /root/.bashrc) ]] || echo "net.bridge.bridge-nf-call-iptables=1" >> /etc/sysctl.conf
+  modprobe br_netfilter
+  sysctl -p
+
+  # personal touch
+  [[ -z $(grep '^set -o vi' /root/.bashrc) ]] || echo "set -o vi" >> /root/.bashrc
+
+SHELL
+
+$configure_captain=<<-SHELL
+
+  # deploy minimal k3s then specify private IP as kubelet's IP
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--flannel-backend=none --disable=servicelb --disable=traefik --node-ip=$(ip a show eth1 | grep 'inet ' | awk '{print $2}' | cut -d / -f1)" sh -
+
+  # deploy latest Calico
+  kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+  # set env vars for Calico pod subnet and IP autodetection
+  kubectl -n kube-system set env daemonset/calico-node CALICO_IPV4POOL_CIDR="10.42.0.0/16"
+  kubectl -n kube-system set env daemonset/calico-node IP_AUTODETECTION_METHOD="cidr=192.168.1.0/24"
+
+  # place token for agent registration in shared folder
+  cat /var/lib/rancher/k3s/server/node-token > /vagrant/.vagrant/token
+
+  # deploy metallb with BGP config
+  if [[ -z $(kubectl get ns metallb-system --ignore-not-found --no-headers) ]]; then
+    kubectl create ns metallb-system
+  fi
+  kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.9.5/manifests/metallb.yaml
+  cat << EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    peers:
+    - my-asn: 64522
+      peer-asn: 64512
+      peer-address: 192.168.1.1
+      peer-port: 179
+      router-id: 192.168.1.1
+    address-pools:
+    - name: aux
+      protocol: bgp
+      avoid-buggy-ips: true
+      addresses:
+      - 192.168.2.192/26
+EOF
+  if [[ -z $(kubectl -n metallb-system get secret memberlist --no-headers --ignore-not-found) ]]; then
+    kubectl -n metallb-system create secret generic memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+  fi
+
+  # wait for pods to become ready
+  sleep 60
+
+  # deploy test app
+  kubectl run echoserver --image=k8s.gcr.io/echoserver:1.4
+  kubectl expose pod echoserver --name=echoserver-lb --port=80 --target-port=8080 --type=LoadBalancer
+  kubectl get svc echoserver-lb
+
+  # ensure client source IP is maintained (instead of host SNAT)
+  kubectl patch svc echoserver-lb -p '{"spec":{"externalTrafficPolicy":"Local"}}'
+
+SHELL
+
+$configure_steward=<<-SHELL
+
+  export K3S_TOKEN="$(cat /vagrant/.vagrant/token)"
+  export K3S_URL=https://192.168.1.10:6443
+
+  # deploy k3s agent without default CNI, specify private IP as kubelet's IP
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip=$(ip a show eth1 | grep 'inet ' | awk '{print $2}' | cut -d / -f1)" sh -
+
+SHELL
+
+$configure_router=<<-SHELL
+
+  apt-get update
+  apt-get install -y curl bird
+
+  # backup default bird config
+  [[ ! -f /etc/bird/bird.conf.original ]] && mv /etc/bird/bird.conf /etc/bird/bird.conf.original
+
+  # set bird config and restart service
+  cat <<EOF > /etc/bird/bird.conf
+router id 192.168.1.1;
+protocol direct {
+  interface "lo"; # restrict network interfaces BIRD works with
+}
+protocol kernel {
+  persist;      # don't remove routes on bird shutdown
+  scan time 20; # scan kernel routing table every 20 seconds
+  import all;   # default is import all
+  export all;   # default is export none
+}
+
+# this pseudo-protocol watches all interface up/down events.
+protocol device {
+  scan time 10; # scan interfaces every 10 seconds
+}
+
+protocol bgp peerCaptain {
+  local as 64512;
+  neighbor 192.168.1.10 as 64522;
+  import all;
+  export all;
+}
+protocol bgp peerSteward1 {
+  local as 64512;
+  neighbor 192.168.1.11 as 64522;
+  import all;
+  export all;
+}
+protocol bgp peerSteward2 {
+  local as 64512;
+  neighbor 192.168.1.12 as 64522;
+  import all;
+  export all;
+}
+EOF
+  systemctl restart bird
+
+  # enable routing
+  echo net.ipv4.ip_forward=1 > /etc/sysctl.d/55-kubeadm.conf
+  sysctl -p /etc/sysctl.d/55-kubeadm.conf
+
+SHELL
+
+$configure_client=<<-SHELL
+
+  # set gateway route for aux network
+  route add -net 192.168.2.0/24 gw 192.168.2.1
+  cat <<EOF > /etc/rc.local
+#!/bin/sh
+route add -net 192.168.2.0/24 gw 192.168.2.1
+exit 0
+EOF
+
+  chmod 0755 /etc/rc.local
+
+SHELL
+
+Vagrant.configure(2) do |config|
+
+  vm_count = 3
+
+  (1..vm_count).each do |index|
+    if index == 1 then
+      name="captain"
+    else
+      name="steward#{index - 1}"
+    end
+
+    config.vm.define name do |host|
+      host.vm.provider "virtualbox" do |vm|
+        vm.cpus = 2
+        vm.memory = 2048
+      end
+      host.vm.box = "hashicorp/bionic64"
+      host.vm.hostname = name
+      host.vm.network "private_network",
+                        ip: "192.168.1.#{10 - 1 + index}",
+                        netmask: "255.255.255.0",
+                        auto_config: true,
+                        virtualbox__intnet: "core"
+
+      host.vm.provision "shell", inline: $configure_common
+
+      if index == 1 then
+        host.vm.provision "shell", inline: $configure_captain
+      else
+        host.vm.provision "shell", inline: $configure_steward
+      end
+    end
   end
-  (1..ENGINEER_COUNT).each do |i|
-    config.vm.provider "virtualbox" do |v|
-      v.memory = 512
-      v.cpus = 1
+
+  config.vm.define "router" do |router|
+    router.vm.provider "virtualbox" do |vm|
+      vm.cpus = 1
+      vm.memory = 512
     end
-    config.vm.define "engineer-#{i}" do |j|
-      j.vm.hostname = "engineer-#{i}.#{DOMAIN}"
-      j.vm.network "private_network", ip: "#{SUBNET}.#{i+10}"
-    end
+    router.vm.box = "hashicorp/bionic64"
+    router.vm.host_name = "router"
+    router.vm.network "public_network",
+                        bridge: "en0: Wi-Fi (Wireless)",
+                        ip: "192.168.0.203"
+    router.vm.network "private_network",
+                        ip: "192.168.1.1",
+                        netmask: "255.255.255.0",
+                        auto_config: true,
+                        virtualbox__intnet: "core"
+    router.vm.network "private_network",
+                        ip: "192.168.2.1",
+                        netmask: "255.255.255.0",
+                        auto_config: true,
+                        virtualbox__intnet: "aux"
+    router.ssh.insert_key = false
+    router.vm.provision "shell", inline: $configure_router
   end
-  (1..CAPTAIN_COUNT).each do |i|
-    config.vm.provider "virtualbox" do |v|
-      v.memory = 1024
-      v.cpus = 2
+
+  config.vm.define "client" do |client|
+    client.vm.provider "virtualbox" do |vm|
+      vm.cpus = 1
+      vm.memory = 512
     end
-    config.vm.define "captain-#{i}" do |j|
-      j.vm.hostname = "captain-#{i}.#{DOMAIN}"
-      j.vm.network "private_network", ip: "#{SUBNET}.#{i+20}"
-    end
+    client.vm.box = "hashicorp/bionic64"
+    client.vm.host_name = "client"
+    client.vm.network "private_network",
+                        ip: "192.168.2.10",
+                        netmask: "255.255.255.0",
+                        auto_config: true,
+                        virtualbox__intnet: "aux"
+    client.ssh.insert_key = false
+    client.vm.provision "shell", inline: $configure_client
   end
-  (1..STEWARD_COUNT).each do |i|
-    config.vm.provider "virtualbox" do |v|
-      v.memory = 2048
-      v.cpus = 2
-    end
-    config.vm.define "steward-#{i}" do |j|
-      j.vm.hostname = "steward-#{i}.#{DOMAIN}"
-      j.vm.network "private_network", ip: "#{SUBNET}.#{i+30}"
-    end
-  end
+
 end
