@@ -1,23 +1,14 @@
-[rpi]
-asphodel
-tartarus
-elysium
-zagreus
-
-[generic]
-cerberus
-
 [apt_cacher]
 cerberus
 
 [control_plane]
+cerberus
 asphodel
 tartarus
-elysium
 
 [nodes]
-cerberus
-zagreus
+elysium
+erebus
 
 [cluster:children]
 control_plane
@@ -29,4 +20,4 @@ ansible_ssh_private_key_file=~/.ssh/technis
 infrastructure_provisioner=none
 k8s_provisioner=kubeadm
 lan_domain=techn.is
-lan_network=192.168.0.0/24
+lan_network=192.168.1.0/24

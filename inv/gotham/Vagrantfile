@@ -3,15 +3,25 @@
 
 $configure_common=<<-SHELL
 
+  # authorize my key for ssh to root
+  [[ -d /root/.ssh ]] || mkdir /root/.ssh
+  echo "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAnpBCvURB0+gV6lfUjjATvG91yguEgpHQSobLbbJiXd5iXNKpG1lNKmq1yrTQ7K6qP/A4kCHE5Ew3GAOxeP1OjhE1PCe32iMg6HcsegVrC7dqdVS/OnzPDBHS38bb5rD17LHYIpRXQpupbNs0jOYe3ETALTf++vvTF8uCWEA2FXxQTe4WE7iRi2x/JF+p3QBPjxa9+evYZOjp/65mrTHjbCT4GyY0luuv7a+1D7ZbXC2jjTgNTFcT13AyqUbAebsI9XdjvX1Hmfcw9eIb7YjfYaB8Q62ae19e6dJ6FfQpvSb2JoPK/76kqleqD5eZRVxfqR+J2kemFpxwIMXa50YIfw==" > /root/.ssh/authorized_keys
+
+SHELL
+
+$configure_cluster=<<-SHELL
+
   # install cni plugins
   mkdir -p /opt/cni/bin
   curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz | tar xzf - -C /opt/cni/bin
 
-  # set permanent route to aux network
-  route add -net 192.168.2.0/24 gw 192.168.1.1
+  # set permanent route to home and aux networks
+route add -net 192.168.1.0/24 gw 192.168.10.1
+route add -net 192.168.20.0/24 gw 192.168.10.1
   cat <<EOF > /etc/rc.local
-#!/bin/sh
-route add -net 192.168.2.0/24 gw 192.168.1.1
+#!/bin/sh -e
+route add -net 192.168.1.0/24 gw 192.168.10.1
+route add -net 192.168.20.0/24 gw 192.168.10.1
 exit 0
 EOF
   chmod 0755 /etc/rc.local
@@ -36,10 +46,13 @@ $configure_captain=<<-SHELL
 
   # set env vars for Calico pod subnet and IP autodetection
   kubectl -n kube-system set env daemonset/calico-node CALICO_IPV4POOL_CIDR="10.42.0.0/16"
-  kubectl -n kube-system set env daemonset/calico-node IP_AUTODETECTION_METHOD="cidr=192.168.1.0/24"
+  kubectl -n kube-system set env daemonset/calico-node IP_AUTODETECTION_METHOD="cidr=192.168.10.0/24"
 
-  # place token for agent registration in shared folder
+  # copy token for agent registration in shared folder
   cat /var/lib/rancher/k3s/server/node-token > /vagrant/.vagrant/token
+
+  # copy kubeconfig for reaching k8s cluster on localhost
+  cat /etc/rancher/k3s/k3s.yaml | sed 's/127.0.0.1/192.168.10.10/g' | sed 's/default/gotham/g' > /vagrant/.vagrant/kubeconfig
 
   # deploy metallb with BGP config
   if [[ -z $(kubectl get ns metallb-system --ignore-not-found --no-headers) ]]; then
@@ -58,15 +71,15 @@ data:
     peers:
     - my-asn: 64522
       peer-asn: 64512
-      peer-address: 192.168.1.1
+      peer-address: 192.168.10.1
       peer-port: 179
-      router-id: 192.168.1.1
+      router-id: 192.168.10.1
     address-pools:
     - name: aux
       protocol: bgp
       avoid-buggy-ips: true
       addresses:
-      - 192.168.2.192/26
+      - 192.168.20.192/26
 EOF
   if [[ -z $(kubectl -n metallb-system get secret memberlist --no-headers --ignore-not-found) ]]; then
     kubectl -n metallb-system create secret generic memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
@@ -88,7 +101,7 @@ SHELL
 $configure_steward=<<-SHELL
 
   export K3S_TOKEN="$(cat /vagrant/.vagrant/token)"
-  export K3S_URL=https://192.168.1.10:6443
+  export K3S_URL=https://192.168.10.10:6443
 
   # deploy k3s agent without default CNI, specify private IP as kubelet's IP
   curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip=$(ip a show eth1 | grep 'inet ' | awk '{print $2}' | cut -d / -f1)" sh -
@@ -101,11 +114,11 @@ $configure_router=<<-SHELL
   apt-get install -y curl bird
 
   # backup default bird config
-  [[ ! -f /etc/bird/bird.conf.original ]] && mv /etc/bird/bird.conf /etc/bird/bird.conf.original
+  [[ -f /etc/bird/bird.conf.original ]] || mv /etc/bird/bird.conf /etc/bird/bird.conf.original
 
   # set bird config and restart service
   cat <<EOF > /etc/bird/bird.conf
-router id 192.168.1.1;
+router id 192.168.10.1;
 protocol direct {
   interface "lo"; # restrict network interfaces BIRD works with
 }
@@ -122,20 +135,20 @@ protocol device {
 }
 
 protocol bgp peerCaptain {
-  local as 64512;
-  neighbor 192.168.1.10 as 64522;
-  import all;
-  export all;
+  local as 64512; # router's AS
+  neighbor 192.168.10.10 as 64522; # metallb BGP speaker
+  import all;     # collect any routes witnessed
+  export all;     # relay any routes witnessed
 }
 protocol bgp peerSteward1 {
   local as 64512;
-  neighbor 192.168.1.11 as 64522;
+  neighbor 192.168.10.11 as 64522;
   import all;
   export all;
 }
 protocol bgp peerSteward2 {
   local as 64512;
-  neighbor 192.168.1.12 as 64522;
+  neighbor 192.168.10.12 as 64522;
   import all;
   export all;
 }
@@ -151,10 +164,10 @@ SHELL
 $configure_client=<<-SHELL
 
   # set gateway route for aux network
-  route add -net 192.168.2.0/24 gw 192.168.2.1
+  route add -net 192.168.20.0/24 gw 192.168.20.1
   cat <<EOF > /etc/rc.local
-#!/bin/sh
-route add -net 192.168.2.0/24 gw 192.168.2.1
+#!/bin/sh -e
+route add -net 192.168.20.0/24 gw 192.168.20.1
 exit 0
 EOF
 
@@ -181,13 +194,13 @@ Vagrant.configure(2) do |config|
       host.vm.box = "hashicorp/bionic64"
       host.vm.hostname = name
       host.vm.network "private_network",
-                        ip: "192.168.1.#{10 - 1 + index}",
+                        ip: "192.168.10.#{10 - 1 + index}",
                         netmask: "255.255.255.0",
                         auto_config: true,
                         virtualbox__intnet: "core"
-
+      host.ssh.insert_key = false
       host.vm.provision "shell", inline: $configure_common
-
+      host.vm.provision "shell", inline: $configure_cluster
       if index == 1 then
         host.vm.provision "shell", inline: $configure_captain
       else
@@ -205,18 +218,19 @@ Vagrant.configure(2) do |config|
     router.vm.host_name = "router"
     router.vm.network "public_network",
                         bridge: "en0: Wi-Fi (Wireless)",
-                        ip: "192.168.0.203"
+                        ip: "192.168.10.203"
     router.vm.network "private_network",
-                        ip: "192.168.1.1",
+                        ip: "192.168.10.1",
                         netmask: "255.255.255.0",
                         auto_config: true,
                         virtualbox__intnet: "core"
     router.vm.network "private_network",
-                        ip: "192.168.2.1",
+                        ip: "192.168.20.1",
                         netmask: "255.255.255.0",
                         auto_config: true,
                         virtualbox__intnet: "aux"
     router.ssh.insert_key = false
+    router.vm.provision "shell", inline: $configure_common
     router.vm.provision "shell", inline: $configure_router
   end
 
@@ -228,11 +242,12 @@ Vagrant.configure(2) do |config|
     client.vm.box = "hashicorp/bionic64"
     client.vm.host_name = "client"
     client.vm.network "private_network",
-                        ip: "192.168.2.10",
+                        ip: "192.168.20.10",
                         netmask: "255.255.255.0",
                         auto_config: true,
                         virtualbox__intnet: "aux"
     client.ssh.insert_key = false
+    client.vm.provision "shell", inline: $configure_common
     client.vm.provision "shell", inline: $configure_client
   end
 

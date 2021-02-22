@@ -1,10 +1,26 @@
-- hosts: cluster
+---
+
+- hosts: control_plane
+  become: yes
   roles:
+  - name: keepalived
+    when:
+    - (groups['control_plane'] | length) > 1
+    - keepalived | default("no") | bool
+  - name: haproxy
+    when: keepalived | default("no") | bool
+
+- hosts: cluster
+  become: yes
+  roles:
+  - k8s
   - k8s/cluster
   - k8s/labels
 
 - hosts: control_plane[0]
+  become: yes
   tasks:
   - name: allow scheduling to control plane
     command: kubectl taint nodes --all node-role.kubernetes.io/master-
     ignore_errors: yes
+    when: control_plane_schedulable | default("no") | bool

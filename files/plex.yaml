@@ -33,13 +33,13 @@ spec:
         imagePullPolicy: Always
         env:
         - name: ADVERTISE_IP
-          value: "http://192.168.0.3:32400/" # necessary for certain LAN devices to reach
+          value: "http://192.168.1.10:32400/" # necessary for certain LAN devices to reach
         - name: NVIDIA_DRIVER_CAPABILITIES
           value: "all"
         - name: NVIDIA_VISIBLE_DEVICES
           value: "all"
         - name: PLEX_CLAIM
-          value: "claim-bkwNRE4jm_-1gshyK498" # only valid for 4min to register *new* servers
+          value: "claim-mCrBzbR_n4RGxat7Gd8-" # only valid for 4min to register *new* servers
         - name: PLEX_GID
           value: "1000"
         - name: PLEX_UID
@@ -102,7 +102,7 @@ spec:
       volumes: # using hostPath for performance
       - name: config
         hostPath:
-          path: /plex
+          path: /var/lib/plex
           type: Directory
       - name: movies
         hostPath:
@@ -110,11 +110,11 @@ spec:
           type: Directory
       - name: tv
         hostPath:
-          path: /hulkpool/shows
+          path: /hulkpool/tv
           type: Directory
       - name: transcode
         hostPath:
-          path: /transcode
+          path: /var/lib/plex/transcode
           type: Directory
       - name: localtime
         hostPath:

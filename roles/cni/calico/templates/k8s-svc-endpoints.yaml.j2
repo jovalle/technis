@@ -4,5 +4,5 @@ metadata:
   name: kubernetes-services-endpoint
   namespace: kube-system
 data:
-  KUBERNETES_SERVICE_HOST: "{{ cluster_control_plane_fqdn }}"
-  KUBERNETES_SERVICE_PORT: "{{ cluster_control_plane_port }}"
+  KUBERNETES_SERVICE_HOST: "{{ control_plane_fqdn }}"
+  KUBERNETES_SERVICE_PORT: "{{ control_plane_port }}"

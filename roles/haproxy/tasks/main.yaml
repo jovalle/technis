@@ -1,3 +1,18 @@
+---
+
+- name: ensure haproxy config dir exists
+  file:
+    path: /etc/haproxy
+    state: directory
+
+# haproxy will fail to install/start with no haproxy file
+- name: haproxy config file
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 0644
+  notify: restart haproxy
+
 - name: install haproxy
   apt:
     name: haproxy
@@ -8,14 +23,7 @@
   retries: 5
   until: apt_install_haproxy is success
 
-- name: haproxy config file
-  template:
-    src: haproxy.cfg.j2
-    dest: /etc/haproxy/haproxy.cfg
-    mode: 0644
-  notify: restart haproxy
-
-- name: set sysctl net.ipv4.ip_nonlocal_bind
+- name: allow binding to non-local IP addresses
   sysctl:
     name: net.ipv4.ip_nonlocal_bind
     value: '1'

@@ -1,51 +1,54 @@
-- name: set node hostname
-  hostname:
-    name: '{{ inventory_hostname }}'
-
-- name: set node /etc/hostname
-  copy:
-    content: '{{ inventory_hostname }}'
-    dest: /etc/hostname
-
 - name: check node status
   stat:
-    path: /etc/kubernetes/kubelet.conf
-  register: kubelet_conf
+    path: "/etc/kubernetes/{{ 'admin.conf' if inventory_hostname in groups['control_plane'] else 'kubelet.conf' }}"
+  register: node_status_marker
 
 - name: set node status fact
-  set_fact:
-    cluster_node_configured: '{{ kubelet_conf.stat.exists }}'
+  ansible.builtin.set_fact:
+    cluster_node_configured: "{{ node_status_marker.stat.exists }}"
+  when: node_status_marker.stat.exists
 
 - name: initialize cluster
   include_tasks: init.yaml
   when:
-  - inventory_hostname == cluster_control_plane_leader
+  - inventory_hostname == control_plane_leader
   - not cluster_node_configured
 
-#TODO update cert key and join cmd once
 - name: refresh certs to create a new join command
   block:
   - name: upload latest certs
     command: kubeadm init phase upload-certs --upload-certs
     register: kubeadm_upload_certs
-    notify:
-    - update remote admin config
-    - update local admin config
-    when: not cluster_node_configured
-  - name: flush handlers
-    meta: flush_handlers
+  - name: ensure kube dir exists
+    file:
+      path: ~/.kube
+      state: directory
+  - name: update remote admin config
+    copy:
+      src: /etc/kubernetes/admin.conf
+      dest: ~/.kube/config
+      remote_src: yes
+    delegate_to: "{{ control_plane_leader }}"
+    when: kubeadm_upload_certs.changed
+  - name: update local admin config
+    fetch:
+      src: /etc/kubernetes/admin.conf
+      dest: ~/.kube/config
+      flat: yes
+      mode: 0600
+    delegate_to: "{{ control_plane_leader }}"
+    when: kubeadm_upload_certs.changed
   - name: create token and print join command
     shell: kubeadm token create --print-join-command
     register: kubeadm_join_command_raw
-    when: not cluster_node_configured
+  delegate_to: "{{ control_plane_leader }}"
   run_once: yes
-  delegate_to: '{{ cluster_control_plane_leader }}'
 
 - name: join cluster
   include_tasks: join.yaml
   vars:
-    kubeadm_join_command: '{{ kubeadm_join_command_raw.stdout }}'
-    kubeadm_certificate_key: '{{ kubeadm_upload_certs.stdout_lines[-1] }}'
+    kubeadm_join_command: "{{ kubeadm_join_command_raw.stdout }}"
+    kubeadm_certificate_key: "{{ kubeadm_upload_certs.stdout_lines[-1] }}"
   when:
-  - inventory_hostname != cluster_control_plane_leader
-  - not cluster_node_configured
+  - inventory_hostname != control_plane_leader
+  - not cluster_node_configured | default("no") | bool

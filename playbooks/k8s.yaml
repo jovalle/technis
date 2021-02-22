@@ -1,12 +1,25 @@
+---
+
 - hosts: control_plane[0]
   vars:
     cluster_node_count: "{{ groups['cluster'] | length }}"
     control_plane_node_count: "{{ groups['control_plane'] | length }}"
   roles:
-  - cni
-  - storage
-  - name: metallb
-    when: (loadbalancer_provider | default('none')) == 'metallb'
-  - cert-manager
-  - ingress
-  - monitoring
+  - name: cni
+    tags:
+    - cni
+  - name: storage
+    tags:
+    - storage
+  - name: loadbalancer
+    tags:
+    - loadbalancer
+  - name: cert-manager
+    tags:
+    - certs
+  - name: ingress
+    tags:
+    - ingress
+  - name: monitoring
+    tags:
+    - monitoring

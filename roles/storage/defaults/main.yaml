@@ -1,1 +1,2 @@
-storage_provisioner: nfs
+storage_providers:
+- longhorn

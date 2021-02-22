@@ -302,7 +302,7 @@ metadata:
     app.kubernetes.io/component: prometheus
     app.kubernetes.io/name: prometheus-k8s
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: v2.22.1
+    app.kubernetes.io/version: v2.24.1
     prometheus: k8s
   name: k8s
   namespace: monitoring
@@ -312,7 +312,7 @@ spec:
     - name: alertmanager-main
       namespace: monitoring
       port: web
-  image: quay.io/prometheus/prometheus:v2.22.1
+  image: quay.io/prometheus/prometheus:v2.24.1
   nodeSelector:
     kubernetes.io/os: linux
   podMetadata:
@@ -320,7 +320,7 @@ spec:
       app.kubernetes.io/component: prometheus
       app.kubernetes.io/name: prometheus-k8s
       app.kubernetes.io/part-of: kube-prometheus
-      app.kubernetes.io/version: v2.22.1
+      app.kubernetes.io/version: v2.24.1
   podMonitorNamespaceSelector: {}
   podMonitorSelector: {}
   probeNamespaceSelector: {}
@@ -347,12 +347,12 @@ spec:
       kind: PersistentVolumeClaim
       spec:
         accessModes:
-        - ReadWriteMany
+        - ReadWriteOnce
         resources:
           requests:
             storage: 50Gi
-        storageClassName: illmatic
-  version: v2.22.1
+        storageClassName: longhorn
+  version: v2.24.1
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -2598,7 +2598,7 @@ metadata:
     app.kubernetes.io/component: prometheus
     app.kubernetes.io/name: prometheus-k8s
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: v2.22.1
+    app.kubernetes.io/version: v2.24.1
     prometheus: k8s
   name: prometheus-k8s
   namespace: monitoring
@@ -2628,7 +2628,7 @@ metadata:
     app.kubernetes.io/component: prometheus
     app.kubernetes.io/name: prometheus-k8s
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: v2.22.1
+    app.kubernetes.io/version: v2.24.1
   name: prometheus
   namespace: monitoring
 spec:

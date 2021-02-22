@@ -65,7 +65,7 @@ metadata:
   name: default
   namespace: default
 spec:
-  minVersion: VersionTLS13
+  minVersion: VersionTLS12
 {% if ingress_default_cert_secret.name is defined %}
 ---
 apiVersion: traefik.containo.us/v1alpha1

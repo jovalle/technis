@@ -1,0 +1,32 @@
+---
+
+- name: apply longhorn manifest
+  import_role:
+    name: kubectl
+  vars:
+    source_role: longhorn
+    file_type: remote
+    target_list:
+    - https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/deploy/longhorn.yaml
+
+- name: apply longhorn UI ingress
+  shell: |
+    cat << EOF | kubectl apply -f -
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: longhorn
+      namespace: longhorn-system
+    spec:
+      rules:
+      - host: longhorn.{{ cluster_domain }}
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: longhorn-frontend
+                port:
+                  number: 80
+    EOF

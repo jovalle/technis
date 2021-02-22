@@ -15,3 +15,10 @@
     daemon_reload: yes
     state: restarted
     enabled: yes
+
+- name: restart avahi-daemon
+  systemd:
+    name: avahi-daemon
+    daemon_reload: yes
+    state: restarted
+    enabled: yes

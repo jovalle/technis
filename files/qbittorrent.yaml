@@ -14,7 +14,7 @@ data:
   UMASK: "002"
   WEBUI_PORT: "8080"
   VPN_ENABLED: "yes"
-  LAN_NETWORK: "192.168.0.0/24"
+  LAN_NETWORK: "192.168.1.0/24"
   NAME_SERVERS: "1.1.1.1,8.8.8.8"
   KUBERNETES_ENABLED: "yes"
   POD_NETWORK: "10.244.0.0/16"
@@ -59,10 +59,34 @@ spec:
     spec:
       nodeSelector:
         techn.is/role: watchtower
+      initContainers:
+      - name: openvpn-setup
+        image: busybox
+        command:
+        - sh
+        - "-c"
+        - |
+          /bin/sh <<EOF
+          wget -qO- https://www.privateinternetaccess.com/openvpn/openvpn.zip | unzip - "us_new_york.ovpn" -d /config/openvpn/
+          EOF
+        volumeMounts:
+        - name: config
+          mountPath: /config
       containers:
       - name: qbittorrent
-        image: jovalle/qbittorrent-openvpn:v0.1.0
+        image: jovalle/qbittorrent-openvpn:v0.2.0
         imagePullPolicy: Always
+        env:
+        - name: VPN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: openvpn
+              key: username
+        - name: VPN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: openvpn
+              key: password
         envFrom:
         - configMapRef:
             name: qbittorrent-config
@@ -80,8 +104,6 @@ spec:
         volumeMounts:
         - mountPath: /config
           name: config
-        - mountPath: /config-bak
-          name: config-bak
         - mountPath: /downloads
           name: downloads
         - name: tunnel
@@ -113,22 +135,18 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: qbittorrent-pvc
-      - name: config-bak
-        nfs:
-          path: /hulkpool/config/qbittorrent
-          server: cerberus.techn.is
       - name: downloads
         nfs:
           path: /hulkpool/downloads
           server: cerberus.techn.is
-      - hostPath:
+      - name: tunnel
+        hostPath:
           path: /dev/net/tun
           type: ""
-        name: tunnel
-      - hostPath:
+      - name: localtime
+        hostPath:
           path: /etc/localtime
           type: ""
-        name: localtime
 ---
 apiVersion: v1
 kind: Service

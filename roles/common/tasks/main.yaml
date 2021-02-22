@@ -1,3 +1,5 @@
+---
+
 - name: apt upgrade
   apt:
     upgrade: full
@@ -23,6 +25,15 @@
   register: apt_install_common
   retries: 5
   until: apt_install_common is success
+
+- name: set node hostname
+  hostname:
+    name: '{{ inventory_hostname }}'
+
+- name: set node /etc/hostname
+  copy:
+    content: '{{ inventory_hostname }}'
+    dest: /etc/hostname
 
 - name: disable swap in /etc/fstab
   replace:
@@ -52,8 +63,22 @@
       path: /var/swap
       state: absent
   when:
-  - inventory_hostname in groups['rpi']
+  - ansible_architecture | regex_search('arm|aarch')
   - dphys_swapfile.stat.exists
+
+- name: set interfaces
+  replace:
+    dest: /etc/network/interfaces
+    regexp: "^(auto|allow-hotplug) {{ default_interface }}\niface {{ default_interface }} inet.*$"
+    replace: "auto {{ default_interface }}\niface {{ default_interface }} inet {{ default_interface_inet }}"
+  notify: restart networking
+
+- name: disable dhcpd
+  systemd:
+    name: dhcpcd
+    state: stopped
+    enabled: no
+    masked: yes
 
 - name: start time services
   service:

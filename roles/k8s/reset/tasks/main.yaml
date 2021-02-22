@@ -1,7 +1,4 @@
-- name: delete node {{ inventory_hostname }}
-  command: kubectl delete node {{ inventory_hostname }} --ignore-not-found=true
-  delegate_to: '{{ cluster_control_plane_leader }}'
-  ignore_errors: yes
+---
 
 - name: revert cluster deployment
   shell: kubeadm reset -f
@@ -17,3 +14,12 @@
 - name: reset cni
   import_role:
     name: cni/reset
+
+- name: reset cri
+  import_role:
+    name: cri/reset
+
+- name: delete node {{ inventory_hostname }}
+  command: kubectl delete node {{ inventory_hostname }} --ignore-not-found=true
+  delegate_to: "{{ control_plane_leader }}"
+  ignore_errors: yes

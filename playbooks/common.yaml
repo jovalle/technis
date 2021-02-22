@@ -1,6 +1,8 @@
+---
+
 - hosts: all
+  become: yes
   roles:
   - apt-cacher
   - common
   - cri
-  - k8s

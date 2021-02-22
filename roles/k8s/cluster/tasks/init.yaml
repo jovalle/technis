@@ -8,3 +8,7 @@
   command:
     cmd: kubeadm init --config /etc/kubernetes/config.yaml --upload-certs
     creates: /etc/kubernetes/admin.conf
+
+- name: update node status
+  ansible.builtin.set_fact:
+    cluster_node_configured: true

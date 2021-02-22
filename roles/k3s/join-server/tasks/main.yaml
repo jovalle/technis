@@ -1,6 +1,0 @@
-- name: join existing k3s cluster as a server
-  shell: >
-    curl -sfL https://get.k3s.io | K3S_TOKEN={{ cluster_token | default('technis') }} INSTALL_K3S_EXEC="--server https://{{ k8s_server | default(groups.control_plane[0]) }}:6443" sh -
-  args:
-    warn: no
-  ignore_errors: yes

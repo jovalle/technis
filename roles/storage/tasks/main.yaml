@@ -1,4 +1,9 @@
-- name: setup {{ storage_provisioner }} storage provisioner
-  include_role:
-    name: storage/{{ storage_provisioner }}
-  when: inventory_hostname == cluster_control_plane_leader
+---
+
+- name: setup storage providers
+  include_tasks: provider.yaml
+  vars:
+    storage_provider: "{{ item }}"
+  when: inventory_hostname == control_plane_leader
+  with_items:
+  - "{{ storage_providers }}"

@@ -1,3 +1,0 @@
-- name: uninstall k3s
-  command: /usr/local/bin/k3s-{{ 'agent-' if inventory_hostname in groups.nodes }}uninstall.sh
-  ignore_errors: yes

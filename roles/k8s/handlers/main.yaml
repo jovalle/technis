@@ -1,3 +1,10 @@
+---
+
+- name: reboot host
+  reboot:
+    msg: "Host rebooted"
+    reboot_timeout: "{{ reboot_timeout | default(600) }}"
+
 - name: restart kubelet
   systemd:
     name: kubelet

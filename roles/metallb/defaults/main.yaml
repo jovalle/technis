@@ -1,2 +1,0 @@
-loadbalancer_metallb_version: v0.9.5
-loadbalancer_metallb_layer2_addresses: 192.168.0.200-192.168.0.232
