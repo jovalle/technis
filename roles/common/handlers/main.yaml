@@ -1,4 +1,6 @@
-- name: reboot hosts
-  reboot:
-    msg: "Hosts are being rebooted"
-    reboot_timeout: '{{ reboot_timeout | default(600) }}'
+---
+
+- name: restart networking
+  systemd:
+    name: networking
+    state: restarted

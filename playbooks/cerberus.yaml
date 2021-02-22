@@ -1,19 +1,9 @@
+---
+
 - hosts: cerberus
+  tags:
+  - always
   tasks:
-  - name: add labels
-    command: kubectl label node cerberus {{ item }}
-    loop:
-    - gpu=nvidia
-    - node-role.techn.is/watchtower=
-  # apt_repository is primitive. doesn't aggregate
-  - name: onboard buster-backports repo
-    lineinfile:
-      path: /etc/apt/sources.list
-      regex: ^{{ item }} http://deb.debian.org/debian buster-backports
-      line: '{{ item }} http://deb.debian.org/debian buster-backports main contrib'
-    loop:
-    - deb
-    - deb-src
   - name: apt upgrade
     apt:
       upgrade: full
@@ -25,9 +15,76 @@
     register: apt_upgrade
     retries: 5
     until: apt_upgrade is success
+  - name: install packages
+    package:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - glances
+    - htop
+
+- hosts: cerberus
+  tags:
+  - net
+  tasks:
+  - name: install required packages
+    package:
+      name: "{{ item }}"
+    loop:
+    - ifenslave
+  - name: set LACP on ethernet interfaces
+    copy:
+      dest: /etc/network/interfaces
+      content: |
+        # Ansible managed
+        auto eno1
+        iface eno1 inet manual
+          bond-master eth0
+
+        auto enp3s0
+        iface enp3s0 inet manual
+          bond-master eth0
+
+        auto eth0
+        iface eth0 inet static
+          address                192.168.1.10/24
+          gateway                192.168.1.1
+          bond-mode              802.3ad
+          bond-miimon            100
+          bond-slaves            none
+          bond-lacp-rate         1
+          bond-updelay           800
+          bond-downdelay         400
+          bond_xmit_hash_policy layer2+3
+    register: net_int
+  - name: restart networking
+    systemd:
+      name: networking
+      state: restarted
+    when: net_int.changed
+
+- hosts: cerberus
+  tags:
+  - zfs
+  tasks:
+  - name: onboard buster-backports repo
+    lineinfile: # apt_repository is primitive. doesn"t aggregate
+      path: /etc/apt/sources.list
+      regex: ^{{ item }} http://deb.debian.org/debian buster-backports
+      line: "{{ item }} http://deb.debian.org/debian buster-backports main contrib"
+    loop:
+    - deb
+    - deb-src
+  - name: add zfs repo preferences
+    copy:
+      content: |
+        Package: libnvpair1linux libuutil1linux libzfs2linux libzpool2linux spl-dkms zfs-dkms zfs-test zfsutils-linux zfsutils-linux-dev zfs-zed
+        Pin: release n=buster-backports
+        Pin-Priority: 990
+      dest: /etc/apt/preferences.d/90_zfs
   - name: install zfs
     package:
-      name: '{{ item }}'
+      name: "{{ item }}"
     with_items:
     - zfs-dkms
     - zfsutils-linux
@@ -37,6 +94,8 @@
       creates: /hulkpool
 
 - hosts: cerberus
+  tags:
+  - nfs
   tasks:
   - name: setup nfs server
     block:
@@ -46,7 +105,7 @@
         state: present
     - name: create export mountpoints if missing
       file:
-        path: '{{ item }}'
+        path: "{{ item }}"
         state: directory
       loop:
       - /hulkpool
@@ -55,7 +114,7 @@
       lineinfile:
         path: /etc/exports
         regex: ^{{ item }}
-        line: '{{ item }} *(rw,sync,no_subtree_check,no_root_squash)'
+        line: "{{ item }} *(rw,sync,no_subtree_check,no_root_squash)"
       loop:
       - /hulkpool
       - /nas
@@ -67,6 +126,8 @@
         state: restarted
 
 - hosts: nfs_clients
+  tags:
+  - nfs
   tasks:
   - name: setup nfs clients
     block:
@@ -76,7 +137,7 @@
         state: present
     - name: create export mountpoints if missing
       file:
-        path: '{{ item }}'
+        path: "{{ item }}"
         state: directory
       loop:
       - /hulkpool
@@ -94,17 +155,11 @@
       loop:
       - /hulkpool
       - /nas
-    delegate_to: '{{ nfs_clients }}'
+    delegate_to: "{{ nfs_clients }}"
 
 - hosts: cerberus
-  vars_prompt:
-  - name: smb_username
-    prompt: username
-    private: no
-  - name: smb_password
-    prompt: password
-    private: yes
-    confirm: yes
+  tags:
+  - smb
   tasks:
   - name: install samba
     apt:
@@ -114,24 +169,33 @@
     template:
       src: files/smb.conf
       dest: /etc/samba/smb.conf
+  - name: check and enable user
+    shell: smbpasswd -e {{ smb_username }}
+    register: smb_check_user
+    changed_when: smb_check_user.rc != 0
+    ignore_errors: yes
   - name: create samba user
-    shell: "(echo '{{ smb_password }}'; echo '{{ smb_password }}') | smbpasswd -a -s {{ smb_username }}"
+    shell: (echo '{{ smb_password }}'; echo '{{ smb_password }}') | smbpasswd -a -s {{ smb_username }}
     no_log: yes
+    register: smb_create_user
+    when: smb_check_user.rc != 0
   - name: restart samba server
     systemd:
       name: smbd
       state: restarted
+    when: smb_create_user.changed
 
 - hosts: cerberus
+  tags:
+  - nvidia
   pre_tasks:
   - name: check host has an nvidia card
     shell: >
       lspci | grep -i nvidia | wc -l
     register: nvidia_check
-    failed_when: nvidia_check.stdout == '0'
+    failed_when: nvidia_check.stdout == "0"
   - name: check driver version
-    shell: >
-      nvidia-smi | grep 'NVIDIA-SMI' | awk '{print $3}'
+    shell: nvidia-smi | grep "NVIDIA-SMI" | awk '{print $3}'
     register: nvidia_driver_version
     ignore_errors: yes
   tasks:
@@ -148,7 +212,7 @@
     - name: disable nouveau
       lineinfile:
         path: /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
-        line: '{{ item }}'
+        line: "{{ item }}"
       loop:
       - blacklist nouveau
       - options nouveau modeset=0
@@ -159,18 +223,18 @@
     - name: download nvidia 455.45.01 driver
       get_url:
         url: https://international.download.nvidia.com/XFree86/Linux-x86_64/455.45.01/NVIDIA-Linux-x86_64-455.45.01.run
-        dest: '{{ tempdir.path }}'
+        dest: "{{ tempdir.path }}"
         mode: 0755
     - name: stealth run driver install
-      shell: '{{ tempdir.path }}/NVIDIA-Linux-x86_64-455.45.01.run -q -s --dkms'
+      shell: "sh {{ tempdir.path }}/NVIDIA-Linux-x86_64-455.45.01.run -q -s --dkms"
     - name: run nvidia-smi to confirm successful install
       shell: nvidia-smi
     always:
     - name: cleanup temp dir
       file:
-        path: '{{ tempdir.path }}'
+        path: "{{ tempdir.path }}"
         state: absent
-    when: nvidia_driver_version is not defined or nvidia_driver_version.stdout != '455.45.01'
+    when: nvidia_driver_version is not defined or nvidia_driver_version.stdout != "455.45.01"
   - name: patch nvidia transcoder
     block:
     - name: create temp dir
@@ -180,13 +244,13 @@
     - name: clone nvidia patch repo
       git:
         repo: https://github.com/keylase/nvidia-patch
-        dest: '{{ tempdir.path }}'
+        dest: "{{ tempdir.path }}"
     - name: run nvidia patch
-      shell: '{{ tempdir.path }}/patch.sh'
+      shell: "{{ tempdir.path }}/patch.sh"
     always:
     - name: cleanup temp dir
       file:
-        path: '{{ tempdir.path }}'
+        path: "{{ tempdir.path }}"
         state: absent
   - name: check for nvidia-container-runtime bin
     stat:
@@ -202,8 +266,6 @@
       shell:
         cmd: >
           curl -s -L https://nvidia.github.io/nvidia-docker/debian10/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
-        args:
-          warn: no
         creates: /etc/apt/sources.list.d/nvidia-docker.list
     - name: install nvidia-docker2
       apt:
@@ -227,7 +289,7 @@
     block:
     - name: install prerequisites for nvtop
       apt:
-        name: ['cmake', 'libncurses5-dev', 'libncursesw5-dev', 'git']
+        name: ["cmake", "libncurses5-dev", "libncursesw5-dev", "git"]
     - name: create temp dir
       tempfile:
         state: directory
@@ -235,26 +297,26 @@
     - name: clone nvtop repo
       git:
         repo: https://github.com/Syllo/nvtop
-        dest: '{{ tempdir.path }}'
+        dest: "{{ tempdir.path }}"
     - name: create build dir
       file:
-        path: '{{ tempdir.path }}/build'
+        path: "{{ tempdir.path }}/build"
         state: directory
     - name: build from source
       shell:
-        chdir: '{{ tempdir.path }}/build'
+        chdir: "{{ tempdir.path }}/build"
         cmd: cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
     - name: run make
       shell:
-        chdir: '{{ tempdir.path }}/build'
+        chdir: "{{ tempdir.path }}/build"
         cmd: make
     - name: run make install
       shell:
-        chdir: '{{ tempdir.path }}/build'
+        chdir: "{{ tempdir.path }}/build"
         cmd: make install
     always:
     - name: cleanup temp dir
       file:
-        path: '{{ tempdir.path }}'
+        path: "{{ tempdir.path }}"
         state: absent
     when: nvtop.stat.exists == False

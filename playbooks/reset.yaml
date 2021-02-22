@@ -1,9 +1,10 @@
+---
+
 - hosts: cluster
   roles:
-  - name: k3s/reset
-    when: k8s_provisioner == 'k3s'
-  - name: k8s/reset
-    when: k8s_provisioner == 'kubeadm'
+  - k8s/reset
+  - haproxy/reset
+  - keepalived/reset
 
 - hosts: etcd
   roles:

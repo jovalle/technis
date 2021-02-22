@@ -1,4 +1,14 @@
+---
+
+- name: join command
+  debug:
+    msg: "{{ inventory_hostname }}: {{ kubeadm_join_command }}{% if inventory_hostname in groups['control_plane'] %} --control-plane --certificate-key {{ kubeadm_certificate_key }}{% endif %}"
+
 - name: join node to cluster
   command:
     cmd: "{{ kubeadm_join_command }}{% if inventory_hostname in groups['control_plane'] %} --control-plane --certificate-key {{ kubeadm_certificate_key }}{% endif %}"
     creates: /etc/kubernetes/{{ 'admin.conf' if inventory_hostname in groups['control_plane'] else 'kubelet.conf' }}
+
+- name: update node status
+  ansible.builtin.set_fact:
+    cluster_node_configured: true

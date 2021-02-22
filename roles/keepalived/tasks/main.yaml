@@ -1,3 +1,5 @@
+---
+
 - name: install keepalived
   apt:
     name: keepalived
@@ -7,6 +9,11 @@
   register: apt_install_keepalived
   retries: 5
   until: apt_install_keepalived is success
+
+- name: ensure config dir exists
+  file:
+    path: /etc/keepalived
+    state: directory
 
 - name: generate keepalived config
   template:

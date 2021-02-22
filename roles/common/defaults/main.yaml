@@ -18,3 +18,5 @@ common_packages:
 - unrar
 - vim
 - zip
+default_interface: eth0
+default_interface_inet: dhcp

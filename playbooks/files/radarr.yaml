@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: radarr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: radarr-pvc
+  namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: radarr
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: radarr
+        tier: watchtower
+    spec:
+      containers:
+      - name: radarr
+        image: ghcr.io/linuxserver/radarr:latest
+        imagePullPolicy: Always
+        env:
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+        - name: TZ
+          value: "America/New_York"
+        - name: UMASK_SET
+          value: "022"
+        ports:
+        - containerPort: 7878
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: config-bak
+          mountPath: /config-bak
+        - name: downloads
+          mountPath: /downloads
+        - name: movies
+          mountPath: /movies
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 5
+          tcpSocket:
+            port: 7878
+        readinessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 5
+          tcpSocket:
+            port: 7878
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 500m
+            memory: 1000Mi
+      restartPolicy: Always
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: radarr-pvc
+      - name: config-bak
+        nfs:
+          path: /hulkpool/config/radarr
+          server: cerberus.techn.is
+      - name: downloads
+        nfs:
+          path: /hulkpool/downloads
+          server: cerberus.techn.is
+      - name: movies
+        nfs:
+          path: /hulkpool/movies
+          server: cerberus.techn.is
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+  namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
+spec:
+  selector:
+    app: radarr
+  ports:
+  - port: 7878
+    protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: radarr
+  namespace: radarr
+  labels:
+    app: radarr
+    tier: watchtower
+spec:
+  rules:
+  - host: radarr.k8s.techn.is
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: radarr
+            port:
+              number: 7878

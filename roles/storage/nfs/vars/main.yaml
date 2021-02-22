@@ -3,4 +3,3 @@ nfs_provisioner_name: techn.is/nas
 nfs_provisioner_image: jovalle/nfs-subdir-external-provisioner
 nfs_server: cerberus.{{ lan_domain }}
 nfs_path: /nas
-storageclass_name: illmatic

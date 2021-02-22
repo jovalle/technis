@@ -1,7 +1,15 @@
 - import_playbook: reset.yaml
-  when: cluster_reset | default('no') | bool
+  when: cluster_reset | default("no") | bool
 - import_playbook: common.yaml
-- import_playbook: control-plane.yaml
+  tags:
+  - common
 - import_playbook: cluster.yaml
+  tags:
+  - cluster
 - import_playbook: k8s.yaml
+  tags:
+  - k8s
 - import_playbook: apps.yaml
+  tags:
+  - apps
+  when: cluster_apps | default("no") | bool

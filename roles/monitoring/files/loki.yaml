@@ -644,7 +644,7 @@ spec:
       resources:
         requests:
           storage: 50Gi
-      storageClassName: illmatic
+      storageClassName: longhorn
       volumeMode: Filesystem
   serviceName: loki-headless
 ---
