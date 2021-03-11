@@ -45,6 +45,9 @@
   notify: reboot host
   when: ansible_architecture | regex_search('arm|aarch')
 
+- name: flush handler calls for immediate effect
+  meta: flush_handlers
+
 - name: flush iptables before changing to iptables-legacy
   iptables:
     flush: true
