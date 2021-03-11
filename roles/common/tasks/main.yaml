@@ -44,34 +44,12 @@
 - name: disable swap
   command: swapoff -a
 
-- name: check for dphys-swapfile
-  stat:
-    path: /etc/dphys-swapfile
-  register: dphys_swapfile
+- name: deploy raspberry pi changes
+  include_tasks: rpi.yaml
+  when: ansible_architecture | regex_search('arm|aarch')
 
-- name: disable swap in /etc/dphys-swapfile
-  block:
-  - name: nullify swap size config
-    replace:
-      dest: /etc/dphys-swapfile
-      regexp: '^.*(CONF_SWAPSIZE.*)$'
-      replace: 'CONF_SWAPSIZE=0'
-  - name: turn off swap via cli
-    command: dphys-swapfile swapoff
-  - name: delete swap file
-    file:
-      path: /var/swap
-      state: absent
-  when:
-  - ansible_architecture | regex_search('arm|aarch')
-  - dphys_swapfile.stat.exists
-
-- name: set interfaces
-  replace:
-    dest: /etc/network/interfaces
-    regexp: "^(auto|allow-hotplug) {{ default_interface }}\niface {{ default_interface }} inet.*$"
-    replace: "auto {{ default_interface }}\niface {{ default_interface }} inet {{ default_interface_inet }}"
-  notify: restart networking
+- name: flush handler calls for immediate effect
+  meta: flush_handlers
 
 - name: disable dhcpd
   systemd:

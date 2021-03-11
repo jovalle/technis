@@ -1,0 +1,45 @@
+---
+
+- name: check for dphys-swapfile
+  stat:
+    path: /etc/dphys-swapfile
+  register: dphys_swapfile
+
+- name: disable swap in /etc/dphys-swapfile
+  block:
+  - name: nullify swap size config
+    replace:
+      dest: /etc/dphys-swapfile
+      regexp: '^.*(CONF_SWAPSIZE.*)$'
+      replace: 'CONF_SWAPSIZE=0'
+  - name: turn off swap via cli
+    command: dphys-swapfile swapoff
+  - name: delete swap file
+    file:
+      path: /var/swap
+      state: absent
+  when:
+  - dphys_swapfile.stat.exists
+
+- name: update keyboard layout
+  replace:
+    path: /etc/default/keyboard
+    regexp: "^XKBLAYOUT=.*$"
+    replace: 'XKBLAYOUT="us"'
+  notify: reboot host
+
+- name: update locale
+  replace:
+    path: /etc/default/locale
+    regexp: "^LANG=.*$"
+    replace: "LANG=en_US.UTF-8"
+  notify: reboot host
+
+- name: update interface
+  copy:
+      content: |
+        # Ansible managed
+        auto eth0
+        iface eth0 inet dhcp
+      dest: /etc/network/interfaces.d/99-technis.conf
+  notify: restart networking
