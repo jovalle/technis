@@ -51,13 +51,6 @@
 - name: flush handler calls for immediate effect
   meta: flush_handlers
 
-- name: disable dhcpd
-  systemd:
-    name: dhcpcd
-    state: stopped
-    enabled: no
-    masked: yes
-
 - name: start time services
   service:
     name: systemd-timesyncd
