@@ -14,6 +14,12 @@
       replace: 'CONF_SWAPSIZE=0'
   - name: turn off swap via cli
     command: dphys-swapfile swapoff
+  - name: disable dphys-swapfile service
+    systemd:
+      name: dphys-swapfile
+      state: stopped
+      enabled: no
+      masked: yes
   - name: delete swap file
     file:
       path: /var/swap
@@ -29,17 +35,28 @@
   notify: reboot host
 
 - name: update locale
-  replace:
-    path: /etc/default/locale
-    regexp: "^LANG=.*$"
-    replace: "LANG=en_US.UTF-8"
+  copy:
+    content: |
+      # Ansible managed
+      LANG=en_US.UTF-8
+      LANGUAGE=en_US.UTF-8
+      LC_ALL=en_US.UTF-8
+    dest: /etc/network/interfaces
   notify: reboot host
 
-- name: update interface
+- name: disable dhcpd service
+  systemd:
+    name: dhcpcd
+    state: stopped
+    enabled: no
+    masked: yes
+
+- name: update interfaces
   copy:
-      content: |
-        # Ansible managed
-        auto eth0
-        iface eth0 inet dhcp
-      dest: /etc/network/interfaces.d/99-technis.conf
+    content: |
+      # Ansible managed
+      auto eth0
+      allow-hotplug eth0
+      iface eth0 inet dhcp
+    dest: /etc/network/interfaces
   notify: restart networking
