@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: sonarr
-        image: ghcr.io/linuxserver/sonarr:preview
+        image: ghcr.io/linuxserver/sonarr:latest
         imagePullPolicy: Always
         env:
         - name: PGID
@@ -79,7 +79,7 @@ spec:
             port: 8989
         resources:
           requests:
-            cpu: 100m
+            cpu: 200m
             memory: 200Mi
           limits:
             cpu: 500m
