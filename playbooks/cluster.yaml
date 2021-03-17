@@ -1,6 +1,5 @@
 ---
 
-
 - hosts: control_plane
   become: yes
   pre_tasks:
@@ -24,8 +23,9 @@
   - k8s/cluster
   - k8s/labels
 
-- hosts: control_plane[0]
+- hosts: control_plane
   become: yes
+  run_once: yes
   tasks:
   - name: allow scheduling to control plane
     command: kubectl taint nodes --all node-role.kubernetes.io/master-
