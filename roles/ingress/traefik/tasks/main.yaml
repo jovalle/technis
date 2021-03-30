@@ -17,3 +17,18 @@
   retries: 6
   delay: 10
   until: ready_count.stdout == control_plane_node_count
+
+- name: check for prometheus
+  shell: kubectl get crd servicemonitors.monitoring.coreos.com
+  register: servicemonitors_crd
+  ignore_errors: yes
+
+- name: deploy traefik servicemonitor
+  import_role:
+    name: kubectl
+  vars:
+    source_role: ingress/traefik
+    file_type: template
+    target_list:
+    - servicemonitor.yaml
+  when: servicemonitors_crd.rc == 0

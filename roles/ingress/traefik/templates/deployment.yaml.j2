@@ -38,8 +38,9 @@ spec:
         - --entrypoints.web.http.redirections.entryPoint.to=websecure
         - --entrypoints.websecure.Address=:443
         - --entrypoints.websecure.http.tls
-        - --log.level=INFO
+        - --log.level=DEBUG
         - --metrics.prometheus=true
+        - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
         - --providers.kubernetescrd
         - --providers.kubernetesingress
         ports:
