@@ -38,10 +38,12 @@
   copy:
     content: |
       # Ansible managed
-      LANG=en_US.UTF-8
-      LANGUAGE=en_US.UTF-8
-      LC_ALL=en_US.UTF-8
-    dest: /etc/network/interfaces
+      LANG="{{ common_locale }}"
+      LANGUAGE="{{ common_locale }}"
+      LC_ALL="{{ common_locale }}"
+      LC_CTYPE="{{ common_locale }}"
+      LC_MESSAGES="{{ common_locale }}"
+    dest: /etc/default/locale
   notify: reboot host
 
 - name: disable dhcpd service
