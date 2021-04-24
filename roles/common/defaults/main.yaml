@@ -1,3 +1,4 @@
+common_locale: en_US.UTF-8
 common_timezone: America/New_York
 common_packages:
 - apt-transport-https
