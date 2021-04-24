@@ -43,6 +43,7 @@ spec:
         - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
         - --providers.kubernetescrd
         - --providers.kubernetesingress
+        - --serversTransport.insecureSkipVerify=true
         ports:
         - name: web
           containerPort: 80
