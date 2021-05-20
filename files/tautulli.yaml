@@ -24,7 +24,12 @@ kind: Deployment
 metadata:
   name: tautulli
   namespace: tautulli
+  annotations:
+    keel.sh/policy: all
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
   labels:
+    name: tautulli
     app: tautulli
     tier: watchtower
 spec:
