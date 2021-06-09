@@ -92,7 +92,6 @@ metadata:
   labels:
     app: keel
 spec:
-  type: LoadBalancer
   ports:
   - port: 9300
     targetPort: 9300
