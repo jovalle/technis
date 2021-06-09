@@ -74,7 +74,7 @@ spec:
           mountPath: /config
       containers:
       - name: qbittorrent
-        image: jovalle/qbittorrent-openvpn:v0.2.0
+        image: jovalle/qbittorrent-openvpn:v0.1.1
         imagePullPolicy: Always
         env:
         - name: VPN_USERNAME
