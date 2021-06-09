@@ -1,12 +1,24 @@
----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: 2.1.0
+  name: kube-state-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-state-metrics
+subjects:
+- kind: ServiceAccount
+  name: kube-state-metrics
+  namespace: kube-system
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 2.0.0
+    app.kubernetes.io/version: 2.1.0
   name: kube-state-metrics
 rules:
 - apiGroups:
@@ -24,16 +36,6 @@ rules:
   - persistentvolumes
   - namespaces
   - endpoints
-  verbs:
-  - list
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  - ingresses
   verbs:
   - list
   - watch
@@ -108,160 +110,85 @@ rules:
   - networking.k8s.io
   resources:
   - networkpolicies
+  - ingresses
   verbs:
   - list
   - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/component: exporter
-    app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 2.0.0
-  name: kube-state-metrics
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kube-state-metrics
-subjects:
-- kind: ServiceAccount
-  name: kube-state-metrics
-  namespace: monitoring
----
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - list
+  - watch
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: v2.0.0-beta
+    app.kubernetes.io/version: 2.1.0
   name: kube-state-metrics
-  namespace: monitoring
+  namespace: kube-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: exporter
       app.kubernetes.io/name: kube-state-metrics
-      app.kubernetes.io/part-of: kube-prometheus
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: exporter
         app.kubernetes.io/name: kube-state-metrics
-        app.kubernetes.io/part-of: kube-prometheus
-        app.kubernetes.io/version: v2.0.0-beta
+        app.kubernetes.io/version: 2.1.0
     spec:
       containers:
-      - args:
-        - --host=127.0.0.1
-        - --port=8081
-        - --telemetry-host=127.0.0.1
-        - --telemetry-port=8082
-        image: k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0-beta
+      - image: k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         name: kube-state-metrics
-      - args:
-        - --logtostderr
-        - --secure-listen-address=:8443
-        - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
-        - --upstream=http://127.0.0.1:8081/
-        image: quay.io/brancz/kube-rbac-proxy:v0.8.0
-        name: kube-rbac-proxy-main
         ports:
-        - containerPort: 8443
-          name: https-main
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: telemetry
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         securityContext:
-          runAsGroup: 65532
-          runAsNonRoot: true
-          runAsUser: 65532
-      - args:
-        - --logtostderr
-        - --secure-listen-address=:9443
-        - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
-        - --upstream=http://127.0.0.1:8082/
-        image: quay.io/brancz/kube-rbac-proxy:v0.8.0
-        name: kube-rbac-proxy-self
-        ports:
-        - containerPort: 9443
-          name: https-self
-        securityContext:
-          runAsGroup: 65532
-          runAsNonRoot: true
-          runAsUser: 65532
+          runAsUser: 65534
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: kube-state-metrics
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/component: exporter
-    app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 2.0.0
-  name: kube-state-metrics
-  namespace: monitoring
-spec:
-  clusterIP: None
-  ports:
-  - name: https-main
-    port: 8443
-    targetPort: https-main
-  - name: https-self
-    port: 9443
-    targetPort: https-self
-  selector:
-    app.kubernetes.io/component: exporter
-    app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 2.0.0
+    app.kubernetes.io/version: 2.1.0
   name: kube-state-metrics
-  namespace: monitoring
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+  namespace: kube-system
+apiVersion: v1
+kind: Service
 metadata:
   labels:
-    app.kubernetes.io/component: exporter
     app.kubernetes.io/name: kube-state-metrics
-    app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 2.0.0
+    app.kubernetes.io/version: 2.1.0
   name: kube-state-metrics
-  namespace: monitoring
+  namespace: kube-system
 spec:
-  endpoints:
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    honorLabels: true
-    interval: 30s
-    port: https-main
-    relabelings:
-    - action: labeldrop
-      regex: (pod|service|endpoint|namespace)
-    scheme: https
-    scrapeTimeout: 30s
-    tlsConfig:
-      insecureSkipVerify: true
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    interval: 30s
-    port: https-self
-    scheme: https
-    tlsConfig:
-      insecureSkipVerify: true
-  jobLabel: app.kubernetes.io/name
+  clusterIP: None
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: http-metrics
+  - name: telemetry
+    port: 8081
+    targetPort: telemetry
   selector:
-    matchLabels:
-      app.kubernetes.io/component: exporter
-      app.kubernetes.io/name: kube-state-metrics
-      app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/name: kube-state-metrics
