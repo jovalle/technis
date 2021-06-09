@@ -11,6 +11,7 @@
     - alertmanager.yaml
     - kube-state-metrics.yaml
     - node-exporter.yaml
+    - metrics-server.yaml
     - rpi-exporter.yaml
     - loki.yaml
     - grafana.yaml
