@@ -24,6 +24,10 @@ kind: Deployment
 metadata:
   name: jackett
   namespace: jackett
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
   labels:
     app: jackett
     tier: watchtower
