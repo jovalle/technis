@@ -11,7 +11,6 @@ metadata:
   annotations:
     keel.sh/policy: force
     keel.sh/trigger: poll
-    keel.sh/match-tag: "true"
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
     name: plex
