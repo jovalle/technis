@@ -1,2 +1,0 @@
-apt_cacher_main_server: "{{ groups['apt_cacher'][0] }}"
-apt_cacher_main_server_fqdn: "{{ apt_cacher_main_server }}.{{ lan_domain }}"
