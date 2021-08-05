@@ -7,7 +7,7 @@
     source_role: longhorn
     file_type: remote
     target_list:
-    - https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/deploy/longhorn.yaml
+    - https://raw.githubusercontent.com/longhorn/longhorn/v1.1.2/deploy/longhorn.yaml
 
 - name: apply longhorn UI ingress
   shell: |
