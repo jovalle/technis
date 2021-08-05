@@ -26,14 +26,23 @@
   retries: 5
   until: apt_install_common is success
 
-- name: set node hostname
-  hostname:
-    name: '{{ inventory_hostname }}'
-
 - name: set node /etc/hostname
   copy:
     content: '{{ inventory_hostname }}'
     dest: /etc/hostname
+
+- name: clean up lingering hostname entries
+  lineinfile:
+    path: /etc/hosts
+    regex: "^127.0.0.1(.*){{ hostvars[inventory_hostname]['ansible_hostname'] }}(.*)$"
+    state: absent
+
+- name: set node aliases in /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1       {{ hostvars[inventory_hostname]['ansible_hostname'] }}.{{ lan_domain }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+    insertbefore: BOF
+  when: lan_domain is defined
 
 - name: disable swap in /etc/fstab
   replace:
@@ -58,7 +67,7 @@
     enabled: yes
 
 - name: run timedatectl status
-  command: /usr/bin/timedatectl show
+  command: /usr/bin/timedatectl
   changed_when: False
   check_mode: no
   register: timedatectl_result

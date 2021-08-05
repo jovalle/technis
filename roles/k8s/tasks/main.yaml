@@ -48,17 +48,6 @@
 - name: flush handler calls for immediate effect
   meta: flush_handlers
 
-- name: flush iptables before changing to iptables-legacy
-  iptables:
-    flush: true
-  changed_when: false
-
-- name: revert to iptables-legacy
-  alternatives:
-    path: /usr/sbin/iptables-legacy
-    name: iptables
-  register: ip4_legacy
-
 - name: let all the tables see bridge traffic
   sysctl:
     name: '{{ item }}'
