@@ -3,4 +3,4 @@
   - name: deploy all apps
     command: kubectl apply -f {{ item }}
     with_fileglob:
-    - files/*.yaml
+    - files/apps/*.yaml

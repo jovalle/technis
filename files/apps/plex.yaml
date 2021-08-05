@@ -11,6 +11,7 @@ metadata:
   annotations:
     keel.sh/policy: force
     keel.sh/trigger: poll
+    keel.sh/match-tag: "true"
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
     name: plex
@@ -155,6 +156,16 @@ metadata:
 spec:
   rules:
   - host: plex.k8s.techn.is
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: plex
+            port:
+              number: 32400
+  - host: watchtower.techn.is
     http:
       paths:
       - path: /

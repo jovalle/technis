@@ -120,6 +120,8 @@ spec:
       labels:
         app: keel
     spec:
+      nodeSelector:
+        "kubernetes.io/arch": amd64
       serviceAccountName: keel
       containers:
       - name: keel
@@ -135,8 +137,10 @@ spec:
         # Basic auth (to enable UI/API)
         - name: BASIC_AUTH_USER
           value: "admin"
+
         - name: BASIC_AUTH_PASSWORD
-          valueFrom:
+          # value: "admin"
+          valueFrom: # kubectl -n keel create secret generic credentials --from-literal=password='noneya'
             secretKeyRef:
               name: credentials
               key: password
@@ -176,3 +180,25 @@ spec:
   selector:
     matchLabels:
       app: keel
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keel
+  namespace: keel
+  labels:
+    app: keel
+spec:
+  rules:
+  - host: keel.k8s.techn.is
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keel
+            port:
+              number: 9300
