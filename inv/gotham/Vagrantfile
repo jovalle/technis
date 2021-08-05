@@ -16,8 +16,8 @@ $configure_cluster=<<-SHELL
   curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz | tar xzf - -C /opt/cni/bin
 
   # set permanent route to home and aux networks
-route add -net 192.168.1.0/24 gw 192.168.10.1
-route add -net 192.168.20.0/24 gw 192.168.10.1
+  route add -net 192.168.1.0/24 gw 192.168.10.1
+  route add -net 192.168.20.0/24 gw 192.168.10.1
   cat <<EOF > /etc/rc.local
 #!/bin/sh -e
 route add -net 192.168.1.0/24 gw 192.168.10.1
@@ -54,12 +54,16 @@ $configure_captain=<<-SHELL
   # copy kubeconfig for reaching k8s cluster on localhost
   cat /etc/rancher/k3s/k3s.yaml | sed 's/127.0.0.1/192.168.10.10/g' | sed 's/default/gotham/g' > /vagrant/.vagrant/kubeconfig
 
-  # deploy metallb with BGP config
-  if [[ -z $(kubectl get ns metallb-system --ignore-not-found --no-headers) ]]; then
-    kubectl create ns metallb-system
-  fi
-  kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.9.5/manifests/metallb.yaml
-  cat << EOF | kubectl apply -f -
+SHELL
+
+  $configure_metallb=<<-SHELL
+
+    # deploy metallb with BGP config
+    if [[ -z $(kubectl get ns metallb-system --ignore-not-found --no-headers) ]]; then
+      kubectl create ns metallb-system
+    fi
+    kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.9.5/manifests/metallb.yaml
+    cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -81,20 +85,20 @@ data:
       addresses:
       - 192.168.20.192/26
 EOF
-  if [[ -z $(kubectl -n metallb-system get secret memberlist --no-headers --ignore-not-found) ]]; then
-    kubectl -n metallb-system create secret generic memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-  fi
+    if [[ -z $(kubectl -n metallb-system get secret memberlist --no-headers --ignore-not-found) ]]; then
+      kubectl -n metallb-system create secret generic memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+    fi
 
-  # wait for pods to become ready
-  sleep 60
+    # wait for pods to become ready
+    sleep 60
 
-  # deploy test app
-  kubectl run echoserver --image=k8s.gcr.io/echoserver:1.4
-  kubectl expose pod echoserver --name=echoserver-lb --port=80 --target-port=8080 --type=LoadBalancer
-  kubectl get svc echoserver-lb
+    # deploy test app
+    kubectl run echoserver --image=k8s.gcr.io/echoserver:1.4
+    kubectl expose pod echoserver --name=echoserver-lb --port=80 --target-port=8080 --type=LoadBalancer
+    kubectl get svc echoserver-lb
 
-  # ensure client source IP is maintained (instead of host SNAT)
-  kubectl patch svc echoserver-lb -p '{"spec":{"externalTrafficPolicy":"Local"}}'
+    # ensure client source IP is maintained (instead of host SNAT)
+    kubectl patch svc echoserver-lb -p '{"spec":{"externalTrafficPolicy":"Local"}}'
 
 SHELL
 
@@ -194,61 +198,62 @@ Vagrant.configure(2) do |config|
       host.vm.box = "hashicorp/bionic64"
       host.vm.hostname = name
       host.vm.network "private_network",
-                        ip: "192.168.10.#{10 - 1 + index}",
-                        netmask: "255.255.255.0",
-                        auto_config: true,
-                        virtualbox__intnet: "core"
+        ip: "192.168.10.#{10 - 1 + index}",
+        netmask: "255.255.255.0",
+        auto_config: true,
+        virtualbox__intnet: "core"
       host.ssh.insert_key = false
       host.vm.provision "shell", inline: $configure_common
-      host.vm.provision "shell", inline: $configure_cluster
+      # host.vm.provision "shell", inline: $configure_cluster
       if index == 1 then
         host.vm.provision "shell", inline: $configure_captain
+        # host.vm.provision "shell", inline: $configure_metallb
       else
         host.vm.provision "shell", inline: $configure_steward
       end
     end
   end
 
-  config.vm.define "router" do |router|
-    router.vm.provider "virtualbox" do |vm|
-      vm.cpus = 1
-      vm.memory = 512
-    end
-    router.vm.box = "hashicorp/bionic64"
-    router.vm.host_name = "router"
-    router.vm.network "public_network",
-                        bridge: "en0: Wi-Fi (Wireless)",
-                        ip: "192.168.10.203"
-    router.vm.network "private_network",
-                        ip: "192.168.10.1",
-                        netmask: "255.255.255.0",
-                        auto_config: true,
-                        virtualbox__intnet: "core"
-    router.vm.network "private_network",
-                        ip: "192.168.20.1",
-                        netmask: "255.255.255.0",
-                        auto_config: true,
-                        virtualbox__intnet: "aux"
-    router.ssh.insert_key = false
-    router.vm.provision "shell", inline: $configure_common
-    router.vm.provision "shell", inline: $configure_router
-  end
+  # config.vm.define "router" do |router|
+  #   router.vm.provider "virtualbox" do |vm|
+  #     vm.cpus = 1
+  #     vm.memory = 512
+  #   end
+  #   router.vm.box = "hashicorp/bionic64"
+  #   router.vm.host_name = "router"
+  #   router.vm.network "public_network",
+  #                       bridge: "en0: Wi-Fi (Wireless)",
+  #                       ip: "192.168.10.203"
+  #   router.vm.network "private_network",
+  #                       ip: "192.168.10.1",
+  #                       netmask: "255.255.255.0",
+  #                       auto_config: true,
+  #                       virtualbox__intnet: "core"
+  #   router.vm.network "private_network",
+  #                       ip: "192.168.20.1",
+  #                       netmask: "255.255.255.0",
+  #                       auto_config: true,
+  #                       virtualbox__intnet: "aux"
+  #   router.ssh.insert_key = false
+  #   router.vm.provision "shell", inline: $configure_common
+  #   router.vm.provision "shell", inline: $configure_router
+  # end
 
-  config.vm.define "client" do |client|
-    client.vm.provider "virtualbox" do |vm|
-      vm.cpus = 1
-      vm.memory = 512
-    end
-    client.vm.box = "hashicorp/bionic64"
-    client.vm.host_name = "client"
-    client.vm.network "private_network",
-                        ip: "192.168.20.10",
-                        netmask: "255.255.255.0",
-                        auto_config: true,
-                        virtualbox__intnet: "aux"
-    client.ssh.insert_key = false
-    client.vm.provision "shell", inline: $configure_common
-    client.vm.provision "shell", inline: $configure_client
-  end
+  # config.vm.define "client" do |client|
+  #   client.vm.provider "virtualbox" do |vm|
+  #     vm.cpus = 1
+  #     vm.memory = 512
+  #   end
+  #   client.vm.box = "hashicorp/bionic64"
+  #   client.vm.host_name = "client"
+  #   client.vm.network "private_network",
+  #     ip: "192.168.20.10",
+  #     netmask: "255.255.255.0",
+  #     auto_config: true,
+  #     virtualbox__intnet: "aux"
+  #   client.ssh.insert_key = false
+  #   client.vm.provision "shell", inline: $configure_common
+  #   client.vm.provision "shell", inline: $configure_client
+  # end
 
 end

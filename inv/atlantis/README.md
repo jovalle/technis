@@ -93,6 +93,16 @@ network:
       dhcp4: yes
 ```
 #### KVM (virsh)
+
+libvirtd.conf may need to be configured to explicitly enable the right socket. (e.g. ```unix_sock_dir = "/usr/local/var/run/libvirt"```) For the sake of platform agnosticism, use a symlinks where necessary (e.g. in macOS ```/var/run/libvirt -> /usr/local/var/run/libvirt```).
+
+##### Validate using virsh
+```
+$ virsh -c "qemu:///session?socket=/var/run/libvirt/libvirt-sock" list
+ Id   Name   State
+--------------------
+```
+
 ##### Pool
 ```
 virsh pool-define /dev/stdin <<EOF
