@@ -7,7 +7,7 @@ Test bed for all things virtualization, automation, and Kubernetes.
 ### Atlantis
 Terraform + libvirt + KVM
 
-### Gotham
+### Gotham/Krypton
 Vagrant + Virtualbox
 
 ### Hades
