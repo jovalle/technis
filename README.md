@@ -17,7 +17,6 @@ Baremetal, hybrid (arm64/amd64)
 
 ### Principles
 
-* Avoid Helm. Reverse engineer a chart (e.g. cert-manager, loki) if necessary.
 * All images must have multi-arch support (at least arm64 and amd64).
 * Physical resource constraints aside (e.g. GPUs, memory, network bandwidth), no workload should be confined to a singular node.
 * In the interest of learning and technological diversity, using multiple solutions to a problem simulatenously is ideal.
