@@ -3,7 +3,7 @@
   serial: yes
   order: inventory
   vars:
-    k8s_version_target: 1.21.0
+    k8s_version_target: 1.22.1
   pre_tasks:
   - name: print expected k8s version
     debug:
@@ -14,7 +14,7 @@
   - name: set kubeadm version fact
     set_fact:
       kubeadm_version: "{{ kubeadm_version_json.stdout | from_json | json_query('clientVersion.gitVersion') }}"
-  - name: print kubeadm version
+  - name: print actual k8s version
     debug:
       var: kubeadm_version
   - name: determine kubectl delegate
@@ -30,14 +30,6 @@
     register: kubelet_version
     delegate_to: "{{ kubectl_delegate }}"
   tasks:
-  - name: update apt cache
-    apt:
-      update_cache: yes
-    register: apt_update
-    retries: 5
-    until: apt_update is success
-  - name: upgrade kubeadm
-    block:
     - name: upgrade kubeadm package
       command: apt-get install -y --allow-change-held-packages --allow-downgrades kubeadm={{ k8s_version_target }}-00
       args:
