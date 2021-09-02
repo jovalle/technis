@@ -42,6 +42,6 @@
 - name: wait until calico-node is ready
   command: kubectl -n kube-system get ds calico-node -o jsonpath='{.status.numberReady}'
   register: number_ready
-  retries: 12
-  delay: 10
+  retries: 10
+  delay: 30
   until: number_ready.stdout == cluster_node_count
