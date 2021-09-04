@@ -74,6 +74,8 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /config
+        - name: music
+          mountPath: /data/music
         - name: movies
           mountPath: /data/movies
         - name: tv
@@ -109,6 +111,10 @@ spec:
       - name: config
         hostPath:
           path: /var/lib/plex
+          type: Directory
+      - name: music
+        hostPath:
+          path: /hulkpool/music
           type: Directory
       - name: movies
         hostPath:
