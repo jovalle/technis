@@ -1,5 +1,5 @@
-container_networking: calico
-container_runtime: docker
+cni_plugin: calico
+cri_plugin: docker
 default_interface: ens3
 etcd_locale: remote
 ingress_controller: nginx

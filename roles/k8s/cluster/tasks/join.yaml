@@ -4,6 +4,19 @@
   debug:
     msg: "{{ inventory_hostname }}: {{ kubeadm_join_command }}{% if inventory_hostname in groups['control_plane'] %} --control-plane --certificate-key {{ kubeadm_certificate_key }}{% endif %}"
 
+- name: stop services if not first run
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+  with_items:
+  - "{{ cri_plugin }}"
+  - kubelet
+
+- name: remove k8s dir
+  file:
+    path: /etc/kubernetes
+    state: absent
+
 - name: join node to cluster
   command:
     cmd: "{{ kubeadm_join_command }}{% if inventory_hostname in groups['control_plane'] %} --control-plane --certificate-key {{ kubeadm_certificate_key }}{% endif %}"
