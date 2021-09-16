@@ -20,6 +20,7 @@
       state: stopped
       enabled: no
       masked: yes
+    ignore_errors: yes # if masked, will cause failures
   - name: delete swap file
     file:
       path: /var/swap
@@ -52,6 +53,7 @@
     state: stopped
     enabled: no
     masked: yes
+  ignore_errors: yes # if masked, will cause failures
 
 - name: update interfaces
   copy:

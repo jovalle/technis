@@ -4,7 +4,7 @@ apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 nodeRegistration:
   name: "{{ inventory_hostname }}"
-{% if container_runtime == 'docker' %}
+{% if cri_plugin == 'docker' %}
   criSocket: "/var/run/dockershim.sock"
 {% else %}
   criSocket: "/run/containerd/containerd.sock"
@@ -14,7 +14,7 @@ nodeRegistration:
     value: "master"
     effect: "NoSchedule"
   kubeletExtraArgs:
-{% if container_runtime == 'docker' %}
+{% if cri_plugin == 'docker' %}
     cgroup-driver: "systemd"
 {% else %}
     cgroup-driver: "cgroupfs"

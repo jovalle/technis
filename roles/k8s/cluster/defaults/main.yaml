@@ -7,3 +7,4 @@ control_plane_leader: "{{ groups['control_plane'][0] }}"
 cluster_etcd_mode: local
 k8s_difficulty_mode: easy
 cluster_node_configured: false
+cri_plugin: docker
