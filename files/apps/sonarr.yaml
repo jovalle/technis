@@ -24,6 +24,10 @@ kind: Deployment
 metadata:
   name: sonarr
   namespace: sonarr
+  annotations:
+    keel.sh/policy: all
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
   labels:
     app: sonarr
     tier: watchtower
