@@ -29,7 +29,6 @@ metadata:
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
-    name: tautulli
     app: tautulli
     tier: watchtower
 spec:
