@@ -30,6 +30,8 @@
     register: kubelet_version
     delegate_to: "{{ kubectl_delegate }}"
   tasks:
+  - name: upgrade node
+    block:
     - name: upgrade kubeadm package
       command: apt-get install -y --allow-change-held-packages --allow-downgrades kubeadm={{ k8s_version_target }}-00
       args:
