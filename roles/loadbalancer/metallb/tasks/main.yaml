@@ -1,3 +1,16 @@
+---
+
+- name: ensure strictARP is enabled in kube-proxy IPVS mode
+  command: kubectl -n kube-system get configmap kube-proxy -o jsonpath='{.data.config\.conf}'
+  register: kube_proxy_config
+
+- name: set ipvs.strictARP to true
+  shell: >
+    kubectl -n kube-system get configmap kube-proxy -o yaml |
+    sed -e "s/strictARP: false/strictARP: true/" |
+    kubectl diff -f - -n kube-system
+  when: "'strictARP: true' not in kube_proxy_config.stdout_lines"
+
 - name: deploy metallb {{ metallb_version }}
   command: '{{ item }}'
   loop:
