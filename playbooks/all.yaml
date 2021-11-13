@@ -3,9 +3,6 @@
 - import_playbook: common.yaml
   tags:
   - common
-- import_playbook: cluster.yaml
-  tags:
-  - cluster
 - import_playbook: k8s.yaml
   tags:
   - k8s
