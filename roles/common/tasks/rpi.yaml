@@ -7,13 +7,16 @@
 
 - name: disable swap in /etc/dphys-swapfile
   block:
+
   - name: nullify swap size config
     replace:
       dest: /etc/dphys-swapfile
       regexp: '^.*(CONF_SWAPSIZE.*)$'
       replace: 'CONF_SWAPSIZE=0'
+
   - name: turn off swap via cli
     command: dphys-swapfile swapoff
+
   - name: disable dphys-swapfile service
     systemd:
       name: dphys-swapfile
@@ -21,12 +24,21 @@
       enabled: no
       masked: yes
     ignore_errors: yes # if masked, will cause failures
+
   - name: delete swap file
     file:
       path: /var/swap
       state: absent
+
   when:
   - dphys_swapfile.stat.exists
+
+- name: disable pi user password
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#PasswordAuthentication.*"
+    line: "PasswordAuthentication no"
+  notify: restart ssh
 
 - name: update keyboard layout
   replace:
@@ -36,16 +48,25 @@
   notify: reboot host
 
 - name: update locale
-  copy:
-    content: |
-      # Ansible managed
-      LANG="{{ common_locale }}"
-      LANGUAGE="{{ common_locale }}"
-      LC_ALL="{{ common_locale }}"
-      LC_CTYPE="{{ common_locale }}"
-      LC_MESSAGES="{{ common_locale }}"
-    dest: /etc/default/locale
-  notify: reboot host
+  block:
+
+  - name: enable locale
+    lineinfile:
+      path: /etc/locale.gen
+      regexp: '^# en_US.UTF-8 UTF-8'
+      line: "en_US.UTF-8 UTF-8"
+
+  - name: generate locale
+    command: locale-gen
+
+  - name: save locale
+    copy:
+      content: |
+        # Ansible managed
+        LANG="{{ common_locale }}"
+        LANGUAGE="{{ common_locale }}"
+        LC_ALL="{{ common_locale }}"
+      dest: /etc/default/locale
 
 - name: disable dhcpd service
   systemd:
