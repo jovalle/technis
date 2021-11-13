@@ -6,6 +6,7 @@
     file_type: template
     target_list:
     - namespace.yaml
+    - crds.yaml
     - rbac.yaml
     - service.yaml
     - deployment.yaml

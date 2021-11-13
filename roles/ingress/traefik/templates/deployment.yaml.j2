@@ -29,21 +29,22 @@ spec:
       serviceAccountName: traefik-ingress-controller
       containers:
       - name: traefik
-        image: traefik:v2.3
+        image: traefik:v2.5.3
         args:
-        - --accesslog
-        - --api.insecure
-        - --entrypoints.traefik.Address=:9000
-        - --entrypoints.web.Address=:80
-        - --entrypoints.web.http.redirections.entryPoint.to=websecure
-        - --entrypoints.websecure.Address=:443
-        - --entrypoints.websecure.http.tls
-        - --log.level=DEBUG
+        - --api.dashboard=true
+        - --entryPoints.metrics.address=:9100/tcp
+        - --entryPoints.traefik.address=:9000/tcp
+        - --entryPoints.web.address=:80/tcp
+        - --entryPoints.web.http.redirections.entryPoint.to=websecure
+        - --entryPoints.websecure.address=:443/tcp
+        - --entryPoints.websecure.http.tls
+        - --global.checknewversion
+        - --global.sendanonymoususage
+        - --metrics.prometheus.entrypoint=metrics
         - --metrics.prometheus=true
-        - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
+        - --ping=true
         - --providers.kubernetescrd
         - --providers.kubernetesingress
-        - --serversTransport.insecureSkipVerify=true
         ports:
         - name: web
           containerPort: 80
@@ -60,6 +61,31 @@ spec:
 {% if ingress_loadbalancer_ip is not defined %}
           hostPort: 9000
 {% endif %}
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+        readinessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /ping
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+      volumes:
+      - emptyDir: {}
+        name: data
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: TLSOption
