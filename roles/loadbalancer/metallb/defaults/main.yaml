@@ -4,4 +4,4 @@ metallb_bgp_peer_address: 192.168.1.1
 metallb_bgp_asn: 64522
 metallb_bgp_peer_asn: 64512
 metallb_bgp_addresses: 192.168.200.0/24
-metallb_layer2_addresses: 192.168.0.192/27
+metallb_layer2_addresses: 192.168.1.192/27

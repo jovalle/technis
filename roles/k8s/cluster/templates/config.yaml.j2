@@ -1,35 +1,7 @@
-{% if k8s_difficulty_mode == 'hard' %}
-# Source: https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2
-apiVersion: kubeadm.k8s.io/v1beta2
-kind: InitConfiguration
-nodeRegistration:
-  name: "{{ inventory_hostname }}"
-{% if cri_plugin == 'docker' %}
-  criSocket: "/var/run/dockershim.sock"
-{% else %}
-  criSocket: "/run/containerd/containerd.sock"
-{% endif %}
-  taints:
-  - key: "kubeadmNode"
-    value: "master"
-    effect: "NoSchedule"
-  kubeletExtraArgs:
-{% if cri_plugin == 'docker' %}
-    cgroup-driver: "systemd"
-{% else %}
-    cgroup-driver: "cgroupfs"
-{% endif %}
-  ignorePreflightErrors:
-  - IsPrivilegedUser
-localAPIEndpoint:
-  advertiseAddress: "{{ hostvars[inventory_hostname]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}"
-  bindPort: {{ k8s_api_port }}
----
-{% endif %}
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 etcd:
-{% if k8s_difficulty_mode == 'hard' or cluster_etcd_mode == 'external' %}
+{% if cluster_etcd_mode == 'external' %}
   external:
     endpoints:
 {% for i in groups['etcd'] %}
@@ -49,13 +21,7 @@ etcd:
     - {{ san }}
 {% endfor%}
 {% endif %}
-    dataDir: "/var/lib/etcd"
-    extraArgs:
-      client-cert-auth: "true"
-      peer-client-cert-auth: "true"
-      peer-auto-tls: "false"
-      heartbeat-interval: "100"
-      election-timeout: "1000"
+    dataDir: /var/lib/etcd
 {% endif %}
 networking:
   dnsDomain: cluster.local
@@ -81,30 +47,8 @@ apiServer:
   - {{ extra_san }}
 {% endfor%}
 {% endif %}
-  extraArgs:
-    audit-log-path: "/var/log/kubernetes/audit.log"
-    audit-log-maxage: "30"
-    audit-log-maxbackup: "10"
-    audit-log-maxsize: "100"
-    authorization-mode: "Node,RBAC"
-    enable-admission-plugins: "NodeRestriction,AlwaysPullImages"
-    insecure-port: "0"
-    kubelet-https: "true"
-    profiling: "false"
-    request-timeout: "1m0s"
-    secure-port: "6443"
-    service-account-lookup: "true"
-    tls-cipher-suites: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
   timeoutForControlPlane: "4m0s"
 imageRepository: {{ cluster_image_repository }}
-controllerManager:
-  extraArgs:
-    bind-address: 127.0.0.1
-    terminated-pod-gc-threshold: "50"
-    profiling: "false"
-    use-service-account-credentials: "true"
-    feature-gates: "RotateKubeletServerCertificate=true"
-scheduler:
-  extraArgs:
-    bind-address: 127.0.0.1
-    profiling: "false"
+controllerManager: {}
+dns: {}
+scheduler: {}

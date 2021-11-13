@@ -1,3 +1,5 @@
+---
+
 k8s_domain: k8s.{{ domain | default('techn.is') }}
 
 k8s_api_fqdn: api.{{ k8s_domain }}
@@ -9,10 +11,3 @@ k8s_service_subnet: 10.32.0.0/16
 
 k8s_ingress_cert: '{{ custom_cert | default(technis_ingress_cert_vaulted) }}'
 k8s_ingress_key: '{{ custom_key | default(technis_ingress_key_vaulted) }}'
-
-k8s_version: 1.17.4
-k8s_package_version: '{{ k8s_version }}-00'
-k8s_packages:
-- 'kubeadm={{ k8s_package_version }}'
-- 'kubectl={{ k8s_package_version }}'
-- 'kubelet={{ k8s_package_version }}'

@@ -1,3 +1,5 @@
+---
+
 - name: check node status
   stat:
     path: "/etc/kubernetes/{{ 'admin.conf' if inventory_hostname in groups['control_plane'] else 'kubelet.conf' }}"
@@ -16,13 +18,16 @@
 
 - name: refresh certs to create a new join command
   block:
+
   - name: upload latest certs
     command: kubeadm init phase upload-certs --upload-certs
     register: kubeadm_upload_certs
+
   - name: ensure kube dir exists
     file:
       path: ~/.kube
       state: directory
+
   - name: update remote admin config
     copy:
       src: /etc/kubernetes/admin.conf
@@ -30,6 +35,7 @@
       remote_src: yes
     delegate_to: "{{ control_plane_leader }}"
     when: kubeadm_upload_certs.changed
+
   - name: update local admin config
     fetch:
       src: /etc/kubernetes/admin.conf
@@ -38,9 +44,14 @@
       mode: 0600
     delegate_to: "{{ control_plane_leader }}"
     when: kubeadm_upload_certs.changed
+
+  - name: upload config
+    command: kubeadm init phase upload-config kubeadm
+
   - name: create token and print join command
     shell: kubeadm token create --print-join-command
     register: kubeadm_join_command_raw
+
   delegate_to: "{{ control_plane_leader }}"
   run_once: yes
 
