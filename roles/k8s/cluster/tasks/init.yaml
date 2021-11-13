@@ -1,3 +1,5 @@
+---
+
 - name: generate kubeadm configuration
   template:
     src: config.yaml.j2

@@ -1,5 +1,30 @@
 ---
 
+- name: determine kubectl delegate
+  block: # avoiding jinja2 templating warning
+
+  - set_fact:
+      kubectl_delegate: "{{ groups['control_plane'][1] }}"
+    when: inventory_hostname == control_plane_leader
+
+  - set_fact:
+      kubectl_delegate: "{{ control_plane_leader }}"
+    when: inventory_hostname != control_plane_leader
+
+- name: prepare node for reset
+  block:
+
+  - name: check for node
+    command: kubectl get node {{ inventory_hostname }}
+    register: get_node
+
+  - name: drain node
+    command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
+    when: get_node.rc == 0
+
+  ignore_errors: yes
+  delegate_to: "{{ kubectl_delegate }}"
+
 - name: revert cluster deployment
   shell: kubeadm reset -f
   ignore_errors: yes
