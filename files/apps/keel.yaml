@@ -108,6 +108,10 @@ kind: Deployment
 metadata:
   name: keel
   namespace: keel
+  annotations:
+    keel.sh/policy: all
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
   labels:
     app: keel
 spec:
@@ -121,7 +125,7 @@ spec:
         app: keel
     spec:
       nodeSelector:
-        "kubernetes.io/arch": amd64
+        kubernetes.io/arch: amd64
       serviceAccountName: keel
       containers:
       - name: keel
