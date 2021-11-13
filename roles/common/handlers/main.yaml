@@ -5,6 +5,11 @@
     name: networking
     state: restarted
 
+- name: restart ssh
+  systemd:
+    name: sshd
+    state: restarted
+
 - name: reboot host
   reboot:
     msg: "Host rebooted"
