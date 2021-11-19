@@ -1,8 +1,0 @@
----
-
-- name: setup {{ loadbalancer_provider }} loadbalancer provisioner
-  include_role:
-    name: loadbalancer/{{ loadbalancer_provider }}
-  when:
-  - (loadbalancer_provider | default("none")) != "none"
-  - inventory_hostname == control_plane_leader
