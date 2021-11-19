@@ -9,7 +9,7 @@ vrrp_instance VI_1 {
         auth_pass kubernetes
     }
     virtual_ipaddress {
-        {{ keepalived_api_vip }}
+        {{ keepalived_vip }}
     }
 }
 {% if keepalived_ingress_vip is defined %}

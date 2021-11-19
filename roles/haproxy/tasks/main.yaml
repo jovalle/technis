@@ -1,5 +1,3 @@
----
-
 - name: ensure haproxy config dir exists
   file:
     path: /etc/haproxy
