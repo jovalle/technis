@@ -158,6 +158,11 @@
     delegate_to: "{{ nfs_clients }}"
 
 - hosts: cerberus
+  vars_prompt:
+    - name: smb_username
+      prompt: "SMB Username: "
+    - name: smb_password
+      prompt: "SMB Password: "
   tags:
   - smb
   tasks:
