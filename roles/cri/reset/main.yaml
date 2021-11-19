@@ -7,13 +7,14 @@
   - docker
   - containerd
 
-- name: unintall packages
+- name: uninstall packages
   package:
     name: '{{ item }}'
     state: absent
   loop:
   - docker
   - docker-ce
+  - docker-ce-cli
   - containerd.io
 
 - name: remove files and dirs
@@ -25,7 +26,9 @@
   - /etc/docker
   - /etc/modules-load.d/containerd.conf
   - /etc/systemd/systemd/containerd.service
+  - /etc/systemd/systemd/containerd.service.d
   - /etc/systemd/systemd/docker.service
+  - /etc/systemd/systemd/docker.service.d
   - /opt/containerd
   - /opt/docker
   - /usr/bin/docker
