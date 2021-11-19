@@ -1,9 +1,0 @@
-cluster_name: technis
-keepalived_api_vip: 192.168.1.100
-control_plane_endpoint: '{{ keepalived_api_vip }}:8443'
-cluster_sans:
-- '{{ keepalived_api_vip }}'
-control_plane_leader: "{{ groups['control_plane'][0] }}"
-cluster_etcd_mode: local
-cluster_node_configured: false
-cri_plugin: docker
