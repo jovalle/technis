@@ -1,26 +1,23 @@
----
-
 - name: determine kubectl delegate
   block: # avoiding jinja2 templating warning
+    - name: delegate to first control plane host
+        kubectl_delegate: "{{ groups['control_plane'][1] }}"
+      when: inventory_hostname != groups['control_plane'][0]
 
-  - set_fact:
-      kubectl_delegate: "{{ groups['control_plane'][1] }}"
-    when: inventory_hostname == control_plane_leader
-
-  - set_fact:
-      kubectl_delegate: "{{ control_plane_leader }}"
-    when: inventory_hostname != control_plane_leader
+    - name: delegate to another when target is default
+      set_fact:
+        kubectl_delegate: "{{ groups['control_plane'][1] }}"
+      when: inventory_hostname == groups['control_plane'][0]
 
 - name: prepare node for reset
   block:
+    - name: check for node
+      command: kubectl get node {{ inventory_hostname }}
+      register: get_node
 
-  - name: check for node
-    command: kubectl get node {{ inventory_hostname }}
-    register: get_node
-
-  - name: drain node
-    command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
-    when: get_node.rc == 0
+    - name: drain node
+      command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
+      when: get_node.rc == 0
 
   ignore_errors: yes
   delegate_to: "{{ kubectl_delegate }}"
@@ -44,7 +41,33 @@
   import_role:
     name: cri/reset
 
+- name: remove packages
+  apt:
+    name: "{{ item }}"
+    state: absent
+    autoclean: yes
+    autoremove: yes
+    force: yes
+    purge: yes
+    update_cache: yes
+  with_items:
+    - kubeadm
+    - kubectl
+    - kubelet
+    - kubernetes-cli
+
+- name: remove artifacts
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/kubernetes
+    - /etc/systemd/system/kubelet.service.d
+    - /var/lib/etcd
+    - /var/lib/kubelet
+
 - name: delete node {{ inventory_hostname }}
   command: kubectl delete node {{ inventory_hostname }} --ignore-not-found=true
-  delegate_to: "{{ control_plane_leader }}"
+  delegate_to: "{{ groups['control_plane'][0] }}"
   ignore_errors: yes
+  when: get_node.rc == 0

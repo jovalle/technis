@@ -1,14 +1,5 @@
 - name: deploy ingress controller
-  block:
-  - name: deploy manifest
-    import_role:
-      name: kubectl
-    vars:
-      command: apply
-      target_list:
-      - contour.yaml
-      source_role: ingress/contour
-      file_type: template
+  command: kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
 
 - name: get envoy ready count
   shell: kubectl -n projectcontour get daemonset envoy -o jsonpath="{.status.desiredNumberScheduled}"

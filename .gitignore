@@ -1,8 +1,8 @@
-*tfstate*
-lock.json
-key.json
-.DS_Store
-.vagrant
 *.log
-.terraform.lock.hcl
+*tfstate*
+.DS_Store
 .terraform
+.terraform.lock.hcl
+.vagrant
+key.json
+lock.json

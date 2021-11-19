@@ -1,23 +1,23 @@
 common_locale: en_US.UTF-8
 common_timezone: America/New_York
 common_packages:
-- apt-transport-https
-- ca-certificates
-- curl
-- dnsutils
-- git
-- gpg
-- gnupg-agent
-- ipset
-- jq
-- open-iscsi
-- net-tools
-- netcat
-- python3-openssl
-- software-properties-common
-- telnet
-- unrar
-- vim
-- zip
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - dnsutils
+  - git
+  - gpg
+  - gnupg-agent
+  - ipset
+  - jq
+  - open-iscsi
+  - net-tools
+  - netcat
+  - python3-openssl
+  - software-properties-common
+  - telnet
+  - unrar
+  - vim
+  - zip
 default_interface: eth0
 default_interface_inet: dhcp

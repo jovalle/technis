@@ -1,4 +1,3 @@
 - name: setup {{ ingress_controller }} ingress controller
   include_role:
     name: ingress/{{ ingress_controller }}
-  when: inventory_hostname == control_plane_leader
