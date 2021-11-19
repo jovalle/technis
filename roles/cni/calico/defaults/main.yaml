@@ -1,1 +1,2 @@
-calico_ebpf_mode: false
+calico_ebpf: no
+calico_version: v3.21.0
