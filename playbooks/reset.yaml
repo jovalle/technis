@@ -1,11 +1,17 @@
----
-
 - hosts: cluster
   roles:
-  - k8s/reset
-  - haproxy/reset
-  - keepalived/reset
+    - name: k8s/reset
+      tags:
+        - k8s
+    - name: haproxy/reset
+      tags:
+        - keepalived
+    - name: keepalived/reset
+      tags:
+        - keepalived
 
 - hosts: etcd
   roles:
-  - etcd/reset
+    - name: etcd/reset
+      tags:
+        - k8s

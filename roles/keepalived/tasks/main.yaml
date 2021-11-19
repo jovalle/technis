@@ -21,3 +21,9 @@
     dest: /etc/keepalived/keepalived.conf
     mode: 0644
   notify: restart keepalived
+
+- name: ensure service is running
+  systemd:
+    name: keepalived
+    state: started
+    enabled: yes
