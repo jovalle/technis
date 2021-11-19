@@ -119,7 +119,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: overseerr.k8s.techn.is
+  - host: overseerr.techn.is
     http:
       paths:
       - path: /

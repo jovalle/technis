@@ -196,7 +196,7 @@ metadata:
     app: keel
 spec:
   rules:
-  - host: keel.k8s.techn.is
+  - host: keel.techn.is
     http:
       paths:
       - path: /

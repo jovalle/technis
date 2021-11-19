@@ -161,7 +161,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: plex.k8s.techn.is
+  - host: plex.techn.is
     http:
       paths:
       - path: /

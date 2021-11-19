@@ -125,7 +125,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: tautulli.k8s.techn.is
+  - host: tautulli.techn.is
     http:
       paths:
       - path: /

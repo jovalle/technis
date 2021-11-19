@@ -3035,18 +3035,18 @@ spec:
   - websecure
   routes:
   - kind: Rule
-    match: Host(`argocd.k8s.techn.is`)
+    match: Host(`argocd.techn.is`)
     priority: 10
     services:
       - name: argocd-server
         port: 80
   - kind: Rule
-    match: Host(`argocd.k8s.techn.is`) && Headers(`Content-Type`, `application/grpc`)
+    match: Host(`argocd.techn.is`) && Headers(`Content-Type`, `application/grpc`)
     priority: 11
     services:
       - name: argocd-server
         port: 80
         scheme: h2c
-  tls:
-    certResolver: default
-    options: {}
+  # tls:
+  #   certResolver: default
+  #   options: {}
