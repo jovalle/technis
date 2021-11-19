@@ -1,6 +1,3 @@
-[apt_cacher]
-cerberus
-
 [control_plane]
 cerberus
 asphodel
