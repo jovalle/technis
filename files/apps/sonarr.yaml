@@ -44,6 +44,21 @@ spec:
         app: sonarr
         tier: watchtower
     spec:
+      # initContainers:
+      # - name: backup
+      #   image: instrumentisto/rsync-ssh
+      #   command:
+      #   - rsync
+      #   - -avp
+      #   - --delete
+      #   - -I
+      #   - /config
+      #   - /config-bak
+      #   volumeMounts:
+      #   - name: config
+      #     mountPath: /config
+      #   - name: config-bak
+      #     mountPath: /config-bak
       containers:
       - name: sonarr
         image: ghcr.io/linuxserver/sonarr:latest
@@ -62,6 +77,8 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /config
+        - name: config-bak
+          mountPath: /config-bak
         - name: downloads
           mountPath: /downloads
         - name: tv
@@ -93,6 +110,10 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: sonarr-pvc
+      - name: config-bak
+        nfs:
+          path: /hulkpool/config/sonarr
+          server: cerberus.techn.is
       - name: downloads
         nfs:
           path: /hulkpool/downloads
@@ -131,7 +152,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: sonarr.k8s.techn.is
+  - host: sonarr.techn.is
     http:
       paths:
       - path: /

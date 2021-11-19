@@ -58,7 +58,7 @@ metadata:
   namespace: kuard
 spec:
   rules:
-  - host: kuard.k8s.techn.is
+  - host: kuard.techn.is
     http:
       paths:
       - path: /
@@ -68,7 +68,7 @@ spec:
             name: kuard
             port:
               number: 80
-  - host: kuard-lb.k8s.techn.is
+  - host: kuard-lb.techn.is
     http:
       paths:
       - path: /

@@ -39,7 +39,7 @@ metadata:
   name: whoami
 spec:
   rules:
-  - host: whoami.k8s.techn.is
+  - host: whoami.techn.is
     http:
       paths:
       - path: /

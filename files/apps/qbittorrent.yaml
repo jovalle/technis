@@ -104,6 +104,8 @@ spec:
         volumeMounts:
         - mountPath: /config
           name: config
+        - mountPath: /config-bak
+          name: config-bak
         - mountPath: /downloads
           name: downloads
         - name: tunnel
@@ -139,10 +141,17 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: qbittorrent-pvc
-      - name: downloads
+      - name: config-bak
         nfs:
-          path: /hulkpool/downloads
+          path: /hulkpool/config/qbittorrent
           server: cerberus.techn.is
+      - name: downloads
+        hostPath:
+          path: /hulkpool/downloads
+#      - name: downloads
+#        nfs:
+#          path: /hulkpool/downloads
+#          server: cerberus.techn.is
       - name: tunnel
         hostPath:
           path: /dev/net/tun
@@ -177,7 +186,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: qbittorrent.k8s.techn.is
+  - host: qbittorrent.techn.is
     http:
       paths:
       - path: /

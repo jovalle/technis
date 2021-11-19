@@ -137,7 +137,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: radarr.k8s.techn.is
+  - host: radarr.techn.is
     http:
       paths:
       - path: /

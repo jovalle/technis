@@ -110,8 +110,6 @@ spec:
         app.kubernetes.io/name: portainer
         app.kubernetes.io/instance: portainer
     spec:
-      nodeSelector:
-        {}
       serviceAccountName: portainer-sa-clusteradmin
       volumes:
          - name: "data"
@@ -151,7 +149,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: portainer.k8s.techn.is
+  - host: portainer.techn.is
     http:
       paths:
       - path: /

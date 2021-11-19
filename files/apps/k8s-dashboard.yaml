@@ -310,7 +310,7 @@ metadata:
   namespace: kubernetes-dashboard
 spec:
   rules:
-  - host: dashboard.k8s.techn.is
+  - host: dashboard.techn.is
     http:
       paths:
       - path: /

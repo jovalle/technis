@@ -133,7 +133,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: jackett.k8s.techn.is
+  - host: jackett.techn.is
     http:
       paths:
       - path: /
