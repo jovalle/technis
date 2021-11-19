@@ -11,7 +11,7 @@ Terraform + libvirt + KVM
 Vagrant + Virtualbox
 
 ### Hades
-Baremetal, hybrid (arm64/amd64)
+K3s on baremetal, hybrid architecture (arm64/amd64)
 
 ## Kubernetes
 
@@ -19,7 +19,7 @@ Baremetal, hybrid (arm64/amd64)
 
 * All images must have multi-arch support (at least arm64 and amd64).
 * Physical resource constraints aside (e.g. GPUs, memory, network bandwidth), no workload should be confined to a singular node.
-* In the interest of learning and technological diversity, using multiple solutions to a problem simulatenously is ideal.
+* In the interest of learning and technological diversity, using multiple solutions to a problem simultaneously is ideal.
 
 ### Ingress
 
@@ -29,4 +29,4 @@ Running Traefik Proxy as a DaemonSet across the control plane nodes for high-ava
 
 Gave up on the Let's Encrypt + Cloudflare DNS bundle as an automated certificate resolver due to what seems to be an unsupported TLD (.is) and rate limiting obstacles while troubleshooting.
 
-Using cert-manager to issue once and maintain (cert-manager will auto-renew) a wildcard cert for the cluster workloads (*.k8s.techn.is). Setting TLSStore to leverage this cert by default and configured via CLI redirection of all HTTP requests to the "websecure" (HTTPS) entrypoint.
+Using cert-manager to issue once and maintain (cert-manager will auto-renew) a wildcard cert for the cluster workloads (*.techn.is). Setting TLSStore to leverage this cert by default and configured via CLI redirection of all HTTP requests to the "websecure" (HTTPS) entrypoint.

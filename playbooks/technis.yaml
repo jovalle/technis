@@ -1,0 +1,17 @@
+- hosts: control_plane[0]
+  roles:
+    - name: k8s/labels
+      tags:
+        - labels
+    - name: storage
+      tags:
+        - storage
+    - name: metallb
+      tags:
+        - metallb
+    - name: cert-manager
+      tags:
+        - cert-manager
+    - name: ingress
+      tags:
+        - ingress
