@@ -30,5 +30,5 @@
     source_role: monitoring/kube-prometheus
     file_type: template
     target_list:
-    - prometheus-ingress.yaml
-    - grafana-ingress.yaml
+      - prometheus-ingress.yaml
+      - grafana-ingress.yaml

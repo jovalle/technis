@@ -17,7 +17,7 @@
   register: ready_count
   retries: 6
   delay: 10
-  until: ready_count.stdout == control_plane_node_count
+  until: ready_count.stdout == (groups['control_plane'] | length | string)
 
 - name: check for prometheus
   shell: kubectl get crd servicemonitors.monitoring.coreos.com

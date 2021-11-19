@@ -21,8 +21,8 @@
     path: '{{ item }}'
     state: absent
   loop:
-  - /etc/etcd
-  - /var/lib/etcd
-  - /etc/systemd/system/etcd.service
-  - /usr/local/bin/etcd
-  - /usr/local/bin/etcdctl
+    - /etc/etcd
+    - /etc/systemd/system/etcd.service
+    - /usr/local/bin/etcd
+    - /usr/local/bin/etcdctl
+    - /var/lib/etcd

@@ -11,19 +11,19 @@
 
 - name: install etcd binaries
   block:
-  - name: download binaries from src
-    unarchive:
-      src: "https://storage.googleapis.com/etcd/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
-      dest: "{{ tempdir.path }}"
-      remote_src: yes
-      mode: 0755
-      owner: root
-      group: root
-  - name: mv binaries to /usr/local/bin
-    command: "mv {{ tempdir.path }}/etcd-{{ etcd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}/{{ item }} /usr/local/bin/"
-    with_items:
-    - etcd
-    - etcdctl
+    - name: download binaries from src
+      unarchive:
+        src: "https://storage.googleapis.com/etcd/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
+        dest: "{{ tempdir.path }}"
+        remote_src: yes
+        mode: 0755
+        owner: root
+        group: root
+    - name: mv binaries to /usr/local/bin
+      command: "mv {{ tempdir.path }}/etcd-{{ etcd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}/{{ item }} /usr/local/bin/"
+      with_items:
+        - etcd
+        - etcdctl
   always:
   - name: clean up tempdir
     file:
@@ -36,8 +36,8 @@
     path: "{{ item }}"
     state: directory
   with_items:
-  - /etc/etcd/pki
-  - /var/lib/etcd
+    - /etc/etcd/pki
+    - /var/lib/etcd
 
 - name: render systemd unit
   template:
@@ -57,7 +57,7 @@
   debug:
     msg: ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['etcd'] %}https://{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert /etc/etcd/pki/etcd-ca.pem --cert /etc/etcd/pki/etcd-peer.pem --key /etc/etcd/pki/etcd-peer-key.pem endpoint health --cluster
   run_once: yes
-  delegate_to: "{{ etcd_main_member }}"
+  delegate_to: "{{ etcd_main_member | default(groups['etcd'][0]) }}"
 
 - name: check etcd cluster health
   shell: |
@@ -67,4 +67,4 @@
   retries: 4
   until: etcd_cluster_health.rc == 0
   run_once: yes
-  delegate_to: "{{ etcd_main_member }}"
+  delegate_to: "{{ etcd_main_member | default(groups['etcd'][0]) }}"

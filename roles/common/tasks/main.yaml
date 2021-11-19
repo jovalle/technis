@@ -77,7 +77,7 @@
     content: |
       [Time]
       NTP={{ common_ntp_servers | join(' ') }}
-      FallbackNTP={{ common_fallback_ntp_servers | join(' ') }}
+      FallbackNTP={{ common_ntp_fallback_servers | join(' ') }}
     dest: /etc/systemd/timesyncd.conf
     mode: 0644
 
