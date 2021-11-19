@@ -1,0 +1,72 @@
+- import_playbook: k3s-uninstall.yaml
+  when:
+    - reset is defined
+    - reset | bool
+
+ - import_playbook: common.yaml
+   tags:
+    - common
+
+- hosts: control_plane[0]
+  tasks:
+    - name: initialize k3s cluster
+      shell: >
+        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest sh -s - server
+        --cluster-init
+        --disable servicelb
+        --disable traefik
+        --disable-network-policy
+        --docker
+        --flannel-backend none
+        --token technis
+      retries: 2
+      delay: 15
+      register: init
+    - debug:
+        var: install.stdout_lines
+
+- hosts: control_plane[1:]
+  vars:
+    k3s_version: v1.22.3+k3s1
+    k3s_extra_args: "--flannel-backend=none"
+  tasks:
+    - name: join control plane nodes
+      shell: >
+        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest sh -s - server
+        --server https://192.168.1.10:6443
+        --docker
+        --disable servicelb
+        --disable traefik
+        --disable-network-policy
+        --flannel-backend none
+        --tls-san "192.168.1.100"
+        --token technis
+      retries: 2
+      delay: 15
+      register: join_control_plane
+    - debug:
+        var: join_control_plane.stdout_lines
+
+- hosts: nodes
+  tasks:
+    - name: join nodes
+      shell: >
+        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_URL=https://192.168.1.10:6443 K3S_TOKEN=technis sh -s -
+        --docker
+      retries: 2
+      delay: 15
+      register: join_nodes
+    - debug:
+        var: join_nodes.stdout_lines
+
+- import_playbook: calico.yaml
+  tags:
+    - cni
+
+- import_playbook: kube-vip.yaml
+  tags:
+    - vip
+
+- import_playbook: technis.yaml
+  tags:
+    - technis

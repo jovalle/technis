@@ -1,0 +1,13 @@
+- hosts: all
+  tasks:
+    - name: run k3s-killall.sh
+      command: k3s-killall.sh
+      ignore_errors: yes
+    - name: run k3s-uninstall.sh
+      command:
+        cmd: k3s-uninstall.sh
+        removes: /usr/local/bin/k3s-uninstall.sh
+    - name: run k3s-agent-uninstall.sh
+      command:
+        cmd: k3s-agent-uninstall.sh
+        removes: /usr/local/bin/k3s-agent-uninstall.sh
