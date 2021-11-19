@@ -9,7 +9,7 @@
   include_role:
     name: cni/{{ cni_plugin }}
   when:
-  - inventory_hostname == control_plane_leader
+  - inventory_hostname == groups['control_plane'][0]
   - cni_plugin != 'none'
 
 - name: setup bare container networking interface (cni)
