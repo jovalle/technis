@@ -1,5 +1,3 @@
----
-
 - name: update kube-api route to LB endpoint
   import_role:
     name: kubectl
@@ -7,12 +5,10 @@
     source_role: calico
     file_type: template
     target_list:
-    - k8s-svc-endpoints.yaml
-
-# - name: applying upstream calico manifest
-#   command:
-#     cmd: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-#     creates: /etc/cni/net.d/10-calico.conflist
+      - k8s-svc-endpoints.yaml
+  when:
+    - control_plane_fqdn is defined
+    - control_plane_port is defined
 
 - name: deploy calico
   import_role:
@@ -21,27 +17,21 @@
     source_role: calico
     file_type: template
     target_list:
-    - calico.yaml
+      - calico.yaml
 
-- name: enable eBPF mode
-  block:
-  - name: disable kube-proxy (replaced by Calico eBPF DP)
-    shell: |
-      kubectl patch ds -n kube-system kube-proxy -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": "true"}}}}}'
-  - name: check felixconfiguration CRD is available
-    command: kubectl get felixconfiguration default
-    register: felix_crd
-    retries: 12
-    delay: 10
-    until: felix_crd.rc == 0
-  - name: enable eBPF
-    shell: |
-      calicoctl patch felixconfiguration default --patch='{"spec": {"bpfEnabled": true}}'
-  when: calico_ebpf_mode
+- name: disable kube-proxy (replaced by Calico eBPF DP)
+  shell: |
+    kubectl patch ds -n kube-system kube-proxy -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": "true"}}}}}'
+  ignore_errors: yes
+  when: calico_ebpf
+
+- name: get node count
+  command: kubectl get nodes --no-headers
+  register: node_count
 
 - name: wait until calico-node is ready
   command: kubectl -n kube-system get ds calico-node -o jsonpath='{.status.numberReady}'
   register: number_ready
   retries: 10
   delay: 30
-  until: number_ready.stdout == cluster_node_count
+  until: number_ready.stdout == (node_count.stdout_lines | length | string)
