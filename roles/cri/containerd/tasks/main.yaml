@@ -1,0 +1,36 @@
+---
+- name: install dep libs
+  apt:
+    name: libseccomp2
+    state: latest
+    update_cache: yes
+
+- name: set release tarball name
+  set_fact:
+    release_tarball_name: "cri-containerd-cni-{{ containerd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
+
+- name: get release tarball checksum
+  uri:
+    url: https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}.sha256sum
+    return_content: yes
+  register: release_tarball_checksum
+
+- debug:
+    msg: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+
+- name: download release tarball
+  get_url:
+    url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}"
+    dest: /tmp
+    checksum: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+
+# - name: unarchive release tarball
+#   unarchive:
+#     src: "/tmp/{{ release_tarball_name }}"
+#     dest: /
+
+# - name: enable service
+#   systemd:
+#     name: containerd
+#     state: started
+#     daemon_reload: yes
