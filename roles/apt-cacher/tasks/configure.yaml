@@ -12,4 +12,4 @@
   lineinfile:
     path: /etc/apt/apt.conf.d/proxy
     regexp: 'Proxy'
-    line: Acquire::http { Proxy "http://{{ apt_cacher_main_server }}.{{ lan_domain }}:3142"; }
+    line: Acquire::http { Proxy "http://{{ apt_cacher_server }}.{{ lan_domain }}:3142"; }
