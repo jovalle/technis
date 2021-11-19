@@ -1,0 +1,48 @@
+- name: mount bpffs
+  mount:
+    src: none
+    path: /sys/fs/bpf
+    fstype: bpf
+    opts: rw,relatime
+    state: mounted
+
+- name: create temporary directory
+  tempfile:
+    state: directory
+  register: tmpdir
+
+- name: check for cilium version if installed
+  shell: |
+    cilium version | head -n1 | awk '{print $2}'
+  register: cilium_cli_version_actual
+  ignore_errors: yes
+
+- name: get cilium release tarball
+  block:
+    - name: get release tarball checksum
+      uri:
+        url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version }}/cilium-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz.sha256sum"
+        return_content: yes
+      register: cilium_cli_tarball_checksum
+
+    - name: get release tarball
+      get_url:
+        url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version }}/cilium-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
+        dest: "{{ tmpdir.path }}"
+        # checksum: cilium_cli_tarball_sha256sum
+        checksum: "sha256:{{ cilium_cli_tarball_checksum.content.partition(' ')[0] }}"
+
+    - name: extract tarball contents
+      unarchive:
+        src: "{{ tmpdir.path }}/cilium-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
+        dest: /usr/local/bin
+        remote_src: yes
+  when: cilium_cli_version_actual != cilium_cli_version
+  always:
+    - name: cleanup
+      file:
+        path: tmpdir.path
+        state: absent
+
+- name: install
+  command: cilium install

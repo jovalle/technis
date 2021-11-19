@@ -1,2 +1,1 @@
 cni_plugin: calico
-control_plane_leader: "{{ groups['control_plane'][0] }}"
