@@ -9,32 +9,16 @@ metadata:
   name: qbittorrent-config
   namespace: qbittorrent
 data:
-  PUID: "1000"
-  PGID: "1000"
-  UMASK: "002"
-  WEBUI_PORT: "8080"
-  VPN_ENABLED: "yes"
-  LAN_NETWORK: "192.168.1.0/24"
+  K8S_CLUSTER: "yes"
+  K8S_POD_CIDR: "10.42.0.0/16"
+  K8S_SVC_CIDR: "10.43.0.0/16"
+  LAN_CIDR: "192.168.1.0/24"
   NAME_SERVERS: "1.1.1.1,8.8.8.8"
-  KUBERNETES_ENABLED: "yes"
-  POD_NETWORK: "10.244.0.0/16"
-  SVC_NETWORK: "10.96.0.0/16"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: qbittorrent-pvc
-  namespace: qbittorrent
-  labels:
-    app: qbittorrent
-    tier: watchtower
-spec:
-  accessModes:
-  - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
+  PGID: "1000"
+  PUID: "1000"
+  UMASK: "002"
+  VPN_ENABLED: "yes"
+  WEBUI_PORT: "8080"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,7 +27,6 @@ metadata:
   namespace: qbittorrent
   labels:
     app: qbittorrent
-    tier: watchtower
 spec:
   replicas: 1
   selector:
@@ -55,111 +38,100 @@ spec:
     metadata:
       labels:
         app: qbittorrent
-        tier: watchtower
     spec:
       nodeSelector:
-        techn.is/role: watchtower
+        kubernetes.io/hostname: cerberus
       initContainers:
-      - name: openvpn-setup
-        image: busybox
-        command:
-        - sh
-        - "-c"
-        - |
-          /bin/sh <<EOF
-          wget -qO- https://www.privateinternetaccess.com/openvpn/openvpn.zip | unzip - "us_new_york.ovpn" -d /config/openvpn/
-          EOF
-        volumeMounts:
-        - name: config
-          mountPath: /config
+        - name: openvpn-setup
+          image: busybox
+          command:
+            - sh
+            - "-c"
+            - |
+              /bin/sh <<EOF
+              wget -qO- https://www.privateinternetaccess.com/openvpn/openvpn.zip | unzip - "us_new_york.ovpn" -d /config/openvpn/
+              EOF
+          volumeMounts:
+            - name: config
+              mountPath: /config
       containers:
-      - name: qbittorrent
-        image: jovalle/qbittorrent-openvpn:v0.2.1
-        imagePullPolicy: Always
-        env:
-        - name: VPN_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: openvpn
-              key: username
-        - name: VPN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: openvpn
-              key: password
-        envFrom:
-        - configMapRef:
-            name: qbittorrent-config
-            optional: false
-        ports:
-        - containerPort: 8080
-        - containerPort: 8999
-        - containerPort: 8999
-          protocol: UDP
-        securityContext:
-          privileged: true
-          capabilities:
-            add:
-            - NET_ADMIN
-        volumeMounts:
-        - mountPath: /config
-          name: config
-        - mountPath: /config-bak
-          name: config-bak
-        - mountPath: /downloads
-          name: downloads
-        - name: tunnel
-          mountPath: /dev/net/tun
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
-        livenessProbe:
-          initialDelaySeconds: 60
-          periodSeconds: 60
-          timeoutSeconds: 5
-          exec:
-            command:
-            - ping
-            - "-c 1"
-            - "-W 1"
-            - 1.1.1.1
-        readinessProbe:
-          initialDelaySeconds: 60
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 8080
-        resources:
-          requests:
-            cpu: 1000m
-            memory: 2Gi
-          limits:
-            cpu: 2000m
-            memory: 3Gi
+        - name: qbittorrent
+          image: jovalle/qbittorrent-openvpn:v0.3.1
+          imagePullPolicy: Always
+          env:
+            - name: VPN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: openvpn
+                  key: username
+            - name: VPN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openvpn
+                  key: password
+          envFrom:
+            - configMapRef:
+                name: qbittorrent-config
+                optional: false
+          ports:
+            - containerPort: 6881
+            - containerPort: 6881
+              protocol: UDP
+            - containerPort: 8080
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /config/qBittorrent/downloads
+              name: downloads
+            - name: tunnel
+              mountPath: /dev/net/tun
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 5
+            exec:
+              command:
+                - ping
+                - "-c 1"
+                - "-W 1"
+                - 1.1.1.1
+          readinessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 500Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
       restartPolicy: Always
       volumes:
-      - name: config
-        persistentVolumeClaim:
-          claimName: qbittorrent-pvc
-      - name: config-bak
-        nfs:
-          path: /hulkpool/config/qbittorrent
-          server: cerberus.techn.is
-      - name: downloads
-        hostPath:
-          path: /hulkpool/downloads
-#      - name: downloads
-#        nfs:
-#          path: /hulkpool/downloads
-#          server: cerberus.techn.is
-      - name: tunnel
-        hostPath:
-          path: /dev/net/tun
-          type: ""
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: ""
+        - name: config
+          hostPath:
+            path: /hulkpool/config/qbittorrent
+        - name: downloads
+          hostPath:
+            path: /hulkpool/downloads
+        - name: tunnel
+          hostPath:
+            path: /dev/net/tun
+            type: ""
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
 ---
 apiVersion: v1
 kind: Service
@@ -168,13 +140,13 @@ metadata:
   namespace: qbittorrent
   labels:
     app: qbittorrent
-    tier: watchtower
 spec:
   selector:
     app: qbittorrent
+  type: LoadBalancer # for browser plugins
   ports:
-  - port: 8080
-    protocol: TCP
+    - port: 8080
+      protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -183,16 +155,15 @@ metadata:
   namespace: qbittorrent
   labels:
     app: qbittorrent
-    tier: watchtower
 spec:
   rules:
-  - host: qbittorrent.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: qbittorrent
-            port:
-              number: 8080
+    - host: qbittorrent.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: qbittorrent
+                port:
+                  number: 8080

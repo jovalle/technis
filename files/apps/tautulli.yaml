@@ -13,7 +13,7 @@ metadata:
     tier: watchtower
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   storageClassName: longhorn
   resources:
     requests:
@@ -45,60 +45,54 @@ spec:
         tier: watchtower
     spec:
       containers:
-      - name: tautulli
-        image: ghcr.io/linuxserver/tautulli:latest
-        imagePullPolicy: Always
-        env:
-        - name: PGID
-          value: "1000"
-        - name: PUID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: UMASK_SET
-          value: "022"
-        ports:
-        - containerPort: 8181
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: config-bak
-          mountPath: /config-bak
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
-        livenessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 8181
-        readinessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 8181
-        resources:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 500m
-            memory: 500Mi
+        - name: tautulli
+          image: ghcr.io/linuxserver/tautulli:latest
+          imagePullPolicy: Always
+          env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: UMASK_SET
+              value: "022"
+          ports:
+            - containerPort: 8181
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 8181
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 8181
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 500Mi
       restartPolicy: Always
       volumes:
-      - name: config
-        persistentVolumeClaim:
-          claimName: tautulli-pvc
-      - name: config-bak
-        nfs:
-          path: /hulkpool/config/tautulli
-          server: cerberus.techn.is
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: ""
+        - name: config
+          persistentVolumeClaim:
+            claimName: tautulli-pvc
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
 ---
 apiVersion: v1
 kind: Service
@@ -112,8 +106,8 @@ spec:
   selector:
     app: tautulli
   ports:
-  - port: 8181
-    protocol: TCP
+    - port: 8181
+      protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -125,13 +119,13 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: tautulli.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: tautulli
-            port:
-              number: 8181
+    - host: tautulli.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tautulli
+                port:
+                  number: 8181

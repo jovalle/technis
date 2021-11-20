@@ -13,7 +13,7 @@ metadata:
     tier: watchtower
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   storageClassName: longhorn
   resources:
     requests:
@@ -45,54 +45,54 @@ spec:
         tier: watchtower
     spec:
       containers:
-      - name: overseerr
-        image: ghcr.io/linuxserver/overseerr:latest
-        imagePullPolicy: Always
-        env:
-        - name: PGID
-          value: "1000"
-        - name: PUID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: UMASK_SET
-          value: "022"
-        ports:
-        - containerPort: 5055
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
-        livenessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 5055
-        readinessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 5055
-        resources:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 500m
-            memory: 1000Mi
+        - name: overseerr
+          image: ghcr.io/linuxserver/overseerr:latest
+          imagePullPolicy: Always
+          env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: UMASK_SET
+              value: "022"
+          ports:
+            - containerPort: 5055
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 5055
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 5055
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 1000Mi
       restartPolicy: Always
       volumes:
-      - name: config
-        persistentVolumeClaim:
-          claimName: overseerr-pvc
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: ""
+        - name: config
+          persistentVolumeClaim:
+            claimName: overseerr-pvc
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
 ---
 apiVersion: v1
 kind: Service
@@ -106,8 +106,8 @@ spec:
   selector:
     app: overseerr
   ports:
-  - port: 5055
-    protocol: TCP
+    - port: 5055
+      protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -119,13 +119,13 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: overseerr.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: overseerr
-            port:
-              number: 5055
+    - host: overseerr.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: overseerr
+                port:
+                  number: 5055

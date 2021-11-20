@@ -13,7 +13,7 @@ metadata:
     tier: watchtower
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   storageClassName: longhorn
   resources:
     requests:
@@ -45,68 +45,62 @@ spec:
         tier: watchtower
     spec:
       containers:
-      - name: jackett
-        image: ghcr.io/linuxserver/jackett:latest
-        imagePullPolicy: Always
-        env:
-        - name: AUTO_UPDATE
-          value: "true"
-        - name: PGID
-          value: "1000"
-        - name: PUID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: UMASK_SET
-          value: "022"
-        ports:
-        - containerPort: 8989
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: config-bak
-          mountPath: /config-bak
-        - name: downloads
-          mountPath: /downloads
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
-        livenessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 9117
-        readinessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 9117
-        resources:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 500m
-            memory: 1000Mi
+        - name: jackett
+          image: ghcr.io/linuxserver/jackett:latest
+          imagePullPolicy: Always
+          env:
+            - name: AUTO_UPDATE
+              value: "true"
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: UMASK_SET
+              value: "022"
+          ports:
+            - containerPort: 8989
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 9117
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 9117
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 1000Mi
       restartPolicy: Always
       volumes:
-      - name: config
-        persistentVolumeClaim:
-          claimName: jackett-pvc
-      - name: config-bak
-        nfs:
-          path: /hulkpool/config/jackett
-          server: cerberus.techn.is
-      - name: downloads
-        nfs:
-          path: /hulkpool/downloads
-          server: cerberus.techn.is
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: ""
+        - name: config
+          persistentVolumeClaim:
+            claimName: jackett-pvc
+        - name: downloads
+          nfs:
+            path: /hulkpool/downloads
+            server: cerberus.techn.is
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
 ---
 apiVersion: v1
 kind: Service
@@ -120,8 +114,8 @@ spec:
   selector:
     app: jackett
   ports:
-  - port: 9117
-    protocol: TCP
+    - port: 9117
+      protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -133,13 +127,13 @@ metadata:
     tier: watchtower
 spec:
   rules:
-  - host: jackett.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: jackett
-            port:
-              number: 9117
+    - host: jackett.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jackett
+                port:
+                  number: 9117
