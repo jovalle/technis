@@ -19,7 +19,7 @@
       namespace: longhorn-system
     spec:
       rules:
-      - host: longhorn.{{ cluster_domain }}
+      - host: longhorn.{{ lan_domain }}
         http:
           paths:
           - path: /

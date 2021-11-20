@@ -5,7 +5,7 @@ metadata:
   namespace: monitoring
 spec:
   rules:
-  - host: grafana.{{ cluster_domain }}
+  - host: grafana.{{ lan_domain }}
     http:
       paths:
       - path: /
