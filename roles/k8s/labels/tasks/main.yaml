@@ -2,7 +2,7 @@
   command: kubectl label node {{ inventory_hostname }} {{ item }} --overwrite
   with_items:
     - "{{ labels.node[inventory_hostname] | default([]) }}"
-  delegate_to: '{{ groups['control_plane'][0] }}'
+  delegate_to: "{{ groups['control_plane'][0] }}"
 
 - name: allow scheduling to control plane
   command: kubectl taint nodes --all node-role.kubernetes.io/master-

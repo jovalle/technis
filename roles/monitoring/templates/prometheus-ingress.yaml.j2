@@ -5,7 +5,7 @@ metadata:
   namespace: monitoring
 spec:
   rules:
-  - host: prometheus.{{ cluster_domain }}
+  - host: prometheus.{{ lan_domain }}
     http:
       paths:
       - path: /
