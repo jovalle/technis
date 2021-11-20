@@ -34,150 +34,150 @@ spec:
       nodeSelector:
         techn.is/role: watchtower
       containers:
-      - name: plex
-        image: plexinc/pms-docker:latest
-        imagePullPolicy: Always
-        env:
-        - name: ADVERTISE_IP
-          value: "http://192.168.1.10:32400/" # necessary for certain LAN devices to reach
-        - name: NVIDIA_DRIVER_CAPABILITIES
-          value: "all"
-        - name: NVIDIA_VISIBLE_DEVICES
-          value: "all"
-        - name: PLEX_CLAIM
-          value: "claim-mCrBzbR_n4RGxat7Gd8-" # only valid for 4min to register *new* servers
-        - name: PLEX_GID
-          value: "1000"
-        - name: PLEX_UID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: UMASK_SET
-          value: "022"
-        - name: VERSION
-          value: "docker"
-        ports:
-        - containerPort: 32400
-        - containerPort: 3005
-        - containerPort: 8324
-        - containerPort: 32469
-        - containerPort: 1900
-          protocol: UDP
-        - containerPort: 32410
-          protocol: UDP
-        - containerPort: 32412
-          protocol: UDP
-        - containerPort: 32413
-          protocol: UDP
-        - containerPort: 32414
-          protocol: UDP
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: music
-          mountPath: /data/music
-        - name: movies
-          mountPath: /data/movies
-        - name: tv
-          mountPath: /data/tvshows
-        - name: transcode
-          mountPath: /transcode
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
-        livenessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 32400
-        readinessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 32400
-        resources:
-          requests:
-            cpu: 1000m
-            memory: 2000Mi
-            nvidia.com/gpu: 1 # nvidia/k8s-device-plugin, scheduled onto host with exposed gpu
-          limits:
-            cpu: 3000m # out of 4 cores
-            memory: 24000Mi # out of 32GiB
-            nvidia.com/gpu: 1
+        - name: plex
+          image: plexinc/pms-docker:latest
+          imagePullPolicy: Always
+          env:
+            - name: ADVERTISE_IP
+              value: "http://192.168.1.10:32400/" # necessary for certain LAN devices to reach
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: "all"
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
+            - name: PLEX_CLAIM
+              value: "claim-mCrBzbR_n4RGxat7Gd8-" # only valid for 4min to register *new* servers
+            - name: PLEX_GID
+              value: "1000"
+            - name: PLEX_UID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: UMASK_SET
+              value: "022"
+            - name: VERSION
+              value: "docker"
+          ports:
+            - containerPort: 1900
+              protocol: UDP
+            - containerPort: 3005
+            - containerPort: 8324
+            - containerPort: 32400
+            - containerPort: 32410
+              protocol: UDP
+            - containerPort: 32412
+              protocol: UDP
+            - containerPort: 32413
+              protocol: UDP
+            - containerPort: 32414
+              protocol: UDP
+            - containerPort: 32469
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: music
+              mountPath: /data/music
+            - name: movies
+              mountPath: /data/movies
+            - name: tv
+              mountPath: /data/tvshows
+            - name: transcode
+              mountPath: /transcode
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 32400
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 32400
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2000Mi
+              nvidia.com/gpu: 1 # nvidia/k8s-device-plugin, scheduled onto host with exposed gpu
+            limits:
+              cpu: 3000m # out of 4 cores
+              memory: 24000Mi # out of 32GiB
+              nvidia.com/gpu: 1
       restartPolicy: Always
       volumes: # using hostPath for performance
-      - name: config
-        hostPath:
-          path: /var/lib/plex
-          type: Directory
-      - name: music
-        hostPath:
-          path: /hulkpool/music
-          type: Directory
-      - name: movies
-        hostPath:
-          path: /hulkpool/movies
-          type: Directory
-      - name: tv
-        hostPath:
-          path: /hulkpool/tv
-          type: Directory
-      - name: transcode
-        hostPath:
-          path: /var/lib/plex/transcode
-          type: Directory
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: ""
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: plex
-  namespace: plex
-  labels:
-    app: plex
-    tier: watchtower
-spec:
-  selector:
-    app: plex
-  ports:
-  - port: 32400
-    protocol: TCP
-    targetPort: 32400
-    nodePort: 32400
-  type: NodePort # allows certain LAN devices direct access
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: plex
-  namespace: plex
-  labels:
-    app: plex
-    tier: watchtower
-spec:
-  rules:
-  - host: plex.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: plex
-            port:
-              number: 32400
-  - host: watchtower.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: plex
-            port:
-              number: 32400
+        - name: config
+          hostPath:
+            path: /var/lib/plex
+            type: Directory
+        - name: music
+          hostPath:
+            path: /hulkpool/music
+            type: Directory
+        - name: movies
+          hostPath:
+            path: /hulkpool/movies
+            type: Directory
+        - name: tv
+          hostPath:
+            path: /hulkpool/tv
+            type: Directory
+        - name: transcode
+          hostPath:
+            path: /var/lib/plex/transcode
+            type: Directory
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: plex
+#   namespace: plex
+#   labels:
+#     app: plex
+#     tier: watchtower
+# spec:
+#   selector:
+#     app: plex
+#   type: NodePort # allows certain LAN devices direct access
+#   ports:
+#     - port: 32400
+#       protocol: TCP
+#       targetPort: 32400
+#       nodePort: 32400
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: plex
+#   namespace: plex
+#   labels:
+#     app: plex
+#     tier: watchtower
+# spec:
+#   rules:
+#     - host: plex.techn.is
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: plex
+#                 port:
+#                   number: 32400
+#     - host: watchtower.techn.is
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: plex
+#                 port:
+#                   number: 32400

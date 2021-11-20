@@ -44,88 +44,67 @@ spec:
         app: sonarr
         tier: watchtower
     spec:
-      # initContainers:
-      # - name: backup
-      #   image: instrumentisto/rsync-ssh
-      #   command:
-      #   - rsync
-      #   - -avp
-      #   - --delete
-      #   - -I
-      #   - /config
-      #   - /config-bak
-      #   volumeMounts:
-      #   - name: config
-      #     mountPath: /config
-      #   - name: config-bak
-      #     mountPath: /config-bak
       containers:
-      - name: sonarr
-        image: ghcr.io/linuxserver/sonarr:latest
-        imagePullPolicy: Always
-        env:
-        - name: PGID
-          value: "1000"
-        - name: PUID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: UMASK_SET
-          value: "022"
-        ports:
-        - containerPort: 8989
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: config-bak
-          mountPath: /config-bak
-        - name: downloads
-          mountPath: /downloads
-        - name: tv
-          mountPath: /tv
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
-        livenessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 8989
-        readinessProbe:
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 5
-          tcpSocket:
-            port: 8989
-        resources:
-          requests:
-            cpu: 200m
-            memory: 200Mi
-          limits:
-            cpu: 500m
-            memory: 1000Mi
+        - name: sonarr
+          image: ghcr.io/linuxserver/sonarr:latest
+          imagePullPolicy: Always
+          env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: UMASK_SET
+              value: "022"
+          ports:
+            - containerPort: 8989
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+            - name: tv
+              mountPath: /tv
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 8989
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            tcpSocket:
+              port: 8989
+          resources:
+            requests:
+              cpu: 200m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 1000Mi
       restartPolicy: Always
       volumes:
-      - name: config
-        persistentVolumeClaim:
-          claimName: sonarr-pvc
-      - name: config-bak
-        nfs:
-          path: /hulkpool/config/sonarr
-          server: cerberus.techn.is
-      - name: downloads
-        nfs:
-          path: /hulkpool/downloads
-          server: cerberus.techn.is
-      - name: tv
-        nfs:
-          path: /hulkpool/tv
-          server: cerberus.techn.is
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: ""
+        - name: config
+          persistentVolumeClaim:
+            claimName: sonarr-pvc
+        - name: downloads
+          nfs:
+            path: /hulkpool/downloads
+            server: cerberus.techn.is
+        - name: tv
+          nfs:
+            path: /hulkpool/tv
+            server: cerberus.techn.is
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
 ---
 apiVersion: v1
 kind: Service
