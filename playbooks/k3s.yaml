@@ -3,9 +3,11 @@
     - reset is defined
     - reset | bool
 
- - import_playbook: common.yaml
-   tags:
+- import_playbook: common.yaml
+  tags:
     - common
+
+- hosts: all
 
 - hosts: control_plane[0]
   tasks:
@@ -18,28 +20,28 @@
         --disable-network-policy
         --docker
         --flannel-backend none
+        --tls-san "{{ kube_vip_ip }}"
         --token technis
       retries: 2
       delay: 15
       register: init
     - debug:
-        var: install.stdout_lines
+        var: init.stdout_lines
 
 - hosts: control_plane[1:]
   vars:
-    k3s_version: v1.22.3+k3s1
-    k3s_extra_args: "--flannel-backend=none"
+    control_plane_leader: "{{ groups['control_plane'][0] }}"
   tasks:
     - name: join control plane nodes
       shell: >
         curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest sh -s - server
-        --server https://192.168.1.10:6443
+        --server https://{{ hostvars[control_plane_leader]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
         --docker
         --disable servicelb
         --disable traefik
         --disable-network-policy
         --flannel-backend none
-        --tls-san "192.168.1.100"
+        --tls-san "{{ kube_vip_ip }}"
         --token technis
       retries: 2
       delay: 15
@@ -47,11 +49,15 @@
     - debug:
         var: join_control_plane.stdout_lines
 
+- import_playbook: kube-vip.yaml
+  tags:
+    - vip
+
 - hosts: nodes
   tasks:
     - name: join nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_URL=https://192.168.1.10:6443 K3S_TOKEN=technis sh -s -
+        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_URL=https://{{ kube_vip_ip }}:6443 K3S_TOKEN=technis sh -s -
         --docker
       retries: 2
       delay: 15
@@ -62,10 +68,6 @@
 - import_playbook: calico.yaml
   tags:
     - cni
-
-- import_playbook: kube-vip.yaml
-  tags:
-    - vip
 
 - import_playbook: technis.yaml
   tags:
