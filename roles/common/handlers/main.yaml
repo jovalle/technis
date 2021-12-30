@@ -8,6 +8,11 @@
     name: sshd
     state: restarted
 
+- name: restart timesyncd
+  systemd:
+    name: systemd-timesyncd
+    state: restarted
+
 - name: reboot host
   reboot:
     msg: "Host rebooted"

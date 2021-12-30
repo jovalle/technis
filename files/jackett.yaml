@@ -83,7 +83,6 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-            type: ""
 ---
 apiVersion: v1
 kind: Service

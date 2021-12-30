@@ -6,14 +6,25 @@ common_packages:
   - curl
   - dnsutils
   - git
-  - gpg
+  - glances
   - gnupg-agent
+  - gpg
+  - hddtemp
+  - iftop
   - ipset
   - jq
-  - open-iscsi
+  - lm-sensors
   - net-tools
   - netcat
+  - open-iscsi
+  - python3
+  - python3-dev
+  - python3-jinja2
   - python3-openssl
+  - python3-pip
+  - python3-psutil
+  - python3-setuptools
+  - rsync
   - software-properties-common
   - telnet
   - unrar

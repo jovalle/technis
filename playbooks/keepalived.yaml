@@ -1,5 +1,4 @@
 - hosts: control_plane
-  become: yes
   pre_tasks:
     - name: assert variables
       assert:
@@ -11,5 +10,5 @@
       delegate_facts: yes
       with_items: "{{ groups['all'] }}"
   roles:
-  - keepalived
-  - haproxy
+    - keepalived
+    - haproxy

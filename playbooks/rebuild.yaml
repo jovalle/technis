@@ -2,16 +2,16 @@
   vars:
     provisioner: "{{ infrastructure_provisioner | default('vagrant') }}"
   tasks:
-  - name: turn it off and on again
-    block:
-    - include_role:
-        name: '{{ provisioner }}/destroy'
-    - include_role:
-        name: '{{ provisioner }}/up'
-    when:
-    - infrastructure_provisioner is defined
-    - infrastructure_provisioner != 'none'
+    - name: turn it off and on again
+      block:
+        - import_role:
+            name: "{{ provisioner }}/destroy"
+        - import_role:
+            name: "{{ provisioner }}/up"
+      when:
+        - infrastructure_provisioner is defined
+        - infrastructure_provisioner != 'none'
 
 - hosts: all
   roles:
-  - wait-for-server
+    - wait-for-server
