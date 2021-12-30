@@ -1,2 +1,0 @@
-default_interface: eth0
-default_interface_inet: static
