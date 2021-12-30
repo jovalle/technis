@@ -1,4 +1,3 @@
----
 - name: install dep libs
   apt:
     name: libseccomp2
@@ -9,28 +8,41 @@
   set_fact:
     release_tarball_name: "cri-containerd-cni-{{ containerd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
 
-- name: get release tarball checksum
-  uri:
-    url: https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}.sha256sum
-    return_content: yes
-  register: release_tarball_checksum
+- name: get source
+  block:
+    - name: create tempdir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: get release tarball checksum
+      uri:
+        url: https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}.sha256sum
+        return_content: yes
+      register: release_tarball_checksum
+    - debug:
+        msg: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+    - name: download release tarball
+      get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}"
+        dest: "{{ tempdir.path }}"
+        checksum: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+    - name: unarchive release tarball
+      shell:
+        cmd: "tar --no-overwrite-dir -C / -xzf {{ tempdir.path }}/{{ release_tarball_name }}"
+        creates: /usr/local/bin/containerd-shim-runc-v2
+  always:
+    - name: cleanup tempdir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
 
-- debug:
-    msg: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+- name: ensure config dir exists
+  file:
+    path: /etc/containerd
+    state: directory
 
-- name: download release tarball
-  get_url:
-    url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}"
-    dest: /tmp
-    checksum: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
-
-# - name: unarchive release tarball
-#   unarchive:
-#     src: "/tmp/{{ release_tarball_name }}"
-#     dest: /
-
-# - name: enable service
-#   systemd:
-#     name: containerd
-#     state: started
-#     daemon_reload: yes
+- name: enable service
+  systemd:
+    name: containerd
+    state: started
+    daemon_reload: yes

@@ -1,1 +1,1 @@
-cri_plugin: docker
+cri_plugin: containerd
