@@ -31,7 +31,7 @@ spec:
       containers:
         - name: jackett
           image: ghcr.io/linuxserver/jackett:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: AUTO_UPDATE
               value: "true"
@@ -77,11 +77,17 @@ spec:
         - name: config
           hostPath:
             path: /var/lib/jackett
+<<<<<<< HEAD:files/jackett.yaml
             type: ""
         - name: downloads
           hostPath:
             path: /hulkpool/downloads
             type: ""
+=======
+        - name: downloads
+          hostPath:
+            path: /hulkpool/downloads
+>>>>>>> 5283442be82c523f5605276819effdc44ce1b518:files/apps/jackett.yaml
         - name: localtime
           hostPath:
             path: /etc/localtime

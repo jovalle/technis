@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: builder
+spec:
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  initContainers:
+    - name: git-sync
+      image: k8s.gcr.io/git-sync/git-sync:v3.1.7
+      args: [
+        "--one-time",
+        "--depth", "1",
+        "--dest", "checkout",
+        "--repo", "https://github.com/nicolaka/netshoot",
+        "--branch", "master"]
+      volumeMounts:
+        - name: code
+          mountPath: /tmp/git
+  containers:
+    - name: main
+      image: jovalle/buildah:bare
+      command: ["/bin/sh"]
+      args: ["-c", "cd code; cd $(readlink checkout); buildah bud -t  ."]
+      volumeMounts:
+        - name: code
+          mountPath: /code
+      resources:
+        requests:
+          cpu: 3000m
+          memory: 2Gi
+        limits:
+          cpu: 6000m
+          memory: 12Gi
+  volume:
+    - name: code
+      emptyDir:
+        medium: Memory
