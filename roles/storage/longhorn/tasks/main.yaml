@@ -1,13 +1,7 @@
 ---
 
 - name: apply longhorn manifest
-  import_role:
-    name: kubectl
-  vars:
-    source_role: longhorn
-    file_type: remote
-    target_list:
-    - https://raw.githubusercontent.com/longhorn/longhorn/v1.2.2/deploy/longhorn.yaml
+  command: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.2.2/deploy/longhorn.yaml
 
 - name: apply longhorn UI ingress
   shell: |

@@ -1,5 +1,13 @@
 - hosts: control_plane[0]
   roles:
+    - import_playbook: reset.yaml
+      when: cluster_reset | default("no") | bool
+    - import_playbook: common.yaml
+      tags:
+        - common
+    - import_playbook: k8s.yaml
+      tags:
+        - k8s
     - name: k8s/labels
       tags:
         - labels

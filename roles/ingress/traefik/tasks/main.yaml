@@ -12,12 +12,17 @@
     - deployment.yaml
     - ingress.yaml
 
+- name: get list of active control plane nodes
+  shell: |
+    kubectl get nodes --selector=node-role.kubernetes.io/control-plane=true --no-headers | wc -l
+  register: control_plane_nodes
+
 - name: wait for traefik readiness
   shell: kubectl -n traefik get daemonset traefik -o jsonpath='{.status.numberReady}'
   register: ready_count
   retries: 6
   delay: 10
-  until: ready_count.stdout == (groups['control_plane'] | length | string)
+  until: ready_count.stdout == control_plane_nodes.stdout
 
 - name: check for prometheus
   shell: kubectl get crd servicemonitors.monitoring.coreos.com

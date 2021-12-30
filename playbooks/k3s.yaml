@@ -13,7 +13,7 @@
   tasks:
     - name: initialize k3s cluster
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest sh -s - server
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.4+k3s1 sh -s - server
         --cluster-init
         --disable servicelb
         --disable traefik
@@ -31,10 +31,17 @@
 - hosts: control_plane[1:]
   vars:
     control_plane_leader: "{{ groups['control_plane'][0] }}"
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      when: hostvars[item]['ansible_default_ipv4'] is not defined
+      with_items: "{{ groups['all'] }}"
   tasks:
     - name: join control plane nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest sh -s - server
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.4+k3s1 sh -s - server
         --server https://{{ hostvars[control_plane_leader]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
         --docker
         --disable servicelb
@@ -57,7 +64,7 @@
   tasks:
     - name: join nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_URL=https://{{ kube_vip_ip }}:6443 K3S_TOKEN=technis sh -s -
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.4+k3s1 K3S_URL=https://{{ kube_vip_ip }}:6443 K3S_TOKEN=technis sh -s -
         --docker
       retries: 2
       delay: 15
