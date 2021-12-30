@@ -112,14 +112,12 @@ spec:
       labels:
         app: keel
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64 #TODO: build/maintain multi-arch variant
       serviceAccountName: keel
       containers:
         - name: keel
           # Note that we use appVersion to get images tag.
           image: keelhq/keel:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/keel"]
           env:
             - name: NAMESPACE
@@ -130,11 +128,11 @@ spec:
             - name: BASIC_AUTH_USER
               value: "admin"
             - name: BASIC_AUTH_PASSWORD
-              # value: "admin"
-              valueFrom: # kubectl -n keel create secret generic credentials --from-literal=password='noneya'
-                secretKeyRef:
-                  name: credentials
-                  key: password
+              value: "admin"
+              # valueFrom: # kubectl -n keel create secret generic credentials --from-literal=password='noneya'
+              #   secretKeyRef:
+              #     name: credentials
+              #     key: password
             - name: AUTHENTICATED_WEBHOOKS
               value: "false"
             - name: NOTIFICATION_LEVEL
@@ -157,18 +155,6 @@ spec:
             requests:
               cpu: 50m
               memory: 64Mi
----
-# Source: keel/templates/pod-disruption-budget.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: keel
-  namespace: keel
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:
-      app: keel
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cobweb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cobweb
+  namespace: cobweb
+  labels:
+    app: cobweb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cobweb
+  template:
+    metadata:
+      labels:
+        app: cobweb
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: web
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: web
+          hostPath:
+            path: /var/lib/web
+            type: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cobweb
+  namespace: cobweb
+  labels:
+    app: cobweb
+spec:
+  selector:
+    app: cobweb
+  ports:
+    - port: 80
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cobweb
+  namespace: cobweb
+  labels:
+    app: cobweb
+spec:
+  tls:
+    - hosts:
+        - j3o.me
+      secretName: j3o-cert
+  rules:
+    - host: j3o.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cobweb
+                port:
+                  number: 80
+    - host: www.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cobweb
+                port:
+                  number: 80
+    - host: cobweb.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cobweb
+                port:
+                  number: 80

@@ -1,6 +1,0 @@
-- hosts: localhost
-  tasks:
-  - name: deploy all apps
-    command: kubectl apply -f {{ item }}
-    with_fileglob:
-    - files/apps/*.yaml
