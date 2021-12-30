@@ -10,9 +10,6 @@ Terraform + libvirt + KVM
 ### Gotham/Krypton
 Vagrant + Virtualbox
 
-### Hades
-K3s on baremetal, hybrid architecture (arm64/amd64)
-
 ## Kubernetes
 
 ### Principles
