@@ -1,0 +1,13 @@
+- name: restart containerd
+  systemd:
+    name: containerd
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+
+- name: restart k3s
+  systemd:
+    name: k3s
+    state: restarted
+    enabled: yes
+    daemon_reload: yes

@@ -1,327 +1,59 @@
----
-
 - hosts: cerberus
   tags:
-  - always
+    - always
   tasks:
-  - name: apt upgrade
-    apt:
-      upgrade: full
-      update_cache: yes
-      cache_valid_time: 3600
-      force_apt_get: true
-      autoclean: yes
-      autoremove: yes
-    register: apt_upgrade
-    retries: 5
-    until: apt_upgrade is success
-  - name: install packages
-    package:
-      name: "{{ item }}"
-      state: present
-    loop:
-    - glances
-    - htop
-
-- hosts: cerberus
-  tags:
-  - net
-  tasks:
-  - name: install required packages
-    package:
-      name: "{{ item }}"
-    loop:
-    - ifenslave
-  - name: set LACP on ethernet interfaces
-    copy:
-      dest: /etc/network/interfaces
-      content: |
-        # Ansible managed
-        auto eno1
-        iface eno1 inet manual
-          bond-master eth0
-
-        auto enp3s0
-        iface enp3s0 inet manual
-          bond-master eth0
-
-        auto eth0
-        iface eth0 inet static
-          address                192.168.1.10/24
-          gateway                192.168.1.1
-          bond-mode              802.3ad
-          bond-miimon            100
-          bond-slaves            none
-          bond-lacp-rate         1
-          bond-updelay           800
-          bond-downdelay         400
-          bond_xmit_hash_policy layer2+3
-    register: net_int
-  - name: restart networking
-    systemd:
-      name: networking
-      state: restarted
-    when: net_int.changed
-
-- hosts: cerberus
-  tags:
-  - zfs
-  tasks:
-  - name: onboard buster-backports repo
-    lineinfile: # apt_repository is primitive. doesn"t aggregate
-      path: /etc/apt/sources.list
-      regex: ^{{ item }} http://deb.debian.org/debian buster-backports
-      line: "{{ item }} http://deb.debian.org/debian buster-backports main contrib"
-    loop:
-    - deb
-    - deb-src
-  - name: add zfs repo preferences
-    copy:
-      content: |
-        Package: libnvpair1linux libuutil1linux libzfs2linux libzpool2linux spl-dkms zfs-dkms zfs-test zfsutils-linux zfsutils-linux-dev zfs-zed
-        Pin: release n=buster-backports
-        Pin-Priority: 990
-      dest: /etc/apt/preferences.d/90_zfs
-  - name: install zfs
-    package:
-      name: "{{ item }}"
-    with_items:
-    - zfs-dkms
-    - zfsutils-linux
-  - name: import all available zpools
-    command:
-      cmd: zpool import -a -f
-      creates: /hulkpool
-
-- hosts: cerberus
-  tags:
-  - nfs
-  tasks:
-  - name: setup nfs server
-    block:
-    - name: install nfs server package
-      package:
-        name: nfs-kernel-server
-        state: present
-    - name: create export mountpoints if missing
-      file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-      - /hulkpool
-      - /nas
-    - name: add exports
-      lineinfile:
-        path: /etc/exports
-        regex: ^{{ item }}
-        line: "{{ item }} *(rw,sync,no_subtree_check,no_root_squash)"
-      loop:
-      - /hulkpool
-      - /nas
-    - name: get exports
-      command: exportfs
-    - name: restart nfs service
-      systemd:
-        name: nfs-kernel-server
-        state: restarted
-
-- hosts: nfs_clients
-  tags:
-  - nfs
-  tasks:
-  - name: setup nfs clients
-    block:
-    - name: install nfs client package
-      package:
-        name: nfs-common
-        state: present
-    - name: create export mountpoints if missing
-      file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-      - /hulkpool
-      - /nas
-    - name: create exports in /etc/fstab
-      lineinfile:
-        path: /etc/fstab
-        regex: "^{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }}"
-        line: "{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }} /{{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
-      loop:
-      - /hulkpool
-      - /nas
-    - name: mount nfs exports
-      command: mount {{ item }}
-      loop:
-      - /hulkpool
-      - /nas
-    delegate_to: "{{ nfs_clients }}"
-
-- hosts: cerberus
-  vars_prompt:
-    - name: smb_username
-      prompt: "SMB Username: "
-    - name: smb_password
-      prompt: "SMB Password: "
-  tags:
-  - smb
-  tasks:
-  - name: install samba
-    apt:
-      name: samba
-      state: present
-  - name: render samba config
-    template:
-      src: files/smb.conf
-      dest: /etc/samba/smb.conf
-  - name: check and enable user
-    shell: smbpasswd -e {{ smb_username }}
-    register: smb_check_user
-    changed_when: smb_check_user.rc != 0
-    ignore_errors: yes
-  - name: create samba user
-    shell: (echo '{{ smb_password }}'; echo '{{ smb_password }}') | smbpasswd -a -s {{ smb_username }}
-    no_log: yes
-    register: smb_create_user
-    when: smb_check_user.rc != 0
-  - name: restart samba server
-    systemd:
-      name: smbd
-      state: restarted
-    when: smb_create_user.changed
-
-- hosts: cerberus
-  tags:
-  - nvidia
-  pre_tasks:
-  - name: check host has an nvidia card
-    shell: >
-      lspci | grep -i nvidia | wc -l
-    register: nvidia_check
-    failed_when: nvidia_check.stdout == "0"
-  - name: check driver version
-    shell: nvidia-smi | grep "NVIDIA-SMI" | awk '{print $3}'
-    register: nvidia_driver_version
-    ignore_errors: yes
-  tasks:
-  - name: install nvidia drivers
-    block:
-    - name: create temp dir
-      tempfile:
-        state: directory
-      register: tempdir
-    - name: create modprobe config to disable nouveau
-      file:
-        path: /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
-        state: touch
-    - name: disable nouveau
-      lineinfile:
-        path: /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
-        line: "{{ item }}"
-      loop:
-      - blacklist nouveau
-      - options nouveau modeset=0
-      register: modprobe_disable_nouvaeu
-    - name: reboot host to reflect modprobe change
-      reboot:
-      when: modprobe_disable_nouvaeu.changed
-    - name: download nvidia 455.45.01 driver
-      get_url:
-        url: https://international.download.nvidia.com/XFree86/Linux-x86_64/455.45.01/NVIDIA-Linux-x86_64-455.45.01.run
-        dest: "{{ tempdir.path }}"
-        mode: 0755
-    - name: stealth run driver install
-      shell: "sh {{ tempdir.path }}/NVIDIA-Linux-x86_64-455.45.01.run -q -s --dkms"
-    - name: run nvidia-smi to confirm successful install
-      shell: nvidia-smi
-    always:
-    - name: cleanup temp dir
-      file:
-        path: "{{ tempdir.path }}"
-        state: absent
-    when: nvidia_driver_version is not defined or nvidia_driver_version.stdout != "455.45.01"
-  - name: patch nvidia transcoder
-    block:
-    - name: create temp dir
-      tempfile:
-        state: directory
-      register: tempdir
-    - name: clone nvidia patch repo
-      git:
-        repo: https://github.com/keylase/nvidia-patch
-        dest: "{{ tempdir.path }}"
-    - name: run nvidia patch
-      shell: "{{ tempdir.path }}/patch.sh"
-    always:
-    - name: cleanup temp dir
-      file:
-        path: "{{ tempdir.path }}"
-        state: absent
-  - name: check for nvidia-container-runtime bin
-    stat:
-      path: /usr/bin/nvidia-container-runtime
-    register: nvidia_container_runtime
-  - name: install nvidia runtime for docker
-    block:
-    - name: add an apt signing key for nvidia
-      apt_key:
-        url: https://nvidia.github.io/nvidia-docker/gpgkey
-        state: present
-    - name: add nvidia apt repo
-      shell:
-        cmd: >
-          curl -s -L https://nvidia.github.io/nvidia-docker/debian10/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
-        creates: /etc/apt/sources.list.d/nvidia-docker.list
-    - name: install nvidia-docker2
+    - name: apt upgrade
       apt:
-        force_apt_get: yes
+        upgrade: full
         update_cache: yes
+        cache_valid_time: 3600
+        force_apt_get: true
+        autoclean: yes
         autoremove: yes
-        name: nvidia-docker2
+      register: apt_upgrade
+      retries: 5
+      until: apt_upgrade is success
+    - name: install packages
+      package:
+        name: "{{ item }}"
         state: present
-      register: nvidia_docker
-    - name: restart docker
-      systemd:
-        name: docker
-        state: restarted
-      when: nvidia_docker.changed
-    when: nvidia_container_runtime.stat.exists == False
-  - name: check for nvtop bin
-    stat:
-      path: /usr/local/bin/nvtop
-    register: nvtop
-  - name: install nvtop
-    block:
-    - name: install prerequisites for nvtop
-      apt:
-        name: ["cmake", "libncurses5-dev", "libncursesw5-dev", "git"]
-    - name: create temp dir
-      tempfile:
-        state: directory
-      register: tempdir
-    - name: clone nvtop repo
-      git:
-        repo: https://github.com/Syllo/nvtop
-        dest: "{{ tempdir.path }}"
-    - name: create build dir
-      file:
-        path: "{{ tempdir.path }}/build"
-        state: directory
-    - name: build from source
-      shell:
-        chdir: "{{ tempdir.path }}/build"
-        cmd: cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
-    - name: run make
-      shell:
-        chdir: "{{ tempdir.path }}/build"
-        cmd: make
-    - name: run make install
-      shell:
-        chdir: "{{ tempdir.path }}/build"
-        cmd: make install
-    always:
-    - name: cleanup temp dir
-      file:
-        path: "{{ tempdir.path }}"
-        state: absent
-    when: nvtop.stat.exists == False
+      with_items:
+        - curl
+        - git
+        - glances
+        - hddtemp
+        - lm-sensors
+        - python3
+        - python3-dev
+        - python3-jinja2
+        - python3-pip
+        - python3-psutil
+        - python3-setuptools
+        - rsync
+        - vim
+
+- hosts: cerberus
+  tags:
+    - zfs
+  tasks:
+    - name: install zfs
+      package:
+        name: "{{ item }}"
+      with_items:
+        - zfsutils-linux
+    - name: import all available zpools
+      command:
+        cmd: zpool import -a -f
+        creates: /hulkpool
+
+- import_playbook: nfs.yaml
+  tags:
+    - nfs
+
+- import_playbook: smb.yaml
+  tags:
+    - smb
+
+- import_playbook: gpu.yaml
+  tags:
+    - gpu
