@@ -1,0 +1,61 @@
+- hosts: cerberus
+  vars:
+    nfs_paths:
+      - /hulkpool
+      - /nas
+  tasks:
+    - name: setup nfs server
+      block:
+        - name: install nfs server package
+          package:
+            name: nfs-kernel-server
+            state: present
+        - name: create export mountpoints if missing
+          file:
+            path: "{{ item }}"
+            state: directory
+          with_items:
+            - "{{ nfs_paths }}"
+        - name: add exports
+          lineinfile:
+            path: /etc/exports
+            regex: "^{{ item }}"
+            line: "{{ item }} *(rw,sync,no_subtree_check,no_root_squash)"
+          with_items:
+            - "{{ nfs_paths }}"
+        - name: get exports
+          command: exportfs
+        - name: restart nfs service
+          systemd:
+            name: nfs-kernel-server
+            state: restarted
+
+- hosts: nfs_clients
+  vars:
+    nfs_paths:
+      - /hulkpool
+      - /nas
+  tasks:
+    - name: setup nfs clients
+      block:
+        - name: install nfs client package
+          package:
+            name: nfs-common
+            state: present
+        - name: create export mountpoints if missing
+          file:
+            path: "{{ item }}"
+            state: directory
+          with_items:
+            - "{{ nfs_paths }}"
+        - name: create exports in /etc/fstab
+          lineinfile:
+            path: /etc/fstab
+            regex: "^{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }}"
+            line: "{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }} /{{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
+          with_items:
+            - "{{ nfs_paths }}"
+        - name: mount nfs exports
+          command: mount {{ item }}
+          with_items:
+            - "{{ nfs_paths }}"

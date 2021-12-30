@@ -1,0 +1,31 @@
+- hosts: cerberus
+  vars_prompt:
+    - name: smb_username
+      prompt: "SMB Username"
+      private: no
+    - name: smb_password
+      prompt: "SMB Password"
+  tasks:
+    - name: install samba
+      apt:
+        name: samba
+        state: present
+    - name: render samba config
+      template:
+        src: ../files/smb.conf
+        dest: /etc/samba/smb.conf
+    - name: check and enable user
+      shell: smbpasswd -e {{ smb_username }}
+      register: smb_check_user
+      changed_when: smb_check_user.rc != 0
+      ignore_errors: yes
+    - name: create samba user
+      shell: (echo '{{ smb_password }}'; echo '{{ smb_password }}') | smbpasswd -a -s {{ smb_username }}
+      no_log: yes
+      register: smb_create_user
+      when: smb_check_user.rc != 0
+    - name: restart samba server
+      systemd:
+        name: smbd
+        state: restarted
+      when: smb_create_user.changed

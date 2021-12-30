@@ -1,0 +1,176 @@
+- name: install headless drivers
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - ubuntu-drivers-common
+    - nvidia-headless-495
+    - nvidia-utils-495
+    - libnvidia-encode-495
+    - nvidia-container-runtime
+
+- name: check nvidia card
+  shell: nvidia-smi
+  register: nvidia_smi
+
+- name: patch nvidia transcoder
+  block:
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: clone nvidia patch repo
+      git:
+        repo: https://github.com/keylase/nvidia-patch
+        dest: "{{ tempdir.path }}"
+    - name: run nvidia patch
+      shell: "{{ tempdir.path }}/patch.sh"
+  always:
+    - name: cleanup temp dir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+  when: nvidia_smi.rc | int == 0
+
+- name: check for nvtop bin
+  stat:
+    path: /usr/local/bin/nvtop
+  register: nvtop
+- name: install nvtop
+  block:
+    - name: install prerequisites for nvtop
+      apt:
+        name: ["cmake", "libncurses5-dev", "libncursesw5-dev", "git"]
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: clone nvtop repo
+      git:
+        repo: https://github.com/Syllo/nvtop
+        dest: "{{ tempdir.path }}"
+    - name: create build dir
+      file:
+        path: "{{ tempdir.path }}/build"
+        state: directory
+    - name: build from source
+      shell:
+        chdir: "{{ tempdir.path }}/build"
+        cmd: cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
+    - name: run make
+      shell:
+        chdir: "{{ tempdir.path }}/build"
+        cmd: make
+    - name: run make install
+      shell:
+        chdir: "{{ tempdir.path }}/build"
+        cmd: make install
+  always:
+    - name: cleanup temp dir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+  when: nvtop.stat.exists == False
+
+# not working due to lack of interactive shell for ctr run
+#- name: pull gpu container image
+#  shell: ctr image pull docker.io/nvidia/cuda:11.0-base
+#
+#- name: test gpu container
+#  shell: ctr run --rm --gpus 0 -t docker.io/nvidia/cuda:11.0-base cuda-11.0-base nvidia-smi
+
+- name: check for k3s
+  command: k3s check-config
+  ignore_errors: yes
+  no_log: yes
+  register: k3s_check_config
+
+- name: configure containerd to use nvidia-container-runtime
+  template:
+    src: config.toml.tmpl.j2
+    dest: /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl # source: https://k3d.io/v5.2.2/usage/advanced/cuda/?h=cuda
+  notify:
+    - restart containerd
+    - restart k3s
+  when: k3s_check_config.rc | int == 0
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: check for pending pods
+  command: kubectl get pods -A --field-selector=status.phase=Pending --no-headers
+  ignore_errors: yes
+  register: pending_pods
+
+- name: deploy gpu test pod
+  block:
+    - shell: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: cuda-vector-add
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cuda-vector-add
+              image: "k8s.gcr.io/cuda-vector-add:v0.1"
+              resources:
+                limits:
+                  nvidia.com/gpu: 1
+        EOF
+      when: pending_pods.stdout_lines | length == 0
+    - command: kubectl wait --for=condition=ready pod cuda-vector-add
+  always:
+    - command: kubectl delete pod cuda-vector-add --ignore-not-found
+  when:
+    - pending_pods.stdout_lines | length == 0
+
+- name: deploy nvidia-device-plugin
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: nvidia-device-plugin
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: nvidia-device-plugin
+      template:
+        metadata:
+          labels:
+            k8s-app: nvidia-device-plugin
+        spec:
+          priorityClassName: system-node-critical
+          nodeSelector:
+            kubernetes.io/gpu: nvidia
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          containers:
+          - env:
+            - name: DP_DISABLE_HEALTHCHECKS
+              value: xids
+            image: nvidia/k8s-device-plugin:1.11
+            name: nvidia-device-plugin-ctr
+            securityContext:
+              allowPrivilegeEscalation: true
+              capabilities:
+                drop: ["ALL"]
+            volumeMounts:
+              - name: device-plugin
+                mountPath: /var/lib/kubelet/device-plugins
+          volumes:
+            - name: device-plugin
+              hostPath:
+                path: /var/lib/kubelet/device-plugins
+    EOF
+
+- name: wait for daemonset to become ready
+  command: kubectl -n kube-system rollout status daemonset nvidia-device-plugin --timeout 60s
+  register: ndp_rollout_status
+  failed_when: ndp_rollout_status.rc | int != 0
+  retries: 10
+  delay: 6
