@@ -1,5 +1,4 @@
 - hosts: cluster
-  become: yes
   serial: yes
   order: inventory
   pre_tasks:

@@ -9,7 +9,7 @@
   register: apt_upgrade
   retries: 5
   until: apt_upgrade is success
-  when: apt_upgrade | default('no') | bool
+  when: apt_upgrade | default(False) | bool
 
 - name: install common packages
   apt:
@@ -34,12 +34,23 @@
     path: /etc/hosts
     regex: "^127.0.0.1(.*){{ hostvars[inventory_hostname]['ansible_hostname'] }}(.*)$"
     state: absent
+  when: infrastructure_provisioner != 'vagrant'
 
 - name: set node aliases in /etc/hosts
   lineinfile:
     path: /etc/hosts
     line: "127.0.0.1       {{ hostvars[inventory_hostname]['ansible_fqdn'] }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
     insertbefore: BOF
+  when: infrastructure_provisioner != 'vagrant'
+
+- name: set cluster nodes aliases in /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regex: "^{{ hostvars[item]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}(.*)$"
+    line: "{{ hostvars[item]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}      {{ hostvars[item]['ansible_hostname'] }}.{{ lan_domain }} {{ hostvars[item]['ansible_hostname'] }}"
+  with_items:
+    - "{{ groups.all }}"
+  when: infrastructure_provisioner == 'vagrant'
 
 - name: disable swap in /etc/fstab
   replace:
@@ -77,14 +88,15 @@
       FallbackNTP={{ common_ntp_fallback_servers | join(' ') }}
     dest: /etc/systemd/timesyncd.conf
     mode: 0644
+  notify: restart timesyncd
 
 - name: set timezone
   command: /usr/bin/timedatectl set-timezone {{ common_timezone }}
   when: common_timezone not in timedatectl_result.stdout_lines[0]
+  notify: restart timesyncd
 
 - name: enable ntp
   command: /usr/bin/timedatectl set-ntp true
-  when: "'NTP=no' in timedatectl_result.stdout"
 
 - name: create ~/.ssh dir if missing
   file:
