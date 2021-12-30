@@ -1,53 +1,37 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: overseerr
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: overseerr-pvc
-  namespace: overseerr
-  labels:
-    app: overseerr
-    tier: watchtower
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
+  name: radarr
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: overseerr
-  namespace: overseerr
+  name: radarr
+  namespace: radarr
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
-    app: overseerr
+    app: radarr
     tier: watchtower
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: overseerr
+      app: radarr
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: overseerr
+        app: radarr
         tier: watchtower
     spec:
       containers:
-        - name: overseerr
-          image: ghcr.io/linuxserver/overseerr:latest
-          imagePullPolicy: Always
+        - name: radarr
+          image: ghcr.io/linuxserver/radarr:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: PGID
               value: "1000"
@@ -58,10 +42,14 @@ spec:
             - name: UMASK_SET
               value: "022"
           ports:
-            - containerPort: 5055
+            - containerPort: 7878
           volumeMounts:
             - name: config
               mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+            - name: movies
+              mountPath: /movies
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
@@ -70,13 +58,13 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 5055
+              port: 7878
           readinessProbe:
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 5055
+              port: 7878
           resources:
             requests:
               cpu: 100m
@@ -87,8 +75,14 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          persistentVolumeClaim:
-            claimName: overseerr-pvc
+          hostPath:
+            path: /var/lib/radarr
+        - name: downloads
+          hostPath:
+            path: /hulkpool/downloads
+        - name: movies
+          hostPath:
+            path: /hulkpool/movies
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -97,35 +91,35 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: overseerr
-  namespace: overseerr
+  name: radarr
+  namespace: radarr
   labels:
-    app: overseerr
+    app: radarr
     tier: watchtower
 spec:
   selector:
-    app: overseerr
+    app: radarr
   ports:
-    - port: 5055
+    - port: 7878
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: overseerr
-  namespace: overseerr
+  name: radarr
+  namespace: radarr
   labels:
-    app: overseerr
+    app: radarr
     tier: watchtower
 spec:
   rules:
-    - host: overseerr.techn.is
+    - host: radarr.techn.is
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: overseerr
+                name: radarr
                 port:
-                  number: 5055
+                  number: 7878

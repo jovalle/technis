@@ -31,12 +31,10 @@ spec:
         tier: watchtower
     spec:
       hostname: watchtower
-      nodeSelector:
-        techn.is/role: watchtower
       containers:
         - name: plex
           image: plexinc/pms-docker:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: ADVERTISE_IP
               value: "http://192.168.1.10:32400/" # necessary for certain LAN devices to reach
@@ -132,52 +130,52 @@ spec:
           hostPath:
             path: /etc/localtime
             type: ""
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: plex
-#   namespace: plex
-#   labels:
-#     app: plex
-#     tier: watchtower
-# spec:
-#   selector:
-#     app: plex
-#   type: NodePort # allows certain LAN devices direct access
-#   ports:
-#     - port: 32400
-#       protocol: TCP
-#       targetPort: 32400
-#       nodePort: 32400
-# ---
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: plex
-#   namespace: plex
-#   labels:
-#     app: plex
-#     tier: watchtower
-# spec:
-#   rules:
-#     - host: plex.techn.is
-#       http:
-#         paths:
-#           - path: /
-#             pathType: Prefix
-#             backend:
-#               service:
-#                 name: plex
-#                 port:
-#                   number: 32400
-#     - host: watchtower.techn.is
-#       http:
-#         paths:
-#           - path: /
-#             pathType: Prefix
-#             backend:
-#               service:
-#                 name: plex
-#                 port:
-#                   number: 32400
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex
+  namespace: plex
+  labels:
+    app: plex
+    tier: watchtower
+spec:
+  selector:
+    app: plex
+  type: NodePort # allows certain LAN devices direct access
+  ports:
+    - port: 32400
+      protocol: TCP
+      targetPort: 32400
+      nodePort: 32400
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: plex
+  namespace: plex
+  labels:
+    app: plex
+    tier: watchtower
+spec:
+  rules:
+    - host: plex.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: plex
+                port:
+                  number: 32400
+    - host: watchtower.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: plex
+                port:
+                  number: 32400

@@ -3,22 +3,6 @@ kind: Namespace
 metadata:
   name: tautulli
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: tautulli-pvc
-  namespace: tautulli
-  labels:
-    app: tautulli
-    tier: watchtower
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,7 +31,7 @@ spec:
       containers:
         - name: tautulli
           image: ghcr.io/linuxserver/tautulli:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: PGID
               value: "1000"
@@ -87,8 +71,9 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          persistentVolumeClaim:
-            claimName: tautulli-pvc
+          hostPath:
+            path: /var/lib/tautulli
+            type: ""
         - name: localtime
           hostPath:
             path: /etc/localtime

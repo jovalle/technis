@@ -1,54 +1,40 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sonarr
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: sonarr-pvc
-  namespace: sonarr
-  labels:
-    app: sonarr
-    tier: watchtower
-spec:
-  accessModes:
-  - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
+  name: jackett
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sonarr
-  namespace: sonarr
+  name: jackett
+  namespace: jackett
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
-    app: sonarr
+    app: jackett
     tier: watchtower
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sonarr
+      app: jackett
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: sonarr
+        app: jackett
         tier: watchtower
     spec:
       containers:
-        - name: sonarr
-          image: ghcr.io/linuxserver/sonarr:latest
+        - name: jackett
+          image: ghcr.io/linuxserver/jackett:latest
           imagePullPolicy: Always
           env:
+            - name: AUTO_UPDATE
+              value: "true"
             - name: PGID
               value: "1000"
             - name: PUID
@@ -64,8 +50,6 @@ spec:
               mountPath: /config
             - name: downloads
               mountPath: /downloads
-            - name: tv
-              mountPath: /tv
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
@@ -74,16 +58,16 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 8989
+              port: 9117
           readinessProbe:
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 8989
+              port: 9117
           resources:
             requests:
-              cpu: 200m
+              cpu: 100m
               memory: 200Mi
             limits:
               cpu: 500m
@@ -91,16 +75,13 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          persistentVolumeClaim:
-            claimName: sonarr-pvc
+          hostPath:
+            path: /var/lib/jackett
+            type: ""
         - name: downloads
-          nfs:
+          hostPath:
             path: /hulkpool/downloads
-            server: cerberus.techn.is
-        - name: tv
-          nfs:
-            path: /hulkpool/tv
-            server: cerberus.techn.is
+            type: ""
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -109,35 +90,35 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sonarr
-  namespace: sonarr
+  name: jackett
+  namespace: jackett
   labels:
-    app: sonarr
+    app: jackett
     tier: watchtower
 spec:
   selector:
-    app: sonarr
+    app: jackett
   ports:
-  - port: 8989
-    protocol: TCP
+    - port: 9117
+      protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: sonarr
-  namespace: sonarr
+  name: jackett
+  namespace: jackett
   labels:
-    app: sonarr
+    app: jackett
     tier: watchtower
 spec:
   rules:
-  - host: sonarr.techn.is
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: sonarr
-            port:
-              number: 8989
+    - host: jackett.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jackett
+                port:
+                  number: 9117
