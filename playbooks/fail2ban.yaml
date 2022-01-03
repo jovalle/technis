@@ -1,0 +1,32 @@
+- hosts: all
+  pre_tasks:
+    - name: install package
+      apt:
+        name: fail2ban
+        update_cache: yes
+        force_apt_get: true
+        autoclean: yes
+        autoremove: yes
+      register: apt_install
+      retries: 5
+      until: apt_install is success
+  tasks:
+    - name: configure sshd jail
+      copy:
+        content: |
+          [sshd]
+          enabled = true
+          port = ssh
+          filter = sshd
+          logpath = /var/log/auth.log
+          maxretry = 3
+          findtime = 300
+          bantime = 3600
+          ignoreip = 127.0.0.1
+        dest: /etc/fail2ban/jail.local
+      register: configure_sshd
+    - name: restart fail2ban
+      systemd:
+        name: fail2ban
+        state: restarted
+      when: configure_sshd.changed
