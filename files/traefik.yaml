@@ -1679,6 +1679,9 @@ spec:
     - name: traefik
       port: 9000
       protocol: TCP
+    - name: metrics
+      port: 9100
+      protocol: TCP
   selector:
     app: traefik
 ---
@@ -1721,7 +1724,6 @@ spec:
             - --entryPoints.websecure.address=:443/tcp
             - --entryPoints.websecure.http.tls
             - --global.checknewversion
-            - --global.sendanonymoususage
             - --metrics.prometheus.entrypoint=metrics
             - --metrics.prometheus=true
             - --ping=true
@@ -1737,6 +1739,8 @@ spec:
             - name: traefik
               containerPort: 9000
               hostPort: 9000
+            - name: metrics
+              containerPort: 9100
           livenessProbe:
             failureThreshold: 3
             httpGet:
