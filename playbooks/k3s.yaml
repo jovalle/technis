@@ -3,30 +3,39 @@
     - reset is defined
     - reset | bool
 
-- import_playbook: common.yaml
-  tags:
-    - common
-
 - hosts: all
 
 - hosts: control_plane[0]
   tasks:
     - name: initialize k3s cluster
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.4+k3s1 sh -s - server
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.5+k3s1 sh -s - server
         --cluster-init
-        --disable servicelb
-        --disable traefik
-        --disable-network-policy
-        --docker
-        --flannel-backend none
-        --tls-san "{{ kube_vip_ip }}"
+        --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --token technis
       retries: 2
       delay: 15
       register: init
     - debug:
         var: init.stdout_lines
+    - name: check for traefik manifest
+      stat:
+        path: /var/lib/rancher/k3s/server/manifests/traefik.yaml
+      register: traefik_manifest
+    - copy:
+        content: |
+          apiVersion: helm.cattle.io/v1
+          kind: HelmChartConfig
+          metadata:
+            name: traefik
+            namespace: kube-system
+          spec:
+            valuesContent: |-
+              ports:
+                web:
+                  redirectTo: websecure
+        dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+        when: traefik_manifests.stat.exists
 
 - hosts: control_plane[1:]
   vars:
@@ -41,14 +50,9 @@
   tasks:
     - name: join control plane nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.4+k3s1 sh -s - server
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.5+k3s1 sh -s - server
         --server https://{{ hostvars[control_plane_leader]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
-        --docker
-        --disable servicelb
-        --disable traefik
-        --disable-network-policy
-        --flannel-backend none
-        --tls-san "{{ kube_vip_ip }}"
+        --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --token technis
       retries: 2
       delay: 15
@@ -64,18 +68,9 @@
   tasks:
     - name: join nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.4+k3s1 K3S_URL=https://{{ kube_vip_ip }}:6443 K3S_TOKEN=technis sh -s -
-        --docker
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.5+k3s1 K3S_URL=https://{{ kube_vip_ip | default("192.168.1.100")}}:6443 K3S_TOKEN=technis sh -s -
       retries: 2
       delay: 15
       register: join_nodes
     - debug:
         var: join_nodes.stdout_lines
-
-- import_playbook: calico.yaml
-  tags:
-    - cni
-
-- import_playbook: technis.yaml
-  tags:
-    - technis
