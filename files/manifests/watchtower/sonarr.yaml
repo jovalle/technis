@@ -1,36 +1,31 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: radarr
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: radarr
-  namespace: radarr
+  name: sonarr
+  namespace: watchtower
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
-    app: radarr
+    app: sonarr
     tier: watchtower
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: radarr
+      app: sonarr
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: radarr
+        app: sonarr
         tier: watchtower
     spec:
       containers:
-        - name: radarr
-          image: ghcr.io/linuxserver/radarr:latest
+        - name: sonarr
+          image: ghcr.io/linuxserver/sonarr:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: PGID
@@ -42,14 +37,14 @@ spec:
             - name: UMASK_SET
               value: "022"
           ports:
-            - containerPort: 7878
+            - containerPort: 8989
           volumeMounts:
             - name: config
               mountPath: /config
             - name: downloads
               mountPath: /downloads
-            - name: movies
-              mountPath: /movies
+            - name: tv
+              mountPath: /tv
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
@@ -58,16 +53,16 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 7878
+              port: 8989
           readinessProbe:
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 7878
+              port: 8989
           resources:
             requests:
-              cpu: 100m
+              cpu: 200m
               memory: 200Mi
             limits:
               cpu: 500m
@@ -76,13 +71,13 @@ spec:
       volumes:
         - name: config
           hostPath:
-            path: /var/lib/radarr
+            path: /var/lib/sonarr
         - name: downloads
           hostPath:
             path: /hulkpool/downloads
-        - name: movies
+        - name: tv
           hostPath:
-            path: /hulkpool/movies
+            path: /hulkpool/tv
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -91,35 +86,35 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: radarr
-  namespace: radarr
+  name: sonarr
+  namespace: watchtower
   labels:
-    app: radarr
+    app: sonarr
     tier: watchtower
 spec:
   selector:
-    app: radarr
+    app: sonarr
   ports:
-    - port: 7878
+    - port: 8989
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: radarr
-  namespace: radarr
+  name: sonarr
+  namespace: watchtower
   labels:
-    app: radarr
+    app: sonarr
     tier: watchtower
 spec:
   rules:
-    - host: radarr.techn.is
+    - host: sonarr.techn.is
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: radarr
+                name: sonarr
                 port:
-                  number: 7878
+                  number: 8989

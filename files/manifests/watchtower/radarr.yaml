@@ -1,40 +1,33 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: jackett
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jackett
-  namespace: jackett
+  name: radarr
+  namespace: watchtower
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
-    app: jackett
+    app: radarr
     tier: watchtower
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jackett
+      app: radarr
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: jackett
+        app: radarr
         tier: watchtower
     spec:
       containers:
-        - name: jackett
-          image: ghcr.io/linuxserver/jackett:latest
+        - name: radarr
+          image: ghcr.io/linuxserver/radarr:latest
           imagePullPolicy: IfNotPresent
           env:
-            - name: AUTO_UPDATE
-              value: "true"
             - name: PGID
               value: "1000"
             - name: PUID
@@ -44,12 +37,14 @@ spec:
             - name: UMASK_SET
               value: "022"
           ports:
-            - containerPort: 8989
+            - containerPort: 7878
           volumeMounts:
             - name: config
               mountPath: /config
             - name: downloads
               mountPath: /downloads
+            - name: movies
+              mountPath: /movies
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
@@ -58,13 +53,13 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 9117
+              port: 7878
           readinessProbe:
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
-              port: 9117
+              port: 7878
           resources:
             requests:
               cpu: 100m
@@ -76,46 +71,50 @@ spec:
       volumes:
         - name: config
           hostPath:
-            path: /var/lib/jackett
+            path: /var/lib/radarr
         - name: downloads
           hostPath:
             path: /hulkpool/downloads
+        - name: movies
+          hostPath:
+            path: /hulkpool/movies
         - name: localtime
           hostPath:
             path: /etc/localtime
+            type: ""
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: jackett
-  namespace: jackett
+  name: radarr
+  namespace: watchtower
   labels:
-    app: jackett
+    app: radarr
     tier: watchtower
 spec:
   selector:
-    app: jackett
+    app: radarr
   ports:
-    - port: 9117
+    - port: 7878
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: jackett
-  namespace: jackett
+  name: radarr
+  namespace: watchtower
   labels:
-    app: jackett
+    app: radarr
     tier: watchtower
 spec:
   rules:
-    - host: jackett.techn.is
+    - host: radarr.techn.is
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: jackett
+                name: radarr
                 port:
-                  number: 9117
+                  number: 7878

@@ -1,13 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: overseerr
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: overseerr
-  namespace: overseerr
+  namespace: watchtower
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
@@ -82,7 +77,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: overseerr
-  namespace: overseerr
+  namespace: watchtower
   labels:
     app: overseerr
     tier: watchtower
@@ -97,7 +92,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: overseerr
-  namespace: overseerr
+  namespace: watchtower
   labels:
     app: overseerr
     tier: watchtower

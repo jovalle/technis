@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: cobweb
+  namespace: cobweb
+  labels:
+    app: cobweb
+spec:
+  selector:
+    app: cobweb
+  ports:
+    - port: 80
+      protocol: TCP
