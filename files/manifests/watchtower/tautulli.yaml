@@ -1,13 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: tautulli
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tautulli
-  namespace: tautulli
+  namespace: watchtower
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
@@ -83,7 +78,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tautulli
-  namespace: tautulli
+  namespace: watchtower
   labels:
     app: tautulli
     tier: watchtower
@@ -98,7 +93,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: tautulli
-  namespace: tautulli
+  namespace: watchtower
   labels:
     app: tautulli
     tier: watchtower

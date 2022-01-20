@@ -1,13 +1,8 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: qbittorrent
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: qbittorrent-config
-  namespace: qbittorrent
+  namespace: watchtower
 data:
   K8S_CLUSTER: "yes"
   K8S_POD_CIDR: "10.42.0.0/16"
@@ -24,7 +19,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: qbittorrent
-  namespace: qbittorrent
+  namespace: watchtower
   labels:
     app: qbittorrent
 spec:
@@ -136,7 +131,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: qbittorrent
-  namespace: qbittorrent
+  namespace: watchtower
   labels:
     app: qbittorrent
 spec:
@@ -151,7 +146,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: qbittorrent
-  namespace: qbittorrent
+  namespace: watchtower
   labels:
     app: qbittorrent
 spec:
