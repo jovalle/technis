@@ -1,6 +1,7 @@
 - name: determine kubectl delegate
   block: # avoiding jinja2 templating warning
     - name: delegate to first control plane host
+      set_fact:
         kubectl_delegate: "{{ groups['control_plane'][1] }}"
       when: inventory_hostname != groups['control_plane'][0]
 

@@ -97,34 +97,8 @@
 - name: flush handlers
   meta: flush_handlers
 
-- name: check for pending pods
-  command: kubectl get pods -A --field-selector=status.phase=Pending --no-headers
-  ignore_errors: yes
-  register: pending_pods
-
-- name: deploy gpu test pod
-  block:
-    - shell: |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          name: cuda-vector-add
-        spec:
-          restartPolicy: OnFailure
-          containers:
-            - name: cuda-vector-add
-              image: "k8s.gcr.io/cuda-vector-add:v0.1"
-              resources:
-                limits:
-                  nvidia.com/gpu: 1
-        EOF
-      when: pending_pods.stdout_lines | length == 0
-    - command: kubectl wait --for=condition=ready pod cuda-vector-add
-  always:
-    - command: kubectl delete pod cuda-vector-add --ignore-not-found
-  when:
-    - pending_pods.stdout_lines | length == 0
+- name: label node
+  command: kubectl label node "{{ gpu_node | default('nexus') }}" kubernetes.io/gpu=nvidia --overwrite
 
 - name: deploy nvidia-device-plugin
   shell: |
@@ -174,3 +148,42 @@
   failed_when: ndp_rollout_status.rc | int != 0
   retries: 10
   delay: 6
+
+- name: check for pending pods
+  command: kubectl get pods -A --field-selector=status.phase=Pending --no-headers
+  ignore_errors: yes
+  register: pending_pods
+
+- name: deploy gpu test job
+  block:
+    - name: deploy job
+      shell: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: cuda-vector-add
+        spec:
+          template:
+            spec:
+              restartPolicy: OnFailure
+              containers:
+                - name: cuda-vector-add
+                  image: "k8s.gcr.io/cuda-vector-add:v0.1"
+                  resources:
+                    limits:
+                      nvidia.com/gpu: 1
+        EOF
+      when: pending_pods.stdout_lines | length == 0
+    - name: wait for job completion
+      command: kubectl wait --for=condition=complete job cuda-vector-add
+  rescue:
+    - command: >
+        kubectl get nodes "{{ gpu_node | default('nexus') }}" -o jsonpath='{.status.allocatable}'
+      register: node_json
+    - debug:
+        msg: "{{ node_json.stdout | from_json }}"
+  always:
+    - command: kubectl delete job cuda-vector-add --ignore-not-found
+  when:
+    - pending_pods.stdout_lines | length == 0

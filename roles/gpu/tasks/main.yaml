@@ -1,0 +1,6 @@
+- name: setup {{ gpu_vendor }} gpu
+  include_role:
+    name: gpu/{{ gpu_vendor }}
+  when:
+  - inventory_hostname in groups['gpu']
+  - gpu_vendor != 'none'
