@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  rules:
+  - host: prometheus.techn.is
+    http:
+      paths:
+      - backend:
+          service:
+            name: prometheus-k8s
+            port:
+              name: web
+        path: /
+        pathType: Prefix
