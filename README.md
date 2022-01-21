@@ -4,6 +4,9 @@ Test bed for all things virtualization, automation, and Kubernetes.
 
 ## Current Environments
 
+### Default
+Baremetal amd64/arm64
+
 ### Atlantis
 Terraform + libvirt + KVM
 
