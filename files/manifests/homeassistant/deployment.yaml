@@ -1,0 +1,41 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: homeassistant
+  namespace: technis
+  annotations:
+    keel.sh/policy: all
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: homeassistant
+  template:
+    metadata:
+      name: homeassistant
+      labels:
+        name: homeassistant
+    spec:
+      hostNetwork: true
+      containers:
+        - name: homeassistant
+          image: lscr.io/linuxserver/homeassistant
+          env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+          ports:
+            - containerPort: 8123
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          hostPath:
+            path: /var/lib/homeassistant
