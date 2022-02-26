@@ -11,9 +11,9 @@
   until: apt_upgrade is success
   when: apt_upgrade | default(False) | bool
 
-- name: install common packages
+- name: install common apt packages
   apt:
-    name: "{{ common_packages }}"
+    name: "{{ common_packages_yum }}"
     install_recommends: false
     update_cache: yes
     cache_valid_time: 3600
@@ -24,10 +24,12 @@
   retries: 5
   until: apt_install_common is success
 
-- name: set node /etc/hostname
-  copy:
-    content: "{{ inventory_hostname }}"
-    dest: /etc/hostname
+- name: install common pip packages
+  pip:
+    name: "{{ common_packages_pip }}"
+  register: pip_install_common
+  retries: 5
+  until: pip_install_common is success
 
 - name: clean up lingering hostname entries
   lineinfile:
@@ -39,7 +41,8 @@
 - name: set node aliases in /etc/hosts
   lineinfile:
     path: /etc/hosts
-    line: "127.0.0.1       {{ hostvars[inventory_hostname]['ansible_fqdn'] }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+    # line: "127.0.0.1       {{ hostvars[inventory_hostname]['ansible_fqdn'] }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+    line: "127.0.0.1       {{ hostvars[inventory_hostname]['ansible_hostname'] }}.{{ lan_domain }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
     insertbefore: BOF
   when: infrastructure_provisioner != 'vagrant'
 
@@ -51,6 +54,14 @@
   with_items:
     - "{{ groups.all }}"
   when: infrastructure_provisioner == 'vagrant'
+
+- debug: var=ansible_fqdn
+
+- name: set hostname
+  shell: |
+    echo "{{ inventory_hostname }}" > /etc/hostname
+    hostname {{ inventory_hostname }}
+    hostnamectl set-hostname {{ inventory_hostname }}
 
 - name: disable swap in /etc/fstab
   replace:
@@ -126,6 +137,21 @@
     dest: ~/.ssh/id_rsa
     mode: 0600
   when: ssh_private_key is defined
+
+- name: prohibit root password auth
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#PermitRootLogin.*"
+    line: "PermitRootLogin prohibit-password"
+  notify: restart ssh
+
+- name: ensure space for local path mounts
+  file:
+    path: /var/lib/technis
+    state: directory
+    mode: 0755
+    owner: 1000
+    group: 1000
 
 - name: personal touch
   lineinfile:

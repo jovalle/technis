@@ -20,7 +20,8 @@
         state: stopped
         enabled: no
         masked: yes
-      ignore_errors: yes # if masked, will cause failures
+      # if masked, will cause failures
+      ignore_errors: yes
 
     - name: delete swap file
       file:
@@ -63,20 +64,9 @@
           LC_ALL="{{ common_locale }}"
         dest: /etc/default/locale
 
-- name: disable dhcpd service
-  systemd:
-    name: dhcpcd
-    state: stopped
-    enabled: no
-    masked: yes
-  ignore_errors: yes # if masked, will cause failures
-
-- name: update interfaces
-  copy:
-    content: |
-      # Ansible managed
-      auto eth0
-      allow-hotplug eth0
-      iface eth0 inet dhcp
-    dest: /etc/network/interfaces
-  notify: restart networking
+# Fixes known issue with ubuntu server 21.10
+# Source: https://github.com/k3s-io/k3s/issues/4188#issuecomment-982503626
+- name: install vxlan modules for k3s
+  apt:
+    name: linux-modules-extra-raspi
+  notify: reboot host
