@@ -1,3 +1,21 @@
+- name: check for target namespace
+  command: kubectl get namespace {{ ingress_controller_namespace }} -o jsonpath='{.metadata.name}' --ignore-not-found
+  register: ingress_ns
+
+- name: create target namespace
+  command: kubectl create namespace {{ ingress_controller_namespace }}
+  when: ingress_ns.stdout == ""
+
+- template:
+    src: "{{ item }}.j2"
+    dest: /tmp/{{ item }}
+  with_items:
+    - crds.yaml
+    - rbac.yaml
+    - deployment.yaml
+    - service.yaml
+    - ingress.yaml
+
 - name: deploy traefik ingress controller
   import_role:
     name: kubectl
@@ -5,24 +23,16 @@
     source_role: ingress/traefik
     file_type: template
     target_list:
-    - namespace.yaml
-    - crds.yaml
-    - rbac.yaml
-    - service.yaml
-    - deployment.yaml
-    - ingress.yaml
+      - crds.yaml
+      - rbac.yaml
+      - deployment.yaml
+      - service.yaml
+      - ingress.yaml
 
-- name: get list of active control plane nodes
-  shell: |
-    kubectl get nodes --selector=node-role.kubernetes.io/control-plane=true --no-headers | wc -l
-  register: control_plane_nodes
-
-- name: wait for traefik readiness
-  shell: kubectl -n traefik get daemonset traefik -o jsonpath='{.status.numberReady}'
-  register: ready_count
+- name: check traefik readiness
+  command: kubectl -n {{ ingress_controller_namespace }} rollout status daemonset traefik --timeout 60s
   retries: 6
   delay: 10
-  until: ready_count.stdout == control_plane_nodes.stdout
 
 - name: check for prometheus
   shell: kubectl get crd servicemonitors.monitoring.coreos.com
@@ -36,5 +46,5 @@
     source_role: ingress/traefik
     file_type: template
     target_list:
-    - servicemonitor.yaml
+      - servicemonitor.yaml
   when: servicemonitors_crd.rc == 0
