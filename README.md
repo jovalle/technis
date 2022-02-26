@@ -13,6 +13,10 @@ Terraform + libvirt + KVM
 ### Gotham/Krypton
 Vagrant + Virtualbox
 
+## OS
+
+`nvidia-container-runtime` does not support Debian beyond amd64. Ubuntu Server 21.10 is the pick for now as it is supported and built for Raspberry Pis and baremetal alike.
+
 ## Kubernetes
 
 ### Principles

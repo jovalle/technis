@@ -3,26 +3,15 @@
     - reset is defined
     - reset | bool
 
-- hosts: all
-
-- hosts: control_plane[0]
+- name: render custom config for built-in traefik
+  hosts: control_plane
   tasks:
-    - name: initialize k3s cluster
-      shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.5+k3s1 sh -s - server
-        --cluster-init
-        --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
-        --token technis
-      retries: 2
-      delay: 15
-      register: init
-    - debug:
-        var: init.stdout_lines
-    - name: check for traefik manifest
-      stat:
-        path: /var/lib/rancher/k3s/server/manifests/traefik.yaml
-      register: traefik_manifest
-    - copy:
+    - name: ensure k3s manifests dir exists
+      file:
+        path: /var/lib/rancher/k3s/server/manifests/
+        state: directory
+    - name: override traefik helm chart
+      copy:
         content: |
           apiVersion: helm.cattle.io/v1
           kind: HelmChartConfig
@@ -34,10 +23,44 @@
               ports:
                 web:
                   redirectTo: websecure
+              service:
+                enabled: true
+                type: LoadBalancer
+                spec:
+                  loadBalancerIP: "{{ ingress_vip | default('192.168.1.200') }}"
         dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
-        when: traefik_manifests.stat.exists
+  tags:
+    - cluster-init
+
+- name: deploy vip for kube-api
+  import_playbook: kube-vip.yaml
+  tags:
+    - vip
+
+- name: initialize k3s cluster
+  hosts: control_plane[0]
+  tasks:
+    # - INSTALL_K3S_VERSION is required for idempotency. Look to Rancher's system-upgrade-controller
+    #   for upgrade paths. Changing the version + --cluster-init will cause a full restart of workloads
+    #   and high risk of k8s state corruption.
+    # - servicelb disabled due to conflicts with metallb
+    - name: initialize k3s cluster
+      shell: >
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version | default('v1.22.6+k3s1') }} sh -s - server
+        --cluster-init
+        --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
+        --disable servicelb
+        --token technis
+      retries: 2
+      delay: 15
+      register: init
+    - debug:
+        var: init.stdout_lines
+  tags:
+    - cluster-init
 
 - hosts: control_plane[1:]
+  serial: 1
   vars:
     control_plane_leader: "{{ groups['control_plane'][0] }}"
   pre_tasks:
@@ -50,27 +73,34 @@
   tasks:
     - name: join control plane nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.5+k3s1 sh -s - server
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version | default('v1.22.6+k3s1') }} sh -s - server
         --server https://{{ hostvars[control_plane_leader]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
         --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
+        --disable servicelb
         --token technis
       retries: 2
       delay: 15
+      ignore_errors: yes
       register: join_control_plane
     - debug:
         var: join_control_plane.stdout_lines
-
-- import_playbook: kube-vip.yaml
   tags:
-    - vip
+    - control-plane
 
-- hosts: nodes
+- name: add worker nodes to cluster
+  hosts: nodes
   tasks:
     - name: join nodes
       shell: >
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.22.5+k3s1 K3S_URL=https://{{ kube_vip_ip | default("192.168.1.100")}}:6443 K3S_TOKEN=technis sh -s -
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version | default('v1.22.6+k3s1') }} K3S_URL=https://{{ kube_vip_ip | default('192.168.1.100')}}:6443 K3S_TOKEN=technis sh -s -
       retries: 2
       delay: 15
       register: join_nodes
     - debug:
         var: join_nodes.stdout_lines
+  tags:
+    - nodes
+
+# TODO
+# - name: configure local kubeconfig
+#   fetch:

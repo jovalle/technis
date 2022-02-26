@@ -1,3 +1,8 @@
+- import_playbook: k3s-uninstall.yaml
+  when: k8s_provisioner | default('k8s') == 'k3s'
+  tags:
+    - k3s
+
 - hosts: cluster
   roles:
     - name: k8s/reset
@@ -13,5 +18,5 @@
 - hosts: etcd
   roles:
     - name: etcd/reset
-      tags:
-        - k8s
+  tags:
+    - etcd
