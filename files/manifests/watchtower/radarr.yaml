@@ -1,5 +1,18 @@
-apiVersion: apps/v1
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: radarr
+  namespace: watchtower
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 kind: Deployment
+apiVersion: apps/v1
 metadata:
   name: radarr
   namespace: watchtower
@@ -70,21 +83,27 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/radarr
+          persistentVolumeClaim:
+            claimName: radarr
+        - name: config-backup
+          nfs:
+            server: nexus.techn.is
+            path: /var/lib/technis/radarr
         - name: downloads
-          hostPath:
+          nfs:
+            server: nexus.techn.is
             path: /hulkpool/downloads
         - name: movies
-          hostPath:
+          nfs:
+            server: nexus.techn.is
             path: /hulkpool/movies
         - name: localtime
           hostPath:
             path: /etc/localtime
             type: ""
 ---
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
   name: radarr
   namespace: watchtower
@@ -98,8 +117,8 @@ spec:
     - port: 7878
       protocol: TCP
 ---
-apiVersion: networking.k8s.io/v1
 kind: Ingress
+apiVersion: networking.k8s.io/v1
 metadata:
   name: radarr
   namespace: watchtower
@@ -108,7 +127,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: radarr.techn.is
+    - host: radarr.k8s.techn.is
       http:
         paths:
           - path: /

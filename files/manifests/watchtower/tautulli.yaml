@@ -1,5 +1,18 @@
-apiVersion: apps/v1
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: tautulli
+  namespace: watchtower
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 kind: Deployment
+apiVersion: apps/v1
 metadata:
   name: tautulli
   namespace: watchtower
@@ -45,13 +58,13 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
               port: 8181
           readinessProbe:
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
@@ -66,16 +79,19 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/tautulli
-            type: ""
+          persistentVolumeClaim:
+            claimName: tautulli
+        - name: config-backup
+          nfs:
+            server: nexus.techn.is
+            path: /var/lib/technis/tautulli
         - name: localtime
           hostPath:
             path: /etc/localtime
             type: ""
 ---
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
   name: tautulli
   namespace: watchtower
@@ -89,8 +105,8 @@ spec:
     - port: 8181
       protocol: TCP
 ---
-apiVersion: networking.k8s.io/v1
 kind: Ingress
+apiVersion: networking.k8s.io/v1
 metadata:
   name: tautulli
   namespace: watchtower
@@ -99,7 +115,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: tautulli.techn.is
+    - host: tautulli.k8s.techn.is
       http:
         paths:
           - path: /

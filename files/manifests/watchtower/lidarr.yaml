@@ -1,3 +1,16 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: lidarr
+  namespace: watchtower
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -49,13 +62,13 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
               port: 8686
           readinessProbe:
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
@@ -70,13 +83,19 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/lidarr
+          persistentVolumeClaim:
+            claimName: lidarr
+        - name: config-backup
+          nfs:
+            server: nexus.techn.is
+            path: /var/lib/technis/lidarr
         - name: downloads
-          hostPath:
+          nfs:
+            server: nexus.techn.is
             path: /hulkpool/downloads
         - name: music
-          hostPath:
+          nfs:
+            server: nexus.techn.is
             path: /hulkpool/music
         - name: localtime
           hostPath:
@@ -108,7 +127,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: lidarr.techn.is
+    - host: lidarr.k8s.techn.is
       http:
         paths:
           - path: /
