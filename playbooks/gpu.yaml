@@ -1,3 +1,5 @@
 - hosts: gpu
   roles:
     - gpu/nvidia
+    - role: gpu/nvidia/k3s
+      when: k8s_provisioner == "k3s"

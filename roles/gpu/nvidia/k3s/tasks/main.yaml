@@ -1,0 +1,10 @@
+- name: ensure containerd config dir exists
+  file:
+    path: /var/lib/rancher/k3s/agent/etc/containerd/
+    state: directory
+
+# Source: https://k3d.io/v5.2.2/usage/advanced/cuda/?h=cuda
+- name: configure containerd to use nvidia-container-runtime
+  template:
+    src: config.toml.tmpl.j2
+    dest: /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl

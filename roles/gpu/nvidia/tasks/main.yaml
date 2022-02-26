@@ -4,10 +4,30 @@
     state: present
   with_items:
     - ubuntu-drivers-common
-    - nvidia-headless-495
-    - nvidia-utils-495
-    - libnvidia-encode-495
-    - nvidia-container-runtime
+    - nvidia-headless-510
+    - nvidia-utils-510
+    - libnvidia-encode-510
+
+- name: add apt signing key for nvidia-docker
+  apt_key:
+    url: https://nvidia.github.io/nvidia-docker/gpgkey
+
+# Hard coded contents of https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list
+# due to no support for 302 redirections from ubuntu20.04 to ubuntu 18.04 and repo param does
+# not download file.
+- name: add apt repository for nvidia-docker
+  apt_repository:
+    repo: "{{ item }}"
+    filename: nvidia-docker
+  with_items:
+    - deb https://nvidia.github.io/libnvidia-container/stable/ubuntu18.04/$(ARCH) /
+    - deb https://nvidia.github.io/nvidia-container-runtime/stable/ubuntu18.04/$(ARCH) /
+    - deb https://nvidia.github.io/nvidia-docker/ubuntu18.04/$(ARCH) /
+
+- name: install nvidia runtime
+  apt:
+    name: nvidia-container-runtime
+    update_cache: yes
 
 - name: check nvidia card
   shell: nvidia-smi
@@ -32,10 +52,27 @@
         state: absent
   when: nvidia_smi.rc | int == 0
 
+# nvtop is available in ubuntu repos but is much older than github releases
 - name: check for nvtop bin
   stat:
     path: /usr/local/bin/nvtop
   register: nvtop
+
+- name: check for local nvtop version
+  shell: nvtop --version | awk '{print $NF}'
+  register: nvtop_local_version
+  when: nvtop.stat.exists
+
+- name: check for upstream nvtop version
+  uri:
+    url: https://api.github.com/repos/Syllo/nvtop/releases/latest
+    return_content: yes
+    body_format: json
+  register: nvtop_upstream_latest
+
+- set_fact:
+    nvtop_upstream_version: "{{ nvtop_upstream_latest.json | json_query('tag_name') }}"
+
 - name: install nvtop
   block:
     - name: install prerequisites for nvtop
@@ -70,120 +107,13 @@
       file:
         path: "{{ tempdir.path }}"
         state: absent
-  when: nvtop.stat.exists == False
+  when: >
+    nvtop.stat.exists == False or
+    nvtop_local_version.stdout != nvtop_upstream_version
 
-# not working due to lack of interactive shell for ctr run
+# Not working due to lack of interactive shell for `ctr run` but here for ref
 #- name: pull gpu container image
 #  shell: ctr image pull docker.io/nvidia/cuda:11.0-base
 #
 #- name: test gpu container
 #  shell: ctr run --rm --gpus 0 -t docker.io/nvidia/cuda:11.0-base cuda-11.0-base nvidia-smi
-
-- name: check for k3s
-  command: k3s check-config
-  ignore_errors: yes
-  no_log: yes
-  register: k3s_check_config
-
-- name: configure containerd to use nvidia-container-runtime
-  template:
-    src: config.toml.tmpl.j2
-    dest: /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl # source: https://k3d.io/v5.2.2/usage/advanced/cuda/?h=cuda
-  notify:
-    - restart containerd
-    - restart k3s
-  when: k3s_check_config.rc | int == 0
-
-- name: flush handlers
-  meta: flush_handlers
-
-- name: label node
-  command: kubectl label node "{{ gpu_node | default('nexus') }}" kubernetes.io/gpu=nvidia --overwrite
-
-- name: deploy nvidia-device-plugin
-  shell: |
-    cat <<EOF | kubectl apply -f -
-    apiVersion: apps/v1
-    kind: DaemonSet
-    metadata:
-      name: nvidia-device-plugin
-      namespace: kube-system
-    spec:
-      selector:
-        matchLabels:
-          k8s-app: nvidia-device-plugin
-      template:
-        metadata:
-          labels:
-            k8s-app: nvidia-device-plugin
-        spec:
-          priorityClassName: system-node-critical
-          nodeSelector:
-            kubernetes.io/gpu: nvidia
-          tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
-          containers:
-          - env:
-            - name: DP_DISABLE_HEALTHCHECKS
-              value: xids
-            image: nvidia/k8s-device-plugin:1.11
-            name: nvidia-device-plugin-ctr
-            securityContext:
-              allowPrivilegeEscalation: true
-              capabilities:
-                drop: ["ALL"]
-            volumeMounts:
-              - name: device-plugin
-                mountPath: /var/lib/kubelet/device-plugins
-          volumes:
-            - name: device-plugin
-              hostPath:
-                path: /var/lib/kubelet/device-plugins
-    EOF
-
-- name: wait for daemonset to become ready
-  command: kubectl -n kube-system rollout status daemonset nvidia-device-plugin --timeout 60s
-  register: ndp_rollout_status
-  failed_when: ndp_rollout_status.rc | int != 0
-  retries: 10
-  delay: 6
-
-- name: check for pending pods
-  command: kubectl get pods -A --field-selector=status.phase=Pending --no-headers
-  ignore_errors: yes
-  register: pending_pods
-
-- name: deploy gpu test job
-  block:
-    - name: deploy job
-      shell: |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: batch/v1
-        kind: Job
-        metadata:
-          name: cuda-vector-add
-        spec:
-          template:
-            spec:
-              restartPolicy: OnFailure
-              containers:
-                - name: cuda-vector-add
-                  image: "k8s.gcr.io/cuda-vector-add:v0.1"
-                  resources:
-                    limits:
-                      nvidia.com/gpu: 1
-        EOF
-      when: pending_pods.stdout_lines | length == 0
-    - name: wait for job completion
-      command: kubectl wait --for=condition=complete job cuda-vector-add
-  rescue:
-    - command: >
-        kubectl get nodes "{{ gpu_node | default('nexus') }}" -o jsonpath='{.status.allocatable}'
-      register: node_json
-    - debug:
-        msg: "{{ node_json.stdout | from_json }}"
-  always:
-    - command: kubectl delete job cuda-vector-add --ignore-not-found
-  when:
-    - pending_pods.stdout_lines | length == 0
