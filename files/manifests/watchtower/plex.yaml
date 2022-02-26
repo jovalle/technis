@@ -1,5 +1,5 @@
-apiVersion: apps/v1
 kind: Deployment
+apiVersion: apps/v1
 metadata:
   name: plex
   namespace: watchtower
@@ -93,17 +93,17 @@ spec:
           resources:
             requests:
               cpu: 1000m
-              memory: 2000Mi
+              memory: 2Gi
               nvidia.com/gpu: 1 # nvidia/k8s-device-plugin, scheduled onto host with exposed gpu
             limits:
-              cpu: 3000m # out of 4 cores
-              memory: 24000Mi # out of 32GiB
+              cpu: 2000m # out of 4 cores
+              memory: 4Gi # out of 32GiB
               nvidia.com/gpu: 1
       restartPolicy: Always
       volumes: # using hostPath for performance
         - name: config
           hostPath:
-            path: /var/lib/plex
+            path: /var/lib/technis/plex
             type: Directory
         - name: music
           hostPath:
@@ -119,15 +119,15 @@ spec:
             type: Directory
         - name: transcode
           hostPath:
-            path: /var/lib/plex/transcode
+            path: /var/lib/technis/plex/transcode
             type: Directory
         - name: localtime
           hostPath:
             path: /etc/localtime
             type: ""
 ---
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
   name: plex
   namespace: watchtower
@@ -144,8 +144,8 @@ spec:
       targetPort: 32400
       nodePort: 32400
 ---
-apiVersion: networking.k8s.io/v1
 kind: Ingress
+apiVersion: networking.k8s.io/v1
 metadata:
   name: plex
   namespace: watchtower
@@ -154,7 +154,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: plex.techn.is
+    - host: plex.k8s.techn.is
       http:
         paths:
           - path: /
@@ -164,7 +164,7 @@ spec:
                 name: plex
                 port:
                   number: 32400
-    - host: watchtower.techn.is
+    - host: watchtower.technis.io
       http:
         paths:
           - path: /
