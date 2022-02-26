@@ -1,10 +1,4 @@
-- hosts: cerberus
-  vars_prompt:
-    - name: smb_username
-      prompt: "SMB Username"
-      private: no
-    - name: smb_password
-      prompt: "SMB Password"
+- hosts: nexus
   tasks:
     - name: install samba
       apt:
@@ -15,12 +9,12 @@
         src: ../files/smb.conf
         dest: /etc/samba/smb.conf
     - name: check and enable user
-      shell: smbpasswd -e {{ smb_username }}
+      shell: smbpasswd -e {{ smb_username | default('jay') }}
       register: smb_check_user
       changed_when: smb_check_user.rc != 0
       ignore_errors: yes
     - name: create samba user
-      shell: (echo '{{ smb_password }}'; echo '{{ smb_password }}') | smbpasswd -a -s {{ smb_username }}
+      shell: (echo '{{ smb_password | default('technis') }}'; echo '{{ smb_password | default('technis') }}') | smbpasswd -a -s {{ smb_username | default('jay') }}
       no_log: yes
       register: smb_create_user
       when: smb_check_user.rc != 0
