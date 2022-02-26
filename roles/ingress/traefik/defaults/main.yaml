@@ -1,1 +1,1 @@
-ingress_controller_namespace: traefik
+ingress_controller_namespace: kube-system

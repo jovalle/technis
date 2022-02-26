@@ -1,1 +1,1 @@
-ingress_controller: contour
+ingress_controller: traefik

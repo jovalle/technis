@@ -21,71 +21,75 @@ spec:
         app: traefik
     spec:
       nodeSelector:
+{% if groups['ingress'] is defined and groups['ingress'] | length > 0 %}
+        node-role.kubernetes.io/ingress: "true"
+{% else %}
         node-role.kubernetes.io/master: "true"
       tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+{% endif %}
       serviceAccountName: traefik-ingress-controller
       containers:
-      - name: traefik
-        image: traefik:v2.5.3
-        args:
-        - --api.dashboard=true
-        - --entryPoints.metrics.address=:9100/tcp
-        - --entryPoints.traefik.address=:9000/tcp
-        - --entryPoints.web.address=:80/tcp
-        - --entryPoints.web.http.redirections.entryPoint.to=websecure
-        - --entryPoints.websecure.address=:443/tcp
-        - --entryPoints.websecure.http.tls
-        - --global.checknewversion
-        - --global.sendanonymoususage
-        - --metrics.prometheus.entrypoint=metrics
-        - --metrics.prometheus=true
-        - --ping=true
-        - --providers.kubernetescrd
-        - --providers.kubernetesingress
-        ports:
-        - name: web
-          containerPort: 80
-{% if ingress_loadbalancer_ip is not defined %}
-          hostPort: 80
-{% endif %}
-        - name: websecure
-          containerPort: 443
-{% if ingress_loadbalancer_ip is not defined %}
-          hostPort: 443
-{% endif %}
         - name: traefik
-          containerPort: 9000
+          image: traefik:v2.5.6
+          args:
+            - --api.dashboard=true
+            - --entryPoints.metrics.address=:9100/tcp
+            - --entryPoints.traefik.address=:9000/tcp
+            - --entryPoints.web.address=:80/tcp
+            - --entryPoints.web.http.redirections.entryPoint.to=websecure
+            - --entryPoints.web.http.redirections.entryPoint.scheme=https
+            - --entryPoints.websecure.address=:443/tcp
+            - --entryPoints.websecure.http.tls
+            - --global.checknewversion
+            - --metrics.prometheus.entrypoint=metrics
+            - --metrics.prometheus=true
+            - --ping=true
+            - --providers.kubernetescrd
+            - --providers.kubernetesingress
+          ports:
+            - name: web
+              containerPort: 80
 {% if ingress_loadbalancer_ip is not defined %}
-          hostPort: 9000
+              hostPort: 80
 {% endif %}
-        livenessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /ping
-            port: 9000
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 2
-        readinessProbe:
-          failureThreshold: 1
-          httpGet:
-            path: /ping
-            port: 9000
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 2
+            - name: websecure
+              containerPort: 443
+{% if ingress_loadbalancer_ip is not defined %}
+              hostPort: 443
+{% endif %}
+            - name: traefik
+              containerPort: 9000
+{% if ingress_loadbalancer_ip is not defined %}
+              hostPort: 9000
+{% endif %}
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: 9000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          readinessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /ping
+              port: 9000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
       volumes:
-      - emptyDir: {}
-        name: data
-      - emptyDir: {}
-        name: tmp
+        - emptyDir: {}
+          name: data
+        - emptyDir: {}
+          name: tmp
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: TLSOption
@@ -94,14 +98,3 @@ metadata:
   namespace: default
 spec:
   minVersion: VersionTLS12
-{% if ingress_default_cert_secret.name is defined %}
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: TLSStore
-metadata:
-  name: default
-  namespace: {{ ingress_default_cert_secret.namespace }}
-spec:
-  defaultCertificate:
-    secretName: {{ ingress_default_cert_secret.name }}
-{% endif %}
