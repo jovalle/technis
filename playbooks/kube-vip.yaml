@@ -1,4 +1,4 @@
-- hosts: control_plane[0]
+- hosts: control_plane
   pre_tasks:
     - name: ensure manifests directory exists
       file:
@@ -21,7 +21,9 @@
         kube_vip_version: "{{ kube_vip_latest.stdout }}"
     - name: pull kube-vip image on containerd
       command: ctr image pull ghcr.io/kube-vip/kube-vip:{{ kube_vip_version }}
-      when: "cri_plugin | default('containerd') == 'containerd'"
+      when: >
+        cri_plugin | default('containerd.io') == 'containerd.io' or
+        cri_plugin | default('containerd.io') == 'containerd'
     - name: deploy kube-vip on containerd
       shell: >
         ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ kube_vip_version }} vip /kube-vip manifest daemonset
@@ -32,7 +34,9 @@
         --inCluster
         --taint
         --arp
-      when: "cri_plugin | default('containerd') == 'containerd'"
+      when: >
+        cri_plugin | default('containerd.io') == 'containerd.io' or
+        cri_plugin | default('containerd.io') == 'containerd'
     - name: deploy kube-vip on docker
       shell: >
         docker run --network host --rm ghcr.io/kube-vip/kube-vip:{{ kube_vip_version }} manifest daemonset
@@ -43,4 +47,4 @@
         --inCluster
         --taint
         --arp
-      when: "cri_plugin | default('containerd') == 'docker'"
+      when: cri_plugin | default('containerd.io') == 'docker'
