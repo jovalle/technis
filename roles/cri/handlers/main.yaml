@@ -5,9 +5,9 @@
     enabled: yes
     daemon_reload: yes
 
-- name: restart k3s
+- name: restart docker
   systemd:
-    name: k3s
+    name: docker
+    daemon_reload: yes
     state: restarted
     enabled: yes
-    daemon_reload: yes

@@ -15,6 +15,7 @@
   - docker
   - docker-ce
   - docker-ce-cli
+  - containerd
   - containerd.io
 
 - name: remove files and dirs
