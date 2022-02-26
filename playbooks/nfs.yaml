@@ -1,8 +1,9 @@
-- hosts: cerberus
+- hosts: nexus
   vars:
     nfs_paths:
       - /hulkpool
       - /nas
+      - /var/lib/technis
   tasks:
     - name: setup nfs server
       block:
@@ -30,11 +31,12 @@
             name: nfs-kernel-server
             state: restarted
 
-- hosts: nfs_clients
+- hosts: all:!nexus
   vars:
     nfs_paths:
       - /hulkpool
       - /nas
+      - /var/lib/technis
   tasks:
     - name: setup nfs clients
       block:
@@ -51,8 +53,8 @@
         - name: create exports in /etc/fstab
           lineinfile:
             path: /etc/fstab
-            regex: "^{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }}"
-            line: "{{ hostvars[cerberus]['ansible_fqdn'] }}:/{{ item }} /{{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
+            regex: "^{{ hostvars['nexus']['ansible_fqdn'] }}:{{ item }}"
+            line: "{{ hostvars['nexus']['ansible_fqdn'] }}:{{ item }} {{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
           with_items:
             - "{{ nfs_paths }}"
         - name: mount nfs exports
