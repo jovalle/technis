@@ -1,0 +1,27 @@
+- hosts: control_plane
+  run_once: yes
+  tasks:
+    - name: deploy metallb namespace
+      shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/namespace.yaml
+    - name: apply metallb configuration
+      shell: |
+        cat << EOF | kubectl apply -f -
+        kind: ConfigMap
+        apiVersion: v1
+        metadata:
+          name: config
+          namespace: metallb-system
+        data:
+          config: |
+            peers:
+            - peer-address: 192.168.1.1
+              peer-asn: 64512
+              my-asn: 64513
+            address-pools:
+            - name: default
+              protocol: bgp
+              addresses:
+              - 192.168.1.192/27
+        EOF
+    - name: deploy metallb
+      shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
