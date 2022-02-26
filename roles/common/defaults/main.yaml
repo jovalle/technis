@@ -1,21 +1,25 @@
 common_locale: en_US.UTF-8
 common_timezone: America/New_York
-common_packages:
+common_packages_pip:
+  - glances
+common_packages_yum:
   - apt-transport-https
   - ca-certificates
   - curl
   - dnsutils
+  - fio
   - git
-  - glances
   - gnupg-agent
   - gpg
   - hddtemp
   - iftop
+  - iotop
   - ipset
   - jq
   - lm-sensors
   - net-tools
   - netcat
+  - nfs-common
   - open-iscsi
   - python3
   - python3-dev
@@ -25,6 +29,7 @@ common_packages:
   - python3-psutil
   - python3-setuptools
   - rsync
+  - smartmontools
   - software-properties-common
   - telnet
   - unrar
