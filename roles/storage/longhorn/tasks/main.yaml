@@ -1,7 +1,7 @@
 ---
 
 - name: apply longhorn manifest
-  command: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.2.2/deploy/longhorn.yaml
+  command: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.2.3/deploy/longhorn.yaml
 
 - name: apply longhorn UI ingress
   shell: |
@@ -13,7 +13,7 @@
       namespace: longhorn-system
     spec:
       rules:
-      - host: longhorn.{{ lan_domain }}
+      - host: longhorn.k8s.{{ lan_domain }}
         http:
           paths:
           - path: /
