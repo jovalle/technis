@@ -1,0 +1,117 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: uptime-kuma
+  namespace: monitoring
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: uptime-kuma
+  namespace: monitoring
+  annotations:
+    keel.sh/policy: all
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
+  labels:
+    app: uptime-kuma
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uptime-kuma
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: uptime-kuma
+    spec:
+      initContainers:
+        - name: backup
+          image: instrumentisto/rsync-ssh
+          command:
+            - rsync
+            - -avp
+            - -I
+            - /config/
+            - /config-backup/
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: config-backup
+              mountPath: /config-backup
+      containers:
+        - name: app
+          image: louislam/uptime-kuma:1
+          ports:
+            - containerPort: 3001
+          volumeMounts:
+            - mountPath: /app/data
+              name: config
+          livenessProbe:
+            exec:
+              command:
+                - node
+                - extra/healthcheck.js
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3001
+              scheme: HTTP
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: uptime-kuma
+        - name: config-backup
+          nfs:
+            server: nexus.techn.is
+            path: /var/lib/technis/uptime-kuma
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: ""
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: uptime-kuma-web # cannot share name with pod as per https://github.com/louislam/uptime-kuma/issues/741#issuecomment-945854426
+  namespace: monitoring
+  labels:
+    app: uptime-kuma
+spec:
+  selector:
+    app: uptime-kuma
+  ports:
+    - port: 3001
+      protocol: TCP
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: uptime-kuma
+  namespace: monitoring
+  labels:
+    app: uptime-kuma
+spec:
+  rules:
+    - host: uptime.k8s.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: uptime-kuma-web
+                port:
+                  number: 3001
