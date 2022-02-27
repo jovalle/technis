@@ -4,35 +4,10 @@
       - /hulkpool
       - /nas
       - /var/lib/technis
-  tasks:
-    - name: setup nfs server
-      block:
-        - name: install nfs server package
-          package:
-            name: nfs-kernel-server
-            state: present
-        - name: create export mountpoints if missing
-          file:
-            path: "{{ item }}"
-            state: directory
-          run_once: yes
-          with_items:
-            - "{{ nfs_paths }}"
-        - name: add exports
-          lineinfile:
-            path: /etc/exports
-            regex: "^{{ item }}"
-            line: "{{ item }} *(rw,sync,no_subtree_check,no_root_squash)"
-          register: add_exports
-          with_items:
-            - "{{ nfs_paths }}"
-        - name: get exports
-          command: exportfs
-        - name: restart nfs service
-          systemd:
-            name: nfs-kernel-server
-            state: restarted
-          when: add_exports.changed
+  roles:
+    - storage/nfs/server
+  tags:
+    - server
 
 - hosts: all:!nexus
   vars:
@@ -40,29 +15,7 @@
       - /hulkpool
       - /nas
       - /var/lib/technis
-  tasks:
-    - name: setup nfs clients
-      block:
-        - name: install nfs client package
-          package:
-            name: nfs-common
-            state: present
-        - name: create export mountpoints if missing
-          file:
-            path: "{{ item }}"
-            state: directory
-          run_once: yes
-          with_items:
-            - "{{ nfs_paths }}"
-        - name: create exports in /etc/fstab
-          lineinfile:
-            path: /etc/fstab
-            regex: "^{{ hostvars['nexus']['ansible_fqdn'] }}:{{ item }}"
-            line: "{{ hostvars['nexus']['ansible_fqdn'] }}:{{ item }} {{ item }} nfs4 vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,timeo=600,retrans=2,sec=sys 0 0"
-          with_items:
-            - "{{ nfs_paths }}"
-        - name: mount nfs exports
-          command: mount {{ item }}
-          ignore_errors: yes
-          with_items:
-            - "{{ nfs_paths }}"
+  roles:
+    - storage/nfs/client
+  tags:
+    - client
