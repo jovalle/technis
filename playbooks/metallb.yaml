@@ -15,13 +15,14 @@
           config: |
             peers:
             - peer-address: 192.168.1.1
-              peer-asn: 64512
-              my-asn: 64513
+              peer-asn: 64501
+              my-asn: 64500
             address-pools:
             - name: default
               protocol: bgp
+              avoid-buggy-ips: true
               addresses:
-              - 192.168.1.192/27
+              - 192.168.10.0/24
         EOF
     - name: deploy metallb
       shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
