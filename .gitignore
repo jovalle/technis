@@ -5,4 +5,6 @@
 .terraform.lock.hcl
 .vagrant
 key.json
-lock.json
+*lock.json
+files/kube-prometheus/manifests
+files/kube-prometheus/vendor
