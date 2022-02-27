@@ -2,8 +2,15 @@
   file:
     path: /var/lib/rancher/k3s/agent/etc/containerd/
     state: directory
+  run_once: yes
 
-# Source: https://k3d.io/v5.2.2/usage/advanced/cuda/?h=cuda
+# containerd v1.4 did away with runtime/runc v1. This took a lot of reverse
+# engineering several github issues, some trial and error and some luck.
+# The most notable resources:
+#   - Deprecation notice: https://github.com/containerd/containerd/blob/v1.4.0/RELEASES.md#deprecated-features
+#   - For v1: https://k3d.io/v5.2.2/usage/advanced/cuda/?h=cuda
+#   - For v2: https://github.com/NVIDIA/nvidia-docker/issues/1468
+#             https://github.com/NVIDIA/k8s-device-plugin/issues/275
 - name: configure containerd to use nvidia-container-runtime
   template:
     src: config.toml.tmpl.j2

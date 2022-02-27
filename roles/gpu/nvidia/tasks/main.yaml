@@ -7,6 +7,10 @@
     - nvidia-headless-510
     - nvidia-utils-510
     - libnvidia-encode-510
+  notify: reboot host
+
+- name: flush handler calls for immediate effect
+  meta: flush_handlers
 
 - name: add apt signing key for nvidia-docker
   apt_key:
@@ -32,6 +36,7 @@
 - name: check nvidia card
   shell: nvidia-smi
   register: nvidia_smi
+  ignore_errors: yes
 
 - name: patch nvidia transcoder
   block:
