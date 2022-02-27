@@ -15,6 +15,7 @@
           file:
             path: "{{ item }}"
             state: directory
+          run_once: yes
           with_items:
             - "{{ nfs_paths }}"
         - name: add exports
@@ -22,6 +23,7 @@
             path: /etc/exports
             regex: "^{{ item }}"
             line: "{{ item }} *(rw,sync,no_subtree_check,no_root_squash)"
+          register: add_exports
           with_items:
             - "{{ nfs_paths }}"
         - name: get exports
@@ -30,6 +32,7 @@
           systemd:
             name: nfs-kernel-server
             state: restarted
+          when: add_exports.changed
 
 - hosts: all:!nexus
   vars:
@@ -48,6 +51,7 @@
           file:
             path: "{{ item }}"
             state: directory
+          run_once: yes
           with_items:
             - "{{ nfs_paths }}"
         - name: create exports in /etc/fstab
@@ -59,5 +63,6 @@
             - "{{ nfs_paths }}"
         - name: mount nfs exports
           command: mount {{ item }}
+          ignore_errors: yes
           with_items:
             - "{{ nfs_paths }}"
