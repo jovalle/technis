@@ -76,6 +76,8 @@
     - services
     - smb
 
-- import_playbook: gpu.yaml
+- hosts: nexus
   tags:
     - gpu
+  roles:
+    - gpu/nvidia
