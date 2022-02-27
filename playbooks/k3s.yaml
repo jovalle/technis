@@ -10,6 +10,7 @@
       file:
         path: /var/lib/rancher/k3s/server/manifests/
         state: directory
+      run_once: yes
     - name: override traefik helm chart
       copy:
         content: |

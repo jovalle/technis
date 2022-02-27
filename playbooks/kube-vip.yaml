@@ -4,6 +4,7 @@
       file:
         path: /var/lib/rancher/k3s/server/manifests/
         state: directory
+      run_once: yes
   tasks:
     - name: get RBAC
       get_url:
