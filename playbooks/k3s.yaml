@@ -30,8 +30,6 @@
                 spec:
                   loadBalancerIP: "{{ ingress_vip | default('192.168.1.200') }}"
         dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
-  tags:
-    - cluster-init
 
 - name: deploy vip for kube-api
   import_playbook: kube-vip.yaml
@@ -40,6 +38,15 @@
 
 - name: initialize k3s cluster
   hosts: control_plane[0]
+  pre_tasks:
+    - name: validate response from kube-api
+      uri:
+        url: "https://{{ kube_vip_ip | default('192.168.1.100') }}:6443"
+        validate_certs: no
+        status_code: 401
+      register: result
+      ignore_errors: yes
+      changed_when: result.status != 401
   tasks:
     # - INSTALL_K3S_VERSION is required for idempotency. Look to Rancher's system-upgrade-controller
     #   for upgrade paths. Changing the version + --cluster-init will cause a full restart of workloads
@@ -48,7 +55,7 @@
     - name: initialize k3s cluster
       shell: >
         curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version | default('v1.22.6+k3s1') }} sh -s - server
-        --cluster-init
+        {% if result.changed %}--cluster-init{% else %}--server https://{{ hostvars[groups['control_plane'][1]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443{% endif %}
         --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --disable servicelb
         --token technis
