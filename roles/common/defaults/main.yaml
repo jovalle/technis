@@ -1,17 +1,17 @@
 common_locale: en_US.UTF-8
 common_timezone: America/New_York
-common_packages_pip:
-  - glances
-common_packages_yum:
+common_packages_apt:
   - apt-transport-https
   - ca-certificates
   - curl
   - dnsutils
   - fio
   - git
+  - glances
   - gnupg-agent
   - gpg
   - hddtemp
+  - htop
   - iftop
   - iotop
   - ipset
@@ -35,5 +35,6 @@ common_packages_yum:
   - unrar
   - vim
   - zip
+common_packages_pip:
 default_interface: eth0
 default_interface_inet: dhcp
