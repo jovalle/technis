@@ -1,0 +1,43 @@
+- name: assert
+  assert:
+    that:
+      - helm_repo_url
+      - helm_repo_name
+      - helm_chart
+      - helm_chart_name
+      - helm_chart_namespace
+
+- name: add repo
+  command: helm repo add {{ helm_repo_name }} {{ helm_repo_url }}
+
+- name: update repos
+  command: helm repo update
+
+- name: check for target namespace
+  command: kubectl get namespace {{ helm_chart_namespace }}
+  ignore_errors: yes
+  register: namespace_check
+
+- name: create missing namespace
+  command: kubectl create namespace {{ helm_chart_namespace }}
+  when: namespace_check.rc | int > 0
+
+- name: prepare values file
+  block:
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tmpdir
+    - name: render values file
+      template:
+        src: "{{ helm_chart_values }}.j2"
+        dest: ""
+  always:
+    - name: cleanup temp dir
+      file:
+        path: tmpdir.path
+        state: absent
+
+- name: "{{ helm_chart_action }}" chart
+  shell: >
+    helm -n {{ helm_chart_namespace }} {{ helm_chart_action }} {{ helm_chart_name }} {{ helm_chart }} "{% if helm_chart_values is defined %}--values {{ helm_chart_values }}{% endif %}"
