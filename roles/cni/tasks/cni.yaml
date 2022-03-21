@@ -20,13 +20,13 @@
     owner: root
     group: root
   with_items:
-  - https://github.com/containernetworking/plugins/releases/download/v0.8.4/cni-plugins-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}-v0.8.4.tgz
+  - https://github.com/containernetworking/plugins/releases/download/{{ cni_version }}/cni-plugins-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}-{{ cni_version }}.tgz
   when: bin.stat.exists == False
 
 - name: render configs
   template:
-    src: '{{ item.file }}.j2'
-    dest: /etc/cni/net.d/{{ item.file }}
+    src: '{{ item }}.j2'
+    dest: /etc/cni/net.d/{{ item }}
   with_items:
   - 10-bridge.conf
   - 99-loopback.conf
