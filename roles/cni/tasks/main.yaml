@@ -16,3 +16,4 @@
   include_tasks: cni.yaml
   when:
   - cni_plugin == 'none'
+  - k8s_provisioner != 'k3s'

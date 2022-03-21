@@ -1,1 +1,2 @@
 cni_plugin: calico
+cni_version: v1.0.1
