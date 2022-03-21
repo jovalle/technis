@@ -10,27 +10,61 @@
     - control_plane_fqdn is defined
     - control_plane_port is defined
 
-- name: deploy calico
-  import_role:
-    name: kubectl
-  vars:
-    source_role: calico
-    file_type: template
-    target_list:
-      - calico.yaml
+- name: deploy calico (auto)
+  block:
+    - name: deploy calico inline
+      shell: |
+        kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+        kubectl -n tigera-operator wait deployment tigera-operator --for=condition=available
+        cat << EOF | kubectl apply -f -
+        apiVersion: operator.tigera.io/v1
+        kind: Installation
+        metadata:
+          name: default
+        spec:
+          # Configures Calico networking.
+          calicoNetwork:
+            # Note: The ipPools section cannot be modified post-install.
+            ipPools:
+            - blockSize: 26
+              cidr: {{ k8s_pod_cidr | default('10.42.0.0/16') }}
+              encapsulation: VXLANCrossSubnet
+              natOutgoing: Enabled
+              nodeSelector: all()
+        ---
+        apiVersion: operator.tigera.io/v1
+        kind: APIServer
+        metadata:
+          name: default
+        spec: {}
+        EOF
+  when: calico_mode | default("auto") == "auto"
 
-- name: disable kube-proxy (replaced by Calico eBPF DP)
-  shell: |
-    kubectl patch ds -n kube-system kube-proxy -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": "true"}}}}}'
-  ignore_errors: yes
-  when: calico_ebpf
+- name: deploy calico (manual)
+  block:
+    - set_fact:
+        calico_namespace: kube-system
+    - name: deploy calico
+      import_role:
+        name: kubectl
+      vars:
+        source_role: calico
+        file_type: template
+        target_list:
+          - calico.yaml
+    - name: disable kube-proxy (replaced by Calico eBPF DP)
+      shell: |
+        kubectl patch ds -n kube-system kube-proxy -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": "true"}}}}}'
+      ignore_errors: yes
+      when: calico_ebpf
+  when: calico_mode | default("auto") == "manual"
 
 - name: get node count
   command: kubectl get nodes --no-headers
   register: node_count
 
 - name: wait until calico-node is ready
-  command: kubectl -n kube-system get ds calico-node -o jsonpath='{.status.numberReady}'
+  command: kubectl -n {{ calico_namespace | default('calico-system') }} get ds calico-node -o jsonpath='{.status.numberReady}'
   register: number_ready
   retries: 10
   delay: 30
