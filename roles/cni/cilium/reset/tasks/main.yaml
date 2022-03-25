@@ -5,5 +5,7 @@
 
 - name: uninstall cilium
   shell: cilium uninstall
-  when: bin_check.rc == 0
+  when:
+    - bin_check.rc == 0
+    - uninstall_cilium | default(False) | bool
   ignore_errors: yes
