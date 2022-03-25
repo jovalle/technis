@@ -2,7 +2,7 @@
   tags:
     - always
   pre_tasks:
-    - name: apt updrade
+    - name: apt upgrade
       apt:
         upgrade: full
         update_cache: yes
@@ -42,6 +42,9 @@
                 version: 2
             dest: /etc/netplan/00-technis.yaml
         - command: netplan apply
+        - file:
+            path: /etc/netplan/00-installer-config.yaml
+            state: absent
       when:
         - ifconfig.rc | int == 0
         - ansible_distribution == "Ubuntu"
