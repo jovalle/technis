@@ -8,6 +8,9 @@
     - name: k8s/reset
       tags:
         - k8s
+    - name: kube-proxy/reset
+      tags:
+        - kube-proxy
     - name: haproxy/reset
       tags:
         - keepalived

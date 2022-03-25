@@ -55,19 +55,25 @@
     - name: initialize k3s cluster
       shell: >
         curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version | default('v1.22.6+k3s1') }} sh -s - server
-        {% if result.changed %}--cluster-init{% else %}--server https://{{ hostvars[groups['control_plane'][1]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443{% endif %}
+        {% if result.changed %}--cluster-init{% else %}--server https://{{ hostvars[groups['control_plane'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443{% endif %}
         --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --disable servicelb
+        {% if disable_kube_proxy | default(False) | bool %}--disable-kube-proxy{% endif %}
+        {% if cni_plugin | default('none') != 'none' %}
+        --disable-network-policy
+        --flannel-backend=none
+        {% endif %}
         --token technis
       retries: 2
       delay: 15
       register: init
     - debug:
-        var: init.stdout_lines
+        var: init
   tags:
     - cluster-init
 
-- hosts: control_plane[1:]
+- name: add control plane nodes to cluster
+  hosts: control_plane[1:]
   serial: 1
   vars:
     control_plane_leader: "{{ groups['control_plane'][0] }}"
@@ -108,7 +114,3 @@
         var: join_nodes.stdout_lines
   tags:
     - nodes
-
-# TODO
-# - name: configure local kubeconfig
-#   fetch:
