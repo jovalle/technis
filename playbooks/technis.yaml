@@ -7,17 +7,25 @@
   tags:
     - common
 
-- import_playbook: gpu.yaml
-  tags:
-    - gpu
-
 - import_playbook: cri.yaml
   tags:
     - cri
 
+- import_playbook: gpu.yaml
+  tags:
+    - gpu
+
 - import_playbook: k3s.yaml
   tags:
     - k3s
+
+- import_playbook: helm.yaml
+  tags:
+    - helm
+
+- import_playbook: cni.yaml
+  tags:
+    - cni
 
 - name: deploy gpu plugin
   hosts: control_plane
@@ -103,5 +111,34 @@
 
 - import_playbook: metallb.yaml
   tags:
-    - cert-manager
+    - lb
     - services
+
+- name: deploy storage provider
+  hosts: control_plane
+  run_once: yes
+  roles:
+    - storage
+
+- name: configure local kubeconfig
+  hosts: localhost
+  tasks:
+    - name: ensure kube dir exists
+      file:
+        path: ~/.kube/
+        state: directory
+    - name: get admin kubeconfig
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/config
+        flat: yes
+      delegate_to: "{{ groups['control_plane'][0] }}"
+    - name: replace 127.0.0.1 in local kubeconfig
+      replace:
+        path: ~/.kube/config
+        regexp: '127\.0\.0\.1'
+        replace: '{{ k8s_api_endpoint_fqdn | default("192.168.1.100") }}'
+    - name: get cluster-info with local kubeconfig
+      command: kubectl cluster-info
+  tags:
+    - kubeconfig
