@@ -12,3 +12,6 @@
   reboot:
     msg: "Host rebooted"
     reboot_timeout: "{{ reboot_timeout | default(600) }}"
+
+- name: renew dhcp lease
+  command: dhclient -v
