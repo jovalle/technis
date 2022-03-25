@@ -1,0 +1,65 @@
+# Fix to Cilium bug in arm64 (https://github.com/cilium/cilium/issues/18131)
+- name: disable strict filtering
+  block:
+    - name: ensure config file exists
+      file:
+        path: /etc/sysctl.d/90-override.conf
+        state: touch
+    - name: set kernel params
+      lineinfile:
+        path: /etc/sysctl.d/90-override.conf
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regex: ^net.ipv4.conf.\*.rp_filter, line: "net.ipv4.conf.*.rp_filter = 0" }
+        - { regex: ^net.ipv4.conf.default.rp_filter, line: "net.ipv4.conf.default.rp_filter = 0" }
+      notify: reboot host
+
+- name: install helm
+  include_role:
+    name: helm/install
+
+- name: install via helm
+  block:
+    - name: add cilium repo
+      shell: |
+        helm repo add cilium https://helm.cilium.io
+        helm repo update
+    - name: install cilium chart
+      shell: >
+        helm upgrade --install cilium cilium/cilium --version 1.11.2 \
+          --namespace kube-system \
+          --set kubeProxyReplacement=strict \
+          --set k8sServiceHost="{{ control_plane_vip | default('192.168.1.100') }}" \
+          --set k8sServicePort=6443 \
+          --set ipam.mode="kubernetes" \
+          --set operator.replicas={% if groups['cluster'] | length > 3 %}3{% else %}1{% endif %}
+  when: disable_kube_proxy | default(False) | bool
+
+- name: install binary
+  include_tasks: binary.yaml
+
+- name: deploy via upstream installer
+  block:
+    - name: install
+      shell: cilium install
+    - name: check status
+      shell: cilium status
+  when: >
+      not disable_kube_proxy | default(False) | bool and
+      not cilium_helm_install | default(False) | bool
+
+- name: check healthy status
+  shell: cilium status
+  register: cilium_status
+  retries: 20
+  delay: 3
+  until: cilium_status.rc == 0
+
+- name: run network tests
+  block:
+    - name: start connectivity tests
+      shell: cilium connectivity test
+  always:
+    - name: cleanup tests
+      shell: kubectl delete ns cilium-test --ignore-not-found

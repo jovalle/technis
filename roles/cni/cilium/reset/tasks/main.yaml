@@ -1,0 +1,9 @@
+- name: check for cilium binary
+  shell: which cilium
+  register: bin_check
+  ignore_errors: true
+
+- name: uninstall cilium
+  shell: cilium uninstall
+  when: bin_check.rc == 0
+  ignore_errors: yes
