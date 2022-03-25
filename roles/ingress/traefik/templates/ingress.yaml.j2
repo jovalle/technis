@@ -5,7 +5,7 @@ metadata:
   namespace: {{ ingress_controller_namespace }}
 spec:
   rules:
-  - host: traefik.{{ lan_domain }}
+  - host: traefik.{{ k8s_ingress_domain }}
     http:
       paths:
       - path: /
