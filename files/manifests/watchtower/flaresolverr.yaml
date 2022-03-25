@@ -98,7 +98,7 @@ metadata:
     app: flaresolverr
 spec:
   rules:
-    - host: flaresolverr.k8s.techn.is
+    - host: flaresolverr.techn.is
       http:
         paths:
           - path: /

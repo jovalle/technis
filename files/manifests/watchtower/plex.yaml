@@ -25,6 +25,8 @@ spec:
         app: plex
         tier: watchtower
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: nexus
       hostname: watchtower
       containers:
         - name: plex
@@ -154,7 +156,17 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: plex.k8s.techn.is
+    - host: plex.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: plex
+                port:
+                  number: 32400
+    - host: watchtower.techn.is
       http:
         paths:
           - path: /

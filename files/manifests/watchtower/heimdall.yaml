@@ -82,10 +82,6 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: heimdall
-        - name: config-backup
-          nfs:
-            server: nexus.techn.is
-            path: /var/lib/technis/heimdall
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -120,7 +116,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: heimdall.k8s.techn.is
+    - host: heimdall.techn.is
       http:
         paths:
           - path: /
