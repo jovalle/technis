@@ -62,6 +62,25 @@
     hostname {{ inventory_hostname }}
     hostnamectl set-hostname {{ inventory_hostname }}
 
+- name: disable local dns cache
+  block:
+  - name: disable resolved
+    systemd:
+      name: systemd-resolved
+      state: stopped
+      enabled: no
+    notify: reboot host
+  - name: check resolv.conf type
+    stat:
+      path: /etc/resolv.conf
+    register: resolv
+  - name: undo resolv.conf symlink
+    file:
+      path: /etc/resolv.conf
+      state: absent
+    when: resolv.stat.islnk is defined and resolv.stat.islnk
+    notify: renew dhcp lease
+
 - name: disable swap in /etc/fstab
   replace:
     dest: /etc/fstab
