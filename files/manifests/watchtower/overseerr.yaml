@@ -36,6 +36,8 @@ spec:
         app: overseerr
         tier: watchtower
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: nexus
       containers:
         - name: overseerr
           image: ghcr.io/linuxserver/overseerr:latest
@@ -81,10 +83,6 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: overseerr
-        - name: config-backup
-          nfs:
-            server: nexus.techn.is
-            path: /var/lib/technis/overseerr
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -115,7 +113,7 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: overseerr.k8s.techn.is
+    - host: overseerr.techn.is
       http:
         paths:
           - path: /

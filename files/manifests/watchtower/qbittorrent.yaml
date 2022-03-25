@@ -153,7 +153,17 @@ metadata:
     app: qbittorrent
 spec:
   rules:
-    - host: qbittorrent.k8s.techn.is
+    - host: qbit.technis.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: qbittorrent
+                port:
+                  number: 8080
+    - host: qbittorrent.techn.is
       http:
         paths:
           - path: /
