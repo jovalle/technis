@@ -1,9 +1,7 @@
----
-
 - name: setup storage providers
   include_tasks: provider.yaml
   vars:
     storage_provider: "{{ item }}"
   when: inventory_hostname == groups['control_plane'][0]
   with_items:
-  - "{{ storage_providers }}"
+    - "{{ storage_providers }}"
