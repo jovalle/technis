@@ -4,11 +4,11 @@
       assert:
         that:
           keepalived_vip is defined
-    - name: gather facts for all hosts
+    - name: gather facts for all hosts in cluster
       setup:
       delegate_to: "{{ item }}"
       delegate_facts: yes
-      with_items: "{{ groups['all'] }}"
+      with_items: "{{ groups['cluster'] }}"
   roles:
     - keepalived
     - haproxy

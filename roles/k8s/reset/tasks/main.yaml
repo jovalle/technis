@@ -2,13 +2,17 @@
   block: # avoiding jinja2 templating warning
     - name: delegate to first control plane host
       set_fact:
-        kubectl_delegate: "{{ groups['control_plane'][1] }}"
-      when: inventory_hostname != groups['control_plane'][0]
+        kubectl_delegate: "{{ groups['control_plane'][0] }}"
+      when: >
+        groups['control_plane'] | length == 1 or
+        inventory_hostname != groups['control_plane'][0]
 
     - name: delegate to another when target is default
       set_fact:
         kubectl_delegate: "{{ groups['control_plane'][1] }}"
-      when: inventory_hostname == groups['control_plane'][0]
+      when:
+        - groups['control_plane'] | length > 1
+        - inventory_hostname == groups['control_plane'][0]
 
 - name: prepare node for reset
   block:

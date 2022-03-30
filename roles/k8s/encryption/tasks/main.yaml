@@ -1,0 +1,27 @@
+- name: check for existing config
+  stat:
+    path: /etc/kubernetes/config/encryption.yaml
+  register: encryption_config
+
+- name: generate encryption config
+  block:
+    - name: generate encryption key
+      shell: |
+        head -c 32 /dev/urandom | base64
+      register: encryption_key
+    - name: render config
+      copy:
+        content: |
+          apiVersion: v1
+          kind: EncryptionConfig
+          resources:
+            - resources:
+                - secrets
+              providers:
+                - aescbc:
+                    keys:
+                      - name: key1
+                        secret: {{ encryption_key.stdout }}
+                - identity: {}
+        dest: /etc/kubernetes/config/encryption.yaml
+  when: not encryption_config.stat.exists | default(True) | bool

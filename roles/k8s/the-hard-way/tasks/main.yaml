@@ -1,0 +1,4 @@
+- include_tasks: controller.yaml
+  when: inventory_hostname in groups['control_plane']
+- include_tasks: worker.yaml
+  when: inventory_hostname in groups['nodes']
