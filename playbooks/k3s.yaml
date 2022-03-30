@@ -28,7 +28,7 @@
                 enabled: true
                 type: LoadBalancer
                 spec:
-                  loadBalancerIP: "{{ ingress_vip | default('192.168.1.200') }}"
+                  loadBalancerIP: "{{ ingress_endpoint | default('192.168.1.200') }}"
         dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
 
 - name: deploy vip for kube-api
@@ -78,12 +78,12 @@
   vars:
     control_plane_leader: "{{ groups['control_plane'][0] }}"
   pre_tasks:
-    - name: Gather facts from ALL hosts (regardless of limit or tags)
+    - name: Gather facts from all cluster hosts (regardless of limit or tags)
       setup:
       delegate_to: "{{ item }}"
       delegate_facts: True
       when: hostvars[item]['ansible_default_ipv4'] is not defined
-      with_items: "{{ groups['all'] }}"
+      with_items: "{{ groups['cluster'] }}"
   tasks:
     - name: join control plane nodes
       shell: >
@@ -91,6 +91,11 @@
         --server https://{{ hostvars[control_plane_leader]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
         --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --disable servicelb
+        {% if disable_kube_proxy | default(False) | bool %}--disable-kube-proxy{% endif %}
+        {% if cni_plugin | default('none') != 'none' %}
+        --disable-network-policy
+        --flannel-backend=none
+        {% endif %}
         --token technis
       retries: 2
       delay: 15

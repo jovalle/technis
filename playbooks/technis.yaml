@@ -137,7 +137,7 @@
       replace:
         path: ~/.kube/config
         regexp: '127\.0\.0\.1'
-        replace: '{{ k8s_api_endpoint_fqdn | default("192.168.1.100") }}'
+        replace: '{{ apiserver_endpoint | default("192.168.1.100") }}'
     - name: get cluster-info with local kubeconfig
       command: kubectl cluster-info
   tags:
