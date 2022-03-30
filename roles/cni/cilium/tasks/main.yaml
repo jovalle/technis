@@ -1,23 +1,15 @@
 # Fix to Cilium bug in arm64 (https://github.com/cilium/cilium/issues/18131)
-- name: disable strict filtering
-  block:
-    - name: ensure config file exists
-      file:
-        path: /etc/sysctl.d/90-override.conf
-        state: touch
-    - name: set kernel params
-      lineinfile:
-        path: /etc/sysctl.d/90-override.conf
-        regex: "{{ item.regex }}"
-        line: "{{ item.line }}"
-      with_items:
-        - { regex: ^net.ipv4.conf.\*.rp_filter, line: "net.ipv4.conf.*.rp_filter = 0" }
-        - { regex: ^net.ipv4.conf.default.rp_filter, line: "net.ipv4.conf.default.rp_filter = 0" }
-      notify: reboot host
-
-- name: install helm
-  include_role:
-    name: helm/install
+- name: disable Strict Reverse Path Forwarding
+  sysctl:
+    name: "{{ item }}"
+    value: "0"
+    state: present
+    reload: yes
+  with_items:
+    - net.ipv4.conf.all.rp_filter
+    - net.ipv4.conf.default.rp_filter
+    - "net.ipv4.conf.{{ default_interface | default('eth0') }}.rp_filter"
+  notify: reboot host
 
 - name: install via helm
   block:
@@ -27,17 +19,40 @@
         helm repo update
     - name: install cilium chart
       shell: >
-        helm upgrade --install cilium cilium/cilium --version 1.11.2 \
+        helm upgrade --install cilium cilium/cilium --version {{ cilium_version }} \
           --namespace kube-system \
           --set kubeProxyReplacement=strict \
-          --set k8sServiceHost="{{ control_plane_vip | default('192.168.1.100') }}" \
+          --set k8sServiceHost="{{ apiserver_endpoint | default('192.168.1.100') }}" \
           --set k8sServicePort=6443 \
           --set ipam.mode="kubernetes" \
           --set operator.replicas={% if groups['cluster'] | length > 3 %}3{% else %}1{% endif %}
   when: disable_kube_proxy | default(False) | bool
 
-- name: install binary
-  include_tasks: binary.yaml
+- name: check for binary
+  stat:
+    path: /usr/local/bin/cilium
+  register: cilium_binary
+
+- name: check cilium version
+  shell: /usr/local/bin/cilium version
+  register: cilium_binary_version
+  when: cilium_binary.stat.exists
+
+- name: "{% if cilium_binary.stat.exists %}upgrade{% else %}install{% endif %} binary"
+  vars:
+    arch: "{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}"
+  block:
+    - name: get files
+      shell: curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/{{ cilium_version }}/download/cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
+    - name: checksum
+      command: sha256sum --check cilium-linux-{{ arch }}.tar.gz.sha256sum
+    - name: unarchive tarball
+      shell: tar xzvfC cilium-linux-{{ arch }}.tar.gz /usr/local/bin
+    - name: remove artifacts
+      shell: rm cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
+  when: >
+    not cilium_binary.stat.exists or
+    cilium_version not in cilium_binary_version.stdout
 
 - name: deploy via upstream installer
   block:
