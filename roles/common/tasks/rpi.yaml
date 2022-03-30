@@ -64,6 +64,19 @@
           LC_ALL="{{ common_locale }}"
         dest: /etc/default/locale
 
+- name: ensure boot file present
+  file:
+    path: /boot/cmdline.txt
+    state: touch
+
+- name: set cgroup support
+  lineinfile:
+    path: /boot/firmware/cmdline.txt
+    regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+    line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+    backrefs: true
+  notify: reboot host
+
 # Fixes known issue with ubuntu server 21.10
 # Source: https://github.com/k3s-io/k3s/issues/4188#issuecomment-982503626
 - name: install vxlan modules for k3s

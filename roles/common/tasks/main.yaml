@@ -79,7 +79,6 @@
       path: /etc/resolv.conf
       state: absent
     when: resolv.stat.islnk is defined and resolv.stat.islnk
-    notify: renew dhcp lease
 
 - name: disable swap in /etc/fstab
   replace:
@@ -89,6 +88,9 @@
 
 - name: disable swap
   command: swapoff -a
+
+- name: renew dhcp lease
+  command: dhclient -v
 
 - name: deploy raspberry pi changes
   include_tasks: rpi.yaml
