@@ -1,0 +1,13 @@
+- name: check target cert
+  stat:
+    path: "{{ target_dir }}/{{ cert_id }}.pem"
+  delegate_to: "{{ target_host }}"
+  register: target_cert
+
+- name: copy cert to target_hosts if any
+  shell: |
+    rsync -e "ssh -o StrictHostKeyChecking=no" {{ item.src }} {{ target_host }}:{{ item.dest }}
+  with_items:
+    - { src: "{{ src_dir | default(target_dir) }}/{{ cert_id }}.pem", dest: "{{ target_dir }}/{{ cert_id }}.pem" }
+    - { src: "{{ src_dir | default(target_dir) }}/{{ cert_id }}-key.pem", dest: "{{ target_dir }}/{{ cert_id }}-key.pem" }
+  when: not target_cert.stat.exists

@@ -1,6 +1,0 @@
-cluster_name: technis
-cluster_extra_sans:
-  - api.{{ lan_domain }}
-control_plane_endpoint: "{{ control_plane_fqdn }}:{{ control_plane_port }}"
-control_plane_fqdn: api.{{ lan_domain }}
-control_plane_port: 8443

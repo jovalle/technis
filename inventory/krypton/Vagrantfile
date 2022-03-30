@@ -1,14 +1,14 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-DOMAIN = "technis.io"
-SUBNET = "192.168.144"
-ENGINEER_COUNT = 0
-CAPTAIN_COUNT = 0
-STEWARD_COUNT = 1
+DOMAIN = "technis.lab"
+SUBNET = "192.168.56"
+ENGINEER_COUNT = 3
+CAPTAIN_COUNT = 3
+STEWARD_COUNT = 3
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "hashicorp/bionic64"
+  config.vm.box = "ubuntu/impish64"
   config.ssh.insert_key = false
   config.ssh.private_key_path = ['~/.vagrant.d/insecure_private_key']  # use static key
   config.vm.provider "virtualbox" do |vb|

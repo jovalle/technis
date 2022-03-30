@@ -1,2 +1,4 @@
-cert_profile: client
+cert_ca_id: ca
+cert_profile: peer
+cfssl_version: 1.6.1
 target_dir: /etc/share/ca-certificates

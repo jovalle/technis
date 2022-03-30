@@ -6,11 +6,11 @@
   },
   "names": [
     {
-      "C": "{{ cert_country }}",
-      "L": "{{ cert_locality }}",
-      "O": "{{ cert_organization }}",
-      "OU": "{{ cert_organizational_unit }}",
-      "ST": "{{ cert_state }}"
+      "C": "{{ cert_country | default('US') }}",
+      "L": "{{ cert_locality | default('New York') }}",
+      "O": "{{ cert_organization | default('Technis') }}",
+      "OU": "{{ cert_organizational_unit | default('Kubernetes') }}",
+      "ST": "{{ cert_state | default('New York') }}"
     }
   ]
 }
