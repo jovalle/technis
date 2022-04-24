@@ -41,3 +41,4 @@ common_packages_apt:
 common_packages_pip:
 default_interface: eth0
 default_interface_inet: dhcp
+lan_domain: technis.local

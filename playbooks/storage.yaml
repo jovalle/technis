@@ -1,3 +1,32 @@
+- hosts: all
+  tasks:
+    - name: install packages
+      apt:
+        name: open-iscsi,lsscsi,sg3-utils,multipath-tools,scsitools,libnfs-utils
+        install_recommends: yes
+        update_cache: yes
+        cache_valid_time: 3600
+        autoclean: yes
+        autoremove: yes
+    - name: render iscsi config
+      copy:
+        content: |
+          defaults {
+            user_friendly_names yes
+            find_multipaths yes
+          }
+        dest: /etc/multipath.conf
+    - name: start and enable multipath service
+      systemd:
+        name: multipath-tools
+        state: started
+        enabled: yes
+    - name: start and enable iscsi service
+      systemd:
+        name: open-iscsi
+        state: started
+        enabled: yes
+
 - hosts: control_plane
   run_once: yes
   roles:
