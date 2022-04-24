@@ -13,41 +13,12 @@
   roles:
     - common
 
-- hosts: nexus
+- import_playbook: netplan.yaml
   vars:
+    target_host: nexus
     target_interface: enp3s0
   tags:
     - network
-  tasks:
-    - name: check for {{ target_interface }}
-      shell: ifconfig {{ target_interface }}
-      ignore_errors: yes
-      register: ifconfig
-    - name: rename {{ target_interface }} to eth0 using netplan
-      block:
-        - set_fact:
-            mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
-        - debug: var=mac_addr
-        - copy:
-            content: |
-              # Ansible managed
-              network:
-                ethernets:
-                  eth0:
-                    dhcp4: true
-                    match:
-                      macaddress: {{ mac_addr }}
-                    optional: true
-                    set-name: eth0
-                version: 2
-            dest: /etc/netplan/00-technis.yaml
-        - command: netplan apply
-        - file:
-            path: /etc/netplan/00-installer-config.yaml
-            state: absent
-      when:
-        - ifconfig.rc | int == 0
-        - ansible_distribution == "Ubuntu"
 
 - hosts: nexus
   tags:
