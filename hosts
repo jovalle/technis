@@ -1,5 +1,5 @@
 [control_plane]
-nexus
+zagreus
 asphodel
 tartarus
 
@@ -8,7 +8,7 @@ elysium
 erebus
 
 [gpu]
-nexus
+zagreus
 
 [raspi]
 asphodel
@@ -27,7 +27,7 @@ cri_plugin=containerd.io
 infrastructure_provisioner=none
 ingress_controller=traefik
 ingress_endpoint=192.168.10.1
-k3s_version=v1.21.7+k3s1
+; k3s_version=v1.21.7+k3s1
 k8s_ingress_domain=techn.is
 k8s_provisioner=k3s
 
