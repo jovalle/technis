@@ -15,3 +15,86 @@
   template:
     src: config.toml.tmpl.j2
     dest: /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+  notify: restart k3s
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: check for running cluster
+  command: kubectl cluster-info
+  ignore_errors: yes
+  retries: 6
+  delay: 10
+  register: k8s_cluster_info
+
+- name: configure k8s node for gpu usage
+  block:
+    - name: add gpu label
+      command: kubectl label node {{ inventory_hostname }} kubernetes.io/gpu=nvidia --overwrite
+    - name: deploy nvidia-device-plugin
+      shell: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: apps/v1
+        kind: DaemonSet
+        metadata:
+          name: nvidia-device-plugin
+          namespace: kube-system
+        spec:
+          selector:
+            matchLabels:
+              k8s-app: nvidia-device-plugin
+          template:
+            metadata:
+              labels:
+                k8s-app: nvidia-device-plugin
+            spec:
+              priorityClassName: system-node-critical
+              nodeSelector:
+                kubernetes.io/gpu: nvidia
+              tolerations:
+              - key: CriticalAddonsOnly
+                operator: Exists
+              containers:
+              - env:
+                - name: DP_DISABLE_HEALTHCHECKS
+                  value: xids
+                image: nvidia/k8s-device-plugin:v0.10.0
+                name: nvidia-device-plugin-ctr
+                securityContext:
+                  allowPrivilegeEscalation: true
+                  capabilities:
+                    drop: ["ALL"]
+                volumeMounts:
+                  - name: device-plugin
+                    mountPath: /var/lib/kubelet/device-plugins
+              volumes:
+                - name: device-plugin
+                  hostPath:
+                    path: /var/lib/kubelet/device-plugins
+        EOF
+    - name: wait for ndp daemonset to become ready
+      command: kubectl -n kube-system rollout status daemonset nvidia-device-plugin --timeout 60s
+      register: ndp_rollout_status
+      retries: 10
+    - name: deploy job
+      shell: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: cuda-vector-add
+        spec:
+          template:
+            spec:
+              restartPolicy: OnFailure
+              containers:
+                - name: cuda-vector-add
+                  image: "k8s.gcr.io/cuda-vector-add:v0.1"
+                  resources:
+                    limits:
+                      nvidia.com/gpu: 1
+        EOF
+    - name: wait for job completion
+      command: kubectl wait --for=condition=complete job cuda-vector-add --timeout 120s
+  run_once: yes
+  when: k8s_cluster_info.rc == 0

@@ -1,120 +1,20 @@
-- name: install headless drivers
-  apt:
-    name: "{{ item }}"
-    state: present
-  with_items:
-    - ubuntu-drivers-common
-    - nvidia-headless-510
-    - nvidia-utils-510
-    - libnvidia-encode-510
-  notify: reboot host
-
-- name: flush handler calls for immediate effect
-  meta: flush_handlers
-
-- name: add apt signing key for nvidia-docker
-  apt_key:
-    url: https://nvidia.github.io/nvidia-docker/gpgkey
-
-# Hard coded contents of https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list
-# due to no support for 302 redirections from ubuntu20.04 to ubuntu 18.04 and repo param does
-# not download file.
-- name: add apt repository for nvidia-docker
-  apt_repository:
-    repo: "{{ item }}"
-    filename: nvidia-docker
-  with_items:
-    - deb https://nvidia.github.io/libnvidia-container/stable/ubuntu18.04/$(ARCH) /
-    - deb https://nvidia.github.io/nvidia-container-runtime/stable/ubuntu18.04/$(ARCH) /
-    - deb https://nvidia.github.io/nvidia-docker/ubuntu18.04/$(ARCH) /
-
-- name: install nvidia runtime
-  apt:
-    name: nvidia-container-runtime
-    update_cache: yes
+- include_tasks: drivers.yaml
+  tags:
+    - drivers
 
 - name: check nvidia card
   shell: nvidia-smi
   register: nvidia_smi
   ignore_errors: yes
 
-- name: patch nvidia transcoder
-  block:
-    - name: create temp dir
-      tempfile:
-        state: directory
-      register: tempdir
-    - name: clone nvidia patch repo
-      git:
-        repo: https://github.com/keylase/nvidia-patch
-        dest: "{{ tempdir.path }}"
-    - name: run nvidia patch
-      shell: "{{ tempdir.path }}/patch.sh"
-  always:
-    - name: cleanup temp dir
-      file:
-        path: "{{ tempdir.path }}"
-        state: absent
+- include_tasks: patch.yaml
   when: nvidia_smi.rc | int == 0
+  tags:
+    - patch
 
-# nvtop is available in ubuntu repos but is much older than github releases
-- name: check for nvtop bin
-  stat:
-    path: /usr/local/bin/nvtop
-  register: nvtop
-
-- name: check for local nvtop version
-  shell: nvtop --version | awk '{print $NF}'
-  register: nvtop_local_version
-  when: nvtop.stat.exists
-
-- name: check for upstream nvtop version
-  uri:
-    url: https://api.github.com/repos/Syllo/nvtop/releases/latest
-    return_content: yes
-    body_format: json
-  register: nvtop_upstream_latest
-
-- set_fact:
-    nvtop_upstream_version: "{{ nvtop_upstream_latest.json | json_query('tag_name') }}"
-
-- name: install nvtop
-  block:
-    - name: install prerequisites for nvtop
-      apt:
-        name: ["cmake", "libncurses5-dev", "libncursesw5-dev", "git"]
-    - name: create temp dir
-      tempfile:
-        state: directory
-      register: tempdir
-    - name: clone nvtop repo
-      git:
-        repo: https://github.com/Syllo/nvtop
-        dest: "{{ tempdir.path }}"
-    - name: create build dir
-      file:
-        path: "{{ tempdir.path }}/build"
-        state: directory
-    - name: build from source
-      shell:
-        chdir: "{{ tempdir.path }}/build"
-        cmd: cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
-    - name: run make
-      shell:
-        chdir: "{{ tempdir.path }}/build"
-        cmd: make
-    - name: run make install
-      shell:
-        chdir: "{{ tempdir.path }}/build"
-        cmd: make install
-  always:
-    - name: cleanup temp dir
-      file:
-        path: "{{ tempdir.path }}"
-        state: absent
-  when: >
-    nvtop.stat.exists == False or
-    nvtop_local_version.stdout != nvtop_upstream_version
+- include_tasks: nvtop.yaml
+  tags:
+    - nvtop
 
 # Not working due to lack of interactive shell for `ctr run` but here for ref
 #- name: pull gpu container image
