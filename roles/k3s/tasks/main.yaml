@@ -1,0 +1,16 @@
+- name: download k3s binary
+  get_url:
+    url: https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s{{ '-arm64' if (ansible_architecture | regex_search('arm|aarch')) else '' }}
+    checksum: sha256:https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/sha256sum-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.txt
+    dest: /usr/local/bin/k3s
+    owner: root
+    group: root
+    mode: 0755
+
+- name: deploy k3s on control plane node
+  include_tasks: control-plane.yaml
+  when: inventory_hostname in groups['control_plane']
+
+- name: deploy k3s on worker node
+  include_tasks: worker.yaml
+  when: inventory_hostname in groups['nodes']

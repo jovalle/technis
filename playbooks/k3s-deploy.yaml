@@ -1,0 +1,26 @@
+- hosts: cluster
+  roles:
+    - common
+  tags:
+    - common
+
+- hosts: control_plane
+  roles:
+    - k3s
+  tags:
+    - k3s
+    - control-plane
+
+- hosts: control_plane
+  run_once: yes
+  roles:
+    - cni
+  tags:
+    - cni
+
+- hosts: nodes
+  roles:
+    - k3s
+  tags:
+    - k3s
+    - nodes
