@@ -1,0 +1,24 @@
+apiserver_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}"
+k3s_token: technis
+k3s_version: v1.23.4+k3s1
+kube_vip_version: v0.4.2
+server_init_args: >-
+  {% if groups['control_plane'] | length > 1 %}
+    {% if inventory_hostname == groups['control_plane'][0] %}
+      --cluster-init
+    {% else %}
+      --server https://{{ apiserver_endpoint }}:6443
+    {% endif %}
+    --token {{ k3s_token }}
+  {% endif %}
+  {{ extra_server_args | default('') }}
+extra_server_args: >-
+  --tls-san "{{ apiserver_endpoint }}"
+  --disable servicelb
+  {% if cni_plugin | default('none') != 'none' %}
+  {% if disable_kube_proxy | default(True) | bool %}
+  --disable-kube-proxy
+  {% endif %}
+  --disable-network-policy
+  --flannel-backend=none
+  {% endif %}
