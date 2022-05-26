@@ -36,8 +36,6 @@ spec:
         app: overseerr
         tier: watchtower
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: nexus
       containers:
         - name: overseerr
           image: ghcr.io/linuxserver/overseerr:latest
@@ -60,15 +58,15 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 10
             tcpSocket:
               port: 5055
           readinessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 10
             tcpSocket:
               port: 5055
           resources:

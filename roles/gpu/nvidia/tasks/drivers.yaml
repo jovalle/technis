@@ -12,23 +12,21 @@
 - name: flush handler calls for immediate effect
   meta: flush_handlers
 
-- name: add apt signing key for nvidia-docker
+- name: add apt signing key for libnvidia-container
   apt_key:
-    url: https://nvidia.github.io/nvidia-docker/gpgkey
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
 
-# Hard coded contents of https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list
-# due to no support for 302 redirections from ubuntu20.04 to ubuntu 18.04 and repo param does
-# not download file.
-- name: add apt repository for nvidia-docker
-  apt_repository:
-    repo: "{{ item }}"
-    filename: nvidia-docker
-  with_items:
-    - deb https://nvidia.github.io/libnvidia-container/stable/ubuntu18.04/$(ARCH) /
-    - deb https://nvidia.github.io/nvidia-container-runtime/stable/ubuntu18.04/$(ARCH) /
-    - deb https://nvidia.github.io/nvidia-docker/ubuntu18.04/$(ARCH) /
+- name: add nvidia-container-toolkit repo
+  copy:
+    dest: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    content: |
+      deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/ubuntu22.04/$(ARCH) /
 
-- name: install nvidia runtime
+- name: install nvidia tools
   apt:
-    name: nvidia-container-runtime
+    name: "{{ item }}"
     update_cache: yes
+  with_items:
+    - libnvidia-container1
+    - libnvidia-container-tools
+    - nvidia-container-runtime

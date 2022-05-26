@@ -10,7 +10,6 @@ common_packages_apt:
   - glances
   - gnupg-agent
   - gpg
-  - hddtemp
   - htop
   - iftop
   - iotop

@@ -11,6 +11,9 @@
     - "net.ipv4.conf.{{ default_interface | default('eth0') }}.rp_filter"
   notify: reboot host
 
+#TODO: check that apiserver_endpoint is reachable
+#   replace with control_plane[0] IP if not reachable (kube-vip/CNI race condition)
+
 - name: install via helm
   block:
     - name: add cilium repo
@@ -43,7 +46,8 @@
     arch: "{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}"
   block:
     - name: get files
-      shell: curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/{{ cilium_version }}/download/cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
+      shell: |
+        curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/{{ cilium_version }}/download/cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
     - name: checksum
       command: sha256sum --check cilium-linux-{{ arch }}.tar.gz.sha256sum
     - name: unarchive tarball
@@ -78,3 +82,4 @@
   always:
     - name: cleanup tests
       shell: kubectl delete ns cilium-test --ignore-not-found
+  when: cilium_tests | default(False) | bool

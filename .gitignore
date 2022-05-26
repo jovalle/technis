@@ -1,10 +1,10 @@
 *.log
+*lock.json
 *tfstate*
 .DS_Store
 .terraform
 .terraform.lock.hcl
 .vagrant
-key.json
-*lock.json
 files/kube-prometheus/manifests
 files/kube-prometheus/vendor
+key.json

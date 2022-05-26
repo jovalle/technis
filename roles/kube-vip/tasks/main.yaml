@@ -1,0 +1,9 @@
+- name: ensure manifests directory exists
+  file:
+    path: /var/lib/rancher/k3s/server/manifests/
+    state: directory
+
+- name: render kube-vip static manifest
+  template:
+    src: kube-vip.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/kube-vip.yaml
