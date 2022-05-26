@@ -10,7 +10,6 @@
       file:
         path: /var/lib/rancher/k3s/server/manifests/
         state: directory
-      run_once: yes
     - name: override traefik helm chart
       copy:
         content: |
@@ -30,11 +29,13 @@
                 spec:
                   loadBalancerIP: "{{ ingress_endpoint | default('192.168.1.200') }}"
         dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+  tags:
+    - control-plane
 
 - name: deploy vip for kube-api
   import_playbook: kube-vip.yaml
   tags:
-    - vip
+    - kube-vip
 
 - name: initialize k3s cluster
   hosts: control_plane[0]
@@ -105,6 +106,27 @@
         var: join_control_plane.stdout_lines
   tags:
     - control-plane
+
+- hosts: control_plane
+  tasks:
+    - name: default to k3s kubeconfig
+      block:
+        - name: clean slate
+          file:
+            path: ~/.kube/config
+            state: absent
+        - name: create kubeconfig dir
+          file:
+            path: ~/.kube/
+            state: directory
+        - name: create a symbolic link
+          file:
+            src: /etc/rancher/k3s/k3s.yaml
+            dest: ~/.kube/config
+            state: link
+  tags:
+    - control-plane
+    - kubeconfig
 
 - name: add worker nodes to cluster
   hosts: nodes

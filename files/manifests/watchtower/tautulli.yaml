@@ -1,3 +1,16 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: tautulli
+  namespace: watchtower
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -23,8 +36,6 @@ spec:
         app: tautulli
         tier: watchtower
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: nexus
       containers:
         - name: tautulli
           image: ghcr.io/linuxserver/tautulli:latest
@@ -68,8 +79,8 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/technis/tautulli
+          persistentVolumeClaim:
+            claimName: tautulli
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -100,6 +111,16 @@ metadata:
     tier: watchtower
 spec:
   rules:
+    - host: tautulli.technis.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tautulli
+                port:
+                  number: 8181
     - host: tautulli.techn.is
       http:
         paths:

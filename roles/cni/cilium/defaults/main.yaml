@@ -1,2 +1,2 @@
-cilium_version: 1.11.3
+cilium_version: 1.11.4
 disable_kube_proxy: True

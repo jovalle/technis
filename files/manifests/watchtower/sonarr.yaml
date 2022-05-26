@@ -1,3 +1,16 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: sonarr
+  namespace: watchtower
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -23,8 +36,6 @@ spec:
         app: sonarr
         tier: watchtower
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: nexus
       containers:
         - name: sonarr
           image: ghcr.io/linuxserver/sonarr:latest
@@ -45,8 +56,6 @@ spec:
               mountPath: /config
             - name: downloads
               mountPath: /downloads
-            - name: downloads
-              mountPath: /config/qBittorrent/downloads
             - name: tv
               mountPath: /tv
             - name: localtime
@@ -74,16 +83,16 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/technis/sonarr
+          persistentVolumeClaim:
+            claimName: sonarr
         - name: downloads
-          hostPath:
-            path: /var/lib/technis/sonarr
-            path: /hulkpool/downloads
+          nfs:
+            server: illmatic.techn.is
+            path: /mnt/hulkpool/downloads
         - name: tv
-          hostPath:
-            path: /var/lib/technis/sonarr
-            path: /hulkpool/tv
+          nfs:
+            server: illmatic.techn.is
+            path: /mnt/hulkpool/tvshows
         - name: localtime
           hostPath:
             path: /etc/localtime

@@ -11,7 +11,7 @@
       namespace: longhorn-system
     spec:
       rules:
-      - host: longhorn.{{ k8s_ingress_domain }}
+      - host: longhorn.{{ ingress_domain }}
         http:
           paths:
           - path: /

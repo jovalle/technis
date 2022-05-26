@@ -31,6 +31,42 @@
   retries: 5
   until: pip_install_common is success
 
+- name: cleanup netplans
+  file:
+    path: "/etc/netplan/{{ item }}"
+    state: absent
+  with_items:
+    - 00-installer-config.yaml.BeforeVMwareCustomization
+    - 99-netcfg-vmware.yaml
+    - /etc/netplan/00-installer-config.yaml
+
+- name: configure netplan
+  block:
+    - set_fact:
+        target_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
+    - name: rename {{ target_interface }} to eth0 using netplan
+      block:
+        - set_fact:
+            mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
+        - debug: var=mac_addr
+        - copy:
+            content: |
+              # Ansible managed
+              network:
+                ethernets:
+                  eth0:
+                    dhcp4: true
+                    match:
+                      macaddress: {{ mac_addr }}
+                    optional: true
+                    set-name: eth0
+                version: 2
+            dest: /etc/netplan/00-technis.yaml
+        - command: netplan apply
+  when:
+    - ansible_distribution == "Ubuntu"
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] != 'eth0'
+
 - name: clean up lingering hostname entries
   lineinfile:
     path: /etc/hosts

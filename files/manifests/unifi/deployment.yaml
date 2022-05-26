@@ -1,22 +1,23 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: unifi-controller
+  name: unifi
   namespace: technis
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
+  labels:
+    app: unifi
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: unifi-controller
+      app: unifi
   template:
     metadata:
-      name: unifi-controller
       labels:
-        name: unifi-controller
+        app: unifi
     spec:
       containers:
         - name: unifi-controller
@@ -52,5 +53,5 @@ spec:
               mountPath: /config
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/unifi
+          persistentVolumeClaim:
+            claimName: unifi

@@ -1,3 +1,16 @@
+# kind: PersistentVolumeClaim
+# apiVersion: v1
+# metadata:
+#   name: qbittorrent
+#   namespace: watchtower
+# spec:
+#   storageClassName: longhorn
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
+---
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -34,9 +47,19 @@ spec:
       labels:
         app: qbittorrent
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: nexus
       initContainers:
+      #   - name: backup
+      #     image: instrumentisto/rsync-ssh
+      #     command:
+      #       - rsync
+      #       - -uva
+      #       - /config/
+      #       - /config-backup/
+      #     volumeMounts:
+      #       - name: config
+      #         mountPath: /config
+      #       - name: config-backup
+      #         mountPath: /config-backup
         - name: openvpn-setup
           image: busybox
           imagePullPolicy: IfNotPresent
@@ -80,10 +103,10 @@ spec:
               add:
                 - NET_ADMIN
           volumeMounts:
-            - mountPath: /config
-              name: config
-            - mountPath: /config/qBittorrent/downloads
-              name: downloads
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /config/qBittorrent/downloads
             - name: tunnel
               mountPath: /dev/net/tun
             - name: localtime
@@ -115,11 +138,16 @@ spec:
       restartPolicy: Always
       volumes:
         - name: config
-          hostPath:
-            path: /var/lib/technis/qbittorrent
+        #   persistentVolumeClaim:
+        #     claimName: qbittorrent
+        # - name: config-backup
+          nfs:
+            server: illmatic.techn.is
+            path: /mnt/hulkpool/technis/qbittorrent
         - name: downloads
-          hostPath:
-            path: /hulkpool/downloads
+          nfs:
+            server: illmatic.techn.is
+            path: /mnt/hulkpool/downloads
         - name: tunnel
           hostPath:
             path: /dev/net/tun

@@ -34,20 +34,6 @@ spec:
       labels:
         app: uptime-kuma
     spec:
-      initContainers:
-        - name: backup
-          image: instrumentisto/rsync-ssh
-          command:
-            - rsync
-            - -avp
-            - -I
-            - /config/
-            - /config-backup/
-          volumeMounts:
-            - name: config
-              mountPath: /config
-            - name: config-backup
-              mountPath: /config-backup
       containers:
         - name: app
           image: louislam/uptime-kuma:1
@@ -73,10 +59,6 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: uptime-kuma
-        - name: config-backup
-          nfs:
-            server: nexus.techn.is
-            path: /var/lib/technis/uptime-kuma
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -105,7 +87,17 @@ metadata:
     app: uptime-kuma
 spec:
   rules:
-    - host: uptime.k8s.techn.is
+    - host: status.technis.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: uptime-kuma-web
+                port:
+                  number: 3001
+    - host: status.techn.is
       http:
         paths:
           - path: /
