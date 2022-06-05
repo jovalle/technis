@@ -59,6 +59,7 @@
         {% if result.changed %}--cluster-init{% else %}--server https://{{ hostvars[groups['control_plane'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443{% endif %}
         --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --disable servicelb
+        --disable metrics-server
         {% if disable_kube_proxy | default(False) | bool %}--disable-kube-proxy{% endif %}
         {% if cni_plugin | default('none') != 'none' %}
         --disable-network-policy
@@ -92,6 +93,7 @@
         --server https://{{ hostvars[control_plane_leader]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
         --tls-san "{{ kube_vip_ip | default("192.168.1.100") }}"
         --disable servicelb
+        --disable metrics-server
         {% if disable_kube_proxy | default(False) | bool %}--disable-kube-proxy{% endif %}
         {% if cni_plugin | default('none') != 'none' %}
         --disable-network-policy
