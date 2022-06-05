@@ -1,0 +1,3 @@
+- hosts: control_plane[0]
+  roles:
+    - monitoring/kube-prometheus
