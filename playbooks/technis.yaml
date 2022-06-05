@@ -46,6 +46,12 @@
     - storage
     - services
 
+- name: deploy monitoring stack
+  import_playbook: monitoring.yaml
+  tags:
+    - monitoring
+    - services
+
 - import_playbook: kubeconfig.yaml
   tags:
     - kubeconfig
