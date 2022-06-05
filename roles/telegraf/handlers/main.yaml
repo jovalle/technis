@@ -1,0 +1,4 @@
+- name: restart telegraf service
+  systemd:
+    name: telegraf
+    state: restarted
