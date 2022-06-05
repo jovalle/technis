@@ -1,4 +1,17 @@
 # thanks @aserhat for the inspiration
+
+- name: assert base parameters
+  assert:
+    that:
+      - file_type is defined
+      - target_list is defined or target_fileglob is defined
+
+- name: assert target_list has elements
+  assert:
+    that:
+      - target_list | len > 0
+  when: target_list is defined
+
 - name: "{{ source_role }} | create temp dir"
   tempfile:
     state: directory
@@ -6,70 +19,83 @@
 
 - name: render manifest
   block:
+    - name: "{{ source_role }} | gather manifest(s) from host"
+      copy:
+        src: "{{ item }}"
+        dest: "{{ tempdir.path }}/{{ item | basename }}"
+      with_fileglob:
+        - "{{ target_fileglob }}"
+      when: file_type == "fileglob"
 
     - name: "{{ source_role }} | fetch manifest(s) from host"
       copy:
-        src: '{{ copy_item }}'
-        dest: '{{ tempdir.path }}/{{ copy_item }}'
+        src: "{{ copy_item }}"
+        dest: "{{ tempdir.path }}/{{ copy_item }}"
       with_items:
-        - '{{ target_list }}'
+        - "{{ target_list }}"
       loop_control:
         loop_var: copy_item
-      when: file_type == 'static'
+      when: file_type == "static"
 
     - name: "{{ source_role }} | render manifest(s) onto target host"
       template:
-        src: '{{ template_item }}.j2'
-        dest: '{{ tempdir.path }}/{{ template_item }}'
+        src: "{{ template_item }}.j2"
+        dest: "{{ tempdir.path }}/{{ template_item | basename }}"
       with_items:
-        - '{{ target_list }}'
+        - "{{ target_list }}"
       loop_control:
         loop_var: template_item
-      when: file_type == 'template'
+      when: file_type == "template"
 
     - name: "{{ source_role }} | clean slate for manifest(s)"
-      command: kubectl delete -f {{ tempdir.path }}/{{ delete_item }}
+      command: kubectl delete -f {{ tempdir.path }}/{{ delete_item | basename }}
       with_items:
-        - '{{ target_list }}'
+        - "{{ target_list }}"
       loop_control:
         loop_var: delete_item
-      when: (mode is defined and mode == 'replace') and (file_type == 'static' or file_type == 'template')
+      when: (mode is defined and mode == "replace") and (file_type == "static" or file_type == "template")
       ignore_errors: yes
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
-      command: kubectl {{ command | default('apply') }} -f {{ tempdir.path }}/{{ static_item }}
-      with_items:
-        - '{{ target_list }}'
+      command: kubectl {{ command | default('apply') }} -f {{ tempdir.path }}/{{ item | basename }}
+      with_fileglob:
+        - "{{ target_fileglob }}"
+      when: file_type == "fileglob"
+
+    - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
+      command: kubectl {{ command | default("apply") }} -f {{ tempdir.path }}/{{ static_item | basename }}
+      loop:
+        - "{{ target_list }}"
       loop_control:
         loop_var: static_item
-      when: file_type == 'static' or file_type == 'template'
+      when: file_type == "static" or file_type == "template"
 
     - name: "{{ source_role }} | clean slate for manifest(s)"
-      command: kubectl delete -f {{ delete_item2 }}
-      with_items:
-        - '{{ target_list }}'
+      command: kubectl delete -f {{ delete_item | basename }}
+      loop:
+        - "{{ target_list }}"
       loop_control:
         loop_var: delete_item
-      when: (mode is defined and mode == 'replace') and (file_type == 'remote')
+      when: (mode is defined and mode == "replace") and (file_type == "remote")
       ignore_errors: yes
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
-      command: kubectl {{ command | default('apply') }} -f {{ remote_item }}
-      with_items:
-        - '{{ target_list }}'
+      command: kubectl {{ command | default("apply") }} -f {{ remote_item }}
+      loop:
+        - "{{ target_list }}"
       loop_control:
         loop_var: remote_item
-      when: file_type == 'remote'
+      when: file_type == "remote"
 
     - name: apply raw manifest
       shell: |
         cat <<EOF | kubectl apply -f -
         {{ raw_manifest }}
         EOF
-      when: file_type == 'raw' and raw_manifest is defined
+      when: file_type == "raw" and raw_manifest is defined
 
   always:
     - name: "{{ source_role }} | clean up"
       file:
-        path: '{{ tempdir.path }}'
+        path: "{{ tempdir.path }}"
         state: absent
