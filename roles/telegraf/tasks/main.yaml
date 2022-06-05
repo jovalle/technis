@@ -1,0 +1,23 @@
+- name: install telegraf
+  apt:
+    name: telegraf
+
+- name: render base configuration
+  template:
+    src: telegraf.conf.j2
+    dest: /etc/telegraf/telegraf.conf
+  notify: restart telegraf service
+
+- name: git clone ups plugin script
+  git:
+    repo: "https://github.com/jovalle/ups-telegraf.git"
+    dest: "{{ telegraf_ups_script_path }}"
+
+- name: render plugin configurations
+  template:
+    src: "{{ item }}.conf.j2"
+    dest: "/etc/telegraf/telegraf.d/{{ item }}.conf"
+  with_items:
+    - ups
+    - idrac
+  notify: restart telegraf service

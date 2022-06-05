@@ -1,0 +1,9 @@
+[agent]
+  hostname = "{{ inventory_hostname }}"
+
+[[outputs.influxdb]]
+  urls = ["{{ influxdb_endpoint }}"]
+  database = "{{ influxdb_database }}"
+  timeout = "5s"
+  username = "{{ influxdb_user }}"
+  password = "{{ influxdb_pass }}"
