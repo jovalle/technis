@@ -23,14 +23,6 @@ local ingress(metadata, domain, service) = {
 local kp =
   (import 'kube-prometheus/main.libsonnet') +
   (import 'kube-prometheus/addons/networkpolicies-disabled.libsonnet') +
-  // TODO: add loki, pihole-exporter, rpi-exporter, snmp-exporter, uptime-kuma
-  // Uncomment the following imports to enable its patches
-  // (import 'kube-prometheus/addons/anti-affinity.libsonnet') +
-  // (import 'kube-prometheus/addons/managed-cluster.libsonnet') +
-  // (import 'kube-prometheus/addons/node-ports.libsonnet') +
-  // (import 'kube-prometheus/addons/static-etcd.libsonnet') +
-  // (import 'kube-prometheus/addons/custom-metrics.libsonnet') +
-  // (import 'kube-prometheus/addons/external-metrics.libsonnet') +
   {
     values+:: {
       common+: {
@@ -78,16 +70,12 @@ local kp =
           replicas: 1,
           retention: '7d',
           retentionSize: '40GB',
-          // nodeSelector+: {
-          //   'kubernetes.io/hostname': 'nexus',
-          // },
           storage: {
             volumeClaimTemplate: {
               metadata: {
                 name: 'promdata',
               },
               spec: {
-                // storageClassName: 'local-path',
                 storageClassName: 'longhorn',
                 accessModes: ['ReadWriteOnce'],
                 resources: {
@@ -96,14 +84,6 @@ local kp =
               },
             },
           },
-          // additionalScrapeConfigs: {
-          //   scrape_configs: [{
-          //     job_name: 'pihole',
-          //     static_configs: [{
-          //       targets: ['192.168.1.2:9617'],
-          //     }],
-          //   }],
-          // },
         },
       },
       ingress: ingress(
