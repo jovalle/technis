@@ -22,6 +22,7 @@ local ingress(metadata, domain, service) = {
 
 local kp =
   (import 'kube-prometheus/main.libsonnet') +
+  (import 'kube-prometheus/addons/networkpolicies-disabled.libsonnet') +
   // TODO: add loki, pihole-exporter, rpi-exporter, snmp-exporter, uptime-kuma
   // Uncomment the following imports to enable its patches
   // (import 'kube-prometheus/addons/anti-affinity.libsonnet') +
@@ -34,7 +35,7 @@ local kp =
     values+:: {
       common+: {
         namespace: 'monitoring',
-        baseDomain: 'k8s.techn.is',
+        baseDomain: 'techn.is',
       },
       other: {},
     },
