@@ -1,3 +1,14 @@
+- name: install calicoctl
+  block:
+    - name: get binary
+      get_url:
+        url: "https://github.com/projectcalico/calicoctl/releases/download/{{ calico_version }}/calicoctl-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}"
+        dest: /usr/local/bin/calicoctl
+    - name: ensure binary is executable
+      file:
+        path: /usr/local/bin/calicoctl
+        mode: 0755
+
 - name: update kube-api route to LB endpoint
   import_role:
     name: kubectl

@@ -3,7 +3,7 @@
     upgrade: full
     update_cache: yes
     cache_valid_time: 3600
-    force_apt_get: true
+    force_apt_get: yes
     autoclean: yes
     autoremove: yes
   register: apt_upgrade
@@ -17,7 +17,7 @@
     install_recommends: false
     update_cache: yes
     cache_valid_time: 3600
-    force_apt_get: true
+    force_apt_get: yes
     autoclean: yes
     autoremove: yes
   register: apt_install_common
@@ -36,9 +36,10 @@
     path: "/etc/netplan/{{ item }}"
     state: absent
   with_items:
+    - 00-installer-config.yaml
     - 00-installer-config.yaml.BeforeVMwareCustomization
+    - 50-cloud-init.yaml
     - 99-netcfg-vmware.yaml
-    - /etc/netplan/00-installer-config.yaml
 
 - name: configure netplan
   block:
@@ -67,12 +68,29 @@
     - ansible_distribution == "Ubuntu"
     - hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] != 'eth0'
 
+# Fix to Cilium bug in arm64 / Ubuntu 22.04 (https://github.com/cilium/cilium/issues/18131)
+- name: prepare node for Strict Reverse Path Forwarding
+  block:
+    - name: clear known kernel param conflicts
+      lineinfile:
+        path: /etc/sysctl.d/10-network-security.conf
+        regex: "^net.ipv4.conf(.*).rp_filter(.*)$"
+        state: absent
+    - name: disable kernel params
+      copy:
+        dest: /etc/sysctl.d/99-cilium-cni.conf
+        content: |
+          net.ipv4.conf.default.rp_filter=0
+          net.ipv4.conf.*.rp_filter=0
+      notify: reboot host
+  when: cni_plugin | default('none') == 'cilium'
+
 - name: clean up lingering hostname entries
   lineinfile:
     path: /etc/hosts
     regex: "^127.0.0.1(.*){{ hostvars[inventory_hostname]['ansible_hostname'] }}(.*)$"
     state: absent
-  when: infrastructure_provisioner != 'vagrant'
+  when: infrastructure_provisioner | default('none') != 'vagrant'
 
 - name: set node aliases in /etc/hosts
   lineinfile:
@@ -201,15 +219,6 @@
     line: "PermitRootLogin prohibit-password"
   notify: restart ssh
 
-- name: ensure space for local path mounts
-  file:
-    path: /var/lib/technis
-    state: directory
-    mode: 0755
-    owner: 1000
-    group: 1000
-  run_once: yes
-
 - name: personal touch
   lineinfile:
     path: "{{ ansible_user_dir }}/.bashrc"
@@ -218,3 +227,9 @@
     - set -o vi
     - export EDITOR=vim
     - alias k=kubectl
+
+- name: request reboot
+  debug:
+    msg: "Requesting a reboot"
+  notify: reboot host
+  when: reboot | default('no') | bool

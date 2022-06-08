@@ -1,3 +1,11 @@
 - hosts: cluster
+  vars_prompt:
+    - name: cluster_wipe_confirmation
+      prompt: WARNING! Cluster will be wiped. Continue?
+      private: no
+      default: no
+  pre_tasks:
+    - fail:
+      when: not cluster_wipe_confirmation | default("no") | bool
   roles:
     - k3s/reset

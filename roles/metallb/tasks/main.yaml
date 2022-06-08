@@ -17,16 +17,6 @@
     - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/namespace.yaml
     - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/metallb.yaml
 
-- name: check for memberlist secret
-  command: kubectl -n metallb-system get secret memberlist
-  register: get_memberlist
-  ignore_errors: yes
-
-- name: generate memberlist secret
-  shell: |
-    kubectl -n metallb-system create secret generic memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-  when: get_memberlist.rc != 0
-
 - name: set config
   import_role:
     name: kubectl

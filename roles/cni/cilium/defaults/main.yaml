@@ -1,2 +1,3 @@
-cilium_version: 1.11.4
-disable_kube_proxy: True
+cilium_version: 1.11.5
+cilium_cli_version: v0.10.7
+disable_kube_proxy: yes

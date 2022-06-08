@@ -13,8 +13,8 @@
     reload: yes
   with_items:
     - net.bridge.bridge-nf-call-iptables
-    - net.ipv4.ip_forward
     - net.bridge.bridge-nf-call-ip6tables
+    - net.ipv4.ip_forward
 
 - name: add an apt signing key for docker
   apt_key:
@@ -52,5 +52,7 @@
     state: directory
 
 - name: render default config
-  shell: containerd config default | tee /etc/containerd/config.toml
+  shell:
+    cmd: containerd config default | tee /etc/containerd/config.toml
+    creates: /etc/containerd/config.toml
   notify: restart containerd

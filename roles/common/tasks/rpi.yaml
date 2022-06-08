@@ -30,12 +30,28 @@
   when:
     - dphys_swapfile.stat.exists
 
-- name: disable pi user password
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "^#PasswordAuthentication.*"
-    line: "PasswordAuthentication no"
-  notify: restart ssh
+- name: set root SSH key
+  authorized_key:
+    user: root
+    state: present
+    key: "{{ ssh_public_key }}"
+  ignore_errors: yes
+
+- name: check if pi user exist
+  command: id -un pi
+  register: pi_user
+  ignore_errors: yes
+
+- name: kill all running pi user processes
+  command: pkill -u pi
+  ignore_errors: yes
+  when: pi_user.rc == 0
+
+- name: disable pi user
+  user:
+    name: pi
+    password: '!'
+  when: pi_user.rc == 0
 
 - name: update keyboard layout
   replace:

@@ -40,3 +40,9 @@
 - name: daemon_reload
   systemd:
     daemon_reload: yes
+
+- name: reboot
+  reboot:
+    msg: "Host rebooted"
+    reboot_timeout: "{{ reboot_timeout | default(600) }}"
+  when: reboot | default('no') | bool

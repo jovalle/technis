@@ -20,19 +20,10 @@
     mode: 0644
   when: inventory_hostname == groups['control_plane'][0]
 
-- name: copy vip rbac manifest to first control plane node
+- name: copy kube-vip manifest to first control plane node
   template:
-    src: "vip.rbac.yaml.j2"
-    dest: "/var/lib/rancher/k3s/server/manifests/vip.rbac.yaml"
-    owner: root
-    group: root
-    mode: 0644
-  when: inventory_hostname == groups['control_plane'][0]
-
-- name: copy vip manifest to first control plane node
-  template:
-    src: "vip.yaml.j2"
-    dest: "/var/lib/rancher/k3s/server/manifests/vip.yaml"
+    src: "kube-vip.yaml.j2"
+    dest: "/var/lib/rancher/k3s/server/manifests/kube-vip.yaml"
     owner: root
     group: root
     mode: 0644
@@ -87,13 +78,13 @@
       failed_when: false
 
 - name: render k3s service file
-  register: k3s_service
   template:
     src: "k3s.service.j2"
     dest: "/etc/systemd/system/k3s.service"
     owner: root
     group: root
     mode: 0644
+  register: k3s_service
 
 - name: enable and restart k3s service
   systemd:
@@ -101,6 +92,7 @@
     daemon_reload: yes
     state: restarted
     enabled: yes
+  when: k3s_service.changed
 
 - name: wait for node-token
   wait_for:

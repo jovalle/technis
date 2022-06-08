@@ -9,7 +9,7 @@
 - name: assert target_list has elements
   assert:
     that:
-      - target_list | len > 0
+      - target_list | length > 0
   when: target_list is defined
 
 - name: "{{ source_role }} | create temp dir"
@@ -64,7 +64,7 @@
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
       command: kubectl {{ command | default("apply") }} -f {{ tempdir.path }}/{{ static_item | basename }}
-      loop:
+      with_items:
         - "{{ target_list }}"
       loop_control:
         loop_var: static_item
@@ -72,7 +72,7 @@
 
     - name: "{{ source_role }} | clean slate for manifest(s)"
       command: kubectl delete -f {{ delete_item | basename }}
-      loop:
+      with_items:
         - "{{ target_list }}"
       loop_control:
         loop_var: delete_item
@@ -81,7 +81,7 @@
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
       command: kubectl {{ command | default("apply") }} -f {{ remote_item }}
-      loop:
+      with_items:
         - "{{ target_list }}"
       loop_control:
         loop_var: remote_item
