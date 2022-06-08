@@ -23,8 +23,8 @@ cluster
 
 [cluster:vars]
 cni_plugin=none
-k8s_apiserver_endpoint=192.168.56.100
-k8s_ingress_endpoint=192.168.56.101
+apiserver_endpoint=192.168.56.100
+ingress_endpoint=192.168.56.101
 k8s_provisioner=kubeadm
 k8s_version=v1.21.8
 
