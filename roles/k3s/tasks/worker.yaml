@@ -5,6 +5,7 @@
     owner: root
     group: root
     mode: 0755
+  register: k3s_node_service
 
 - name: enable and check k3s service
   systemd:
@@ -12,3 +13,4 @@
     daemon_reload: yes
     state: restarted
     enabled: yes
+  when: k3s_node_service.changed

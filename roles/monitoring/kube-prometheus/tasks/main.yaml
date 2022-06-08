@@ -65,7 +65,7 @@
       shell:
         cmd: |
           ./build.sh main.jsonnet
-          kubectl apply -f --server-side manifests/setup
+          kubectl apply --server-side -f manifests/setup
           until kubectl get servicemonitors --all-namespaces ; do date; sleep 1; echo ""; done
           kubectl apply -f manifests/
         chdir: "{{ temp_dir.path }}/kube-prometheus"

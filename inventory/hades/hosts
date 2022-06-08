@@ -21,15 +21,13 @@ control_plane
 nodes
 
 [cluster:vars]
-apiserver_endpoint=192.168.1.100
-cni_plugin=none
+cni_plugin=cilium
 cri_plugin=containerd.io
-infrastructure_provisioner=terraform
-ingress_controller=traefik
-ingress_endpoint=192.168.10.1
+infrastructure_provisioner=terraform #TODO: support multiple (e.g. terraform + baremetal (raspi))
 k3s_version=v1.23.6+k3s1
 k8s_provisioner=k3s
-kube_vip_ip=192.168.1.100
+apiserver_endpoint=192.168.1.100
+ingress_endpoint=192.168.10.1
 storage_providers="['longhorn']"
 
 [all:vars]

@@ -1,16 +1,3 @@
-# Fix to Cilium bug in arm64 (https://github.com/cilium/cilium/issues/18131)
-- name: disable Strict Reverse Path Forwarding
-  sysctl:
-    name: "{{ item }}"
-    value: "0"
-    state: present
-    reload: yes
-  with_items:
-    - net.ipv4.conf.all.rp_filter
-    - net.ipv4.conf.default.rp_filter
-    - "net.ipv4.conf.{{ default_interface | default('eth0') }}.rp_filter"
-  notify: reboot host
-
 #TODO: check that apiserver_endpoint is reachable
 #   replace with control_plane[0] IP if not reachable (kube-vip/CNI race condition)
 
@@ -27,8 +14,11 @@
           --set kubeProxyReplacement=strict \
           --set k8sServiceHost="{{ apiserver_endpoint | default('192.168.1.100') }}" \
           --set k8sServicePort=6443 \
-          --set ipam.mode="kubernetes" \
-          --set operator.replicas={% if groups['cluster'] | length > 3 %}3{% else %}1{% endif %}
+          --set operator.replicas={% if groups['cluster'] | length > 2 %}2{% else %}1{% endif %} \
+          --set egressGateway.enabled=true \
+          --set bpf.masquerade=true \
+          --set hubble.relay.enabled=true \
+          --set hubble.ui.enabled=true
   when: disable_kube_proxy | default(False) | bool
 
 - name: check for binary
@@ -47,7 +37,7 @@
   block:
     - name: get files
       shell: |
-        curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/{{ cilium_version }}/download/cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
+        curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version }}/cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
     - name: checksum
       command: sha256sum --check cilium-linux-{{ arch }}.tar.gz.sha256sum
     - name: unarchive tarball

@@ -1,6 +1,6 @@
-apiserver_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}"
 k3s_token: technis
 k3s_version: v1.23.4+k3s1
+apiserver_endpoint: 192.168.1.100
 kube_vip_version: v0.4.2
 server_init_args: >-
   {% if groups['control_plane'] | length > 1 %}
@@ -15,6 +15,7 @@ server_init_args: >-
 extra_server_args: >-
   --tls-san "{{ apiserver_endpoint }}"
   --disable servicelb
+  --disable metrics-server
   {% if cni_plugin | default('none') != 'none' %}
   {% if disable_kube_proxy | default(True) | bool %}
   --disable-kube-proxy

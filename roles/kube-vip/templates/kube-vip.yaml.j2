@@ -52,9 +52,6 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: node-role.kubernetes.io/master
-                operator: Exists
-            - matchExpressions:
               - key: node-role.kubernetes.io/control-plane
                 operator: Exists
       containers:
@@ -62,7 +59,7 @@ spec:
         - manager
         env:
         - name: vip_arp
-          value: "false"
+          value: "{{ 'true' if (kube_vip_mode | default('arp') == 'arp') else 'false' }}"
         - name: port
           value: "6443"
         - name: vip_interface
@@ -77,19 +74,29 @@ spec:
           value: "false"
         - name: svc_enable
           value: "true"
+{% if kube_vip_mode | default('arp') == 'bgp' %}
         - name: bgp_enable
           value: "true"
         - name: bgp_routerinterface
           value: "eth0"
         - name: bgp_as
-          value: "65000"
+          value: "{{ kube_vip_bgp_asn | default('65000') }}"
         - name: bgp_peeras
-          value: "65000"
+          value: "{{ kube_vip_bgp_peer_asn | default('65001') }}"
         - name: bgp_peers
-          value: "192.168.1.1:65001::false"
+          value: "{{ kube_vip_bgp_peer_ip | default('192.168.1.1') }}:{{ kube_vip_bgp_peer_asn | default('65001') }}::false"
+{% endif %}
+        - name: vip_leaderelection
+          value: "true"
+        - name: vip_leaseduration
+          value: "5"
+        - name: vip_renewdeadline
+          value: "3"
+        - name: vip_retryperiod
+          value: "1"
         - name: address
-          value: "192.168.1.100"
-        image: ghcr.io/kube-vip/kube-vip:v0.4.4
+          value: "{{ kube_apiserver_vip | default('192.168.1.100') }}"
+        image: ghcr.io/kube-vip/kube-vip:{{ kube_vip_version | default('v0.4.2') }}
         imagePullPolicy: Always
         name: kube-vip
         resources: {}
@@ -106,3 +113,4 @@ spec:
         operator: Exists
       - effect: NoExecute
         operator: Exists
+  updateStrategy: {}
