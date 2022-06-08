@@ -47,7 +47,7 @@
     - name: upgrade kubelet
       block:
         - name: drain node
-          command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-local-data
+          command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
           delegate_to: "{{ kubectl_delegate }}"
         - name: upgrade kubelet and kubectl
           command: apt-get install -y --allow-change-held-packages --allow-downgrades kubelet={{ version }}-00 kubectl={{ version }}-00
