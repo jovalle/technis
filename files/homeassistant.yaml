@@ -39,3 +39,39 @@ spec:
         - name: config
           hostPath:
             path: /var/lib/homeassistant
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: homeassistant
+  namespace: technis
+  labels:
+    name: homeassistant
+spec:
+  ports:
+    - name: web
+      protocol: TCP
+      port: 8123
+  selector:
+    name: homeassistant
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homeassistant
+  namespace: watchtower
+  labels:
+    app: homeassistant
+spec:
+  rules:
+    - host: homeassistant.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homeassistant
+                port:
+                  number: 8191
