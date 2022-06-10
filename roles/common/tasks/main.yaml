@@ -43,30 +43,37 @@
 
 - name: configure netplan
   block:
-    - set_fact:
-        target_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
-    - name: rename {{ target_interface }} to eth0 using netplan
-      block:
-        - set_fact:
-            mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
-        - debug: var=mac_addr
-        - copy:
-            content: |
-              # Ansible managed
-              network:
-                ethernets:
-                  eth0:
-                    dhcp4: true
-                    match:
-                      macaddress: {{ mac_addr }}
-                    optional: true
-                    set-name: eth0
-                version: 2
-            dest: /etc/netplan/00-technis.yaml
-        - command: netplan apply
-  when:
-    - ansible_distribution == "Ubuntu"
-    - hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] != 'eth0'
+    - name: get primary interface name
+      set_fact:
+        target_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] | default('eth0') }}"
+    - name: get primary interface mac address
+      set_fact:
+        mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
+    - debug: var=mac_addr
+    - name: set primary interface to eth0
+      copy:
+        content: |
+          # Ansible managed
+          network:
+            ethernets:
+              eth0:
+                dhcp4: true
+                match:
+                  macaddress: {{ mac_addr }}
+                optional: true
+                set-name: eth0
+            version: 2
+        dest: /etc/netplan/00-technis.yaml
+      register: netplan
+    - name: apply new net config
+      command: netplan apply
+      when: netplan.changed
+
+- name: set hostname
+  shell: |
+    echo "{{ inventory_hostname }}" > /etc/hostname
+    hostname {{ inventory_hostname }}
+    hostnamectl set-hostname {{ inventory_hostname }}
 
 # Fix to Cilium bug in arm64 / Ubuntu 22.04 (https://github.com/cilium/cilium/issues/18131)
 - name: prepare node for Strict Reverse Path Forwarding
@@ -110,12 +117,6 @@
 
 - debug: var=ansible_fqdn
 
-- name: set hostname
-  shell: |
-    echo "{{ inventory_hostname }}" > /etc/hostname
-    hostname {{ inventory_hostname }}
-    hostnamectl set-hostname {{ inventory_hostname }}
-
 - name: disable local dns cache
   block:
   - name: disable resolved
@@ -145,6 +146,56 @@
 
 - name: renew dhcp lease
   command: dhclient -v
+
+- name: create ~/.ssh dir if missing
+  file:
+    path: ~/.ssh
+    mode: 0700
+    state: directory
+  when:
+    - ssh_public_key is defined
+    - ssh_private_key is defined
+
+- name: create ~/.ssh/authorized_keys if missing
+  file:
+    path: ~/.ssh/authorized_keys
+    state: touch
+    mode: 0600
+  when: ssh_public_key is defined
+
+- name: allow public SSH key for administration
+  lineinfile:
+    path: ~/.ssh/authorized_keys
+    line: "{{ ssh_public_key | trim }}"
+  when: ssh_public_key is defined
+
+- name: render SSH key for host to host
+  copy:
+    content: "{{ ssh_private_key }}"
+    dest: ~/.ssh/id_rsa
+    mode: 0600
+  when: ssh_private_key is defined
+
+- name: allow password atuh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^(#*)PasswordAuthentication no"
+    line: "PasswordAuthentication yes"
+  notify: restart ssh
+
+- name: allow root login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^(#*)PermitRootLogin.*"
+    line: "PermitRootLogin yes"
+  notify: restart ssh
+
+# Generate a hash via:
+#   docker run --rm -it flyingprogrammer/mkpasswd -m sha-512 --rounds=4096
+- name: set root password if defined
+  user:
+    name: root
+    password: "$6$rounds=4096$aEPEL1bIDTcZ$YnEvgJKmQrHnyF.OmpdSasUjxwtqn2C1CugUUAyGq9GGI/B3Qz9CTcuj2G/L5uxNhidEd7jXynNXVzZfJm2YB."
 
 - name: deploy raspberry pi changes
   include_tasks: rpi.yaml
@@ -182,42 +233,6 @@
 
 - name: enable ntp
   command: /usr/bin/timedatectl set-ntp true
-
-- name: create ~/.ssh dir if missing
-  file:
-    path: ~/.ssh
-    mode: 0700
-    state: directory
-  when:
-    - ssh_public_key is defined
-    - ssh_private_key is defined
-
-- name: create ~/.ssh/authorized_keys if missing
-  file:
-    path: ~/.ssh/authorized_keys
-    state: touch
-    mode: 0600
-  when: ssh_public_key is defined
-
-- name: allow public SSH key for administration
-  lineinfile:
-    path: ~/.ssh/authorized_keys
-    line: "{{ ssh_public_key }}"
-  when: ssh_public_key is defined
-
-- name: render SSH key for host to host
-  copy:
-    content: "{{ ssh_private_key }}"
-    dest: ~/.ssh/id_rsa
-    mode: 0600
-  when: ssh_private_key is defined
-
-- name: prohibit root password auth
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "^#PermitRootLogin.*"
-    line: "PermitRootLogin prohibit-password"
-  notify: restart ssh
 
 - name: personal touch
   lineinfile:
