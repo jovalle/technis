@@ -30,13 +30,6 @@
   when:
     - dphys_swapfile.stat.exists
 
-- name: set root SSH key
-  authorized_key:
-    user: root
-    state: present
-    key: "{{ ssh_public_key }}"
-  ignore_errors: yes
-
 - name: check if pi user exist
   command: id -un pi
   register: pi_user
