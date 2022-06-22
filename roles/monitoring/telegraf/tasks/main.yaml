@@ -8,16 +8,12 @@
     dest: /etc/telegraf/telegraf.conf
   notify: restart telegraf service
 
-- name: git clone ups plugin script
-  git:
-    repo: "https://github.com/jovalle/ups-telegraf.git"
-    dest: "{{ telegraf_ups_script_path }}"
+- name: ensure plugin path exists
+  file:
+    path: "{{ telegraf_plugin_path }}"
+    state: directory
 
-- name: render plugin configurations
-  template:
-    src: "{{ item }}.conf.j2"
-    dest: "/etc/telegraf/telegraf.d/{{ item }}.conf"
+- name: configure plugins
+  include_tasks: configure.yaml
   with_items:
-    - ups
-    - idrac
-  notify: restart telegraf service
+    - "{{ telegraf_plugins }}"

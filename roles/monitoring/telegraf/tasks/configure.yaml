@@ -1,0 +1,11 @@
+- name: git clone {{ item.name }} plugin repo
+  git:
+    repo: "{{ item.repo }}"
+    dest: "{{ telegraf_plugin_path }}/{{ item.name }}"
+  when: item.repo is defined | default('no') | bool
+
+- name: render {{ item.name }} telegraf config
+  template:
+    src: "{{ item.name }}.conf.j2"
+    dest: "/etc/telegraf/telegraf.d/{{ item.name }}.conf"
+  notify: restart telegraf service
