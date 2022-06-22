@@ -3,7 +3,14 @@ influxdb_endpoint: "https://influxdb.{{ ingress_domain }}"
 influxdb_database: monitoring
 influxdb_user: admin
 influxdb_pass: adminadmin
-telegraf_ups_script_path: /etc/telegraf/ups
-telegraf_ups_script_name: get_ups_data.py
-telegraf_ups_config: tripplite/smart1500lcd
-telegraf_ups_name: tripplite
+telegraf_plugin_path: /etc/telegraf/plugins
+telegraf_plugins:
+  - name: ups
+    repo: https://github.com/jovalle/ups-telegraf.git
+    script: get_ups_data.py
+  - name: idrac
+telegraf_plugin:
+  ups:
+    name: tripplite
+    config: tripplite/smart1500lcd
+    script_path: /etc/telegraf/plugins/ups
