@@ -58,3 +58,9 @@
           when: technis_private.stat.exists | default('no') | bool
       tags:
         - private
+    - name: deploy addon manifests
+      shell: kubectl apply -f {{ playbook_dir }}/../files/{{ item }}
+      with_items:
+        - "{{ addon_manifests }}"
+      tags:
+        - addons
