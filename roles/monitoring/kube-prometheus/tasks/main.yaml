@@ -20,6 +20,7 @@
       git:
         repo: "https://github.com/prometheus-operator/kube-prometheus.git"
         dest: "{{ temp_dir.path }}/kube-prometheus"
+        version: "release-0.11"
 
     - name: install go dependencies
       shell:
@@ -56,19 +57,51 @@
           jb update
         chdir: "{{ temp_dir.path }}/kube-prometheus"
 
-    - name: render setup file
-      copy:
-        src: "{{ role_path }}/files/main.jsonnet"
-        dest: "{{ temp_dir.path }}/kube-prometheus"
+    - name: ensure extra dirs exist
+      file:
+        path: "{{ temp_dir.path }}/kube-prometheus/{{ item }}"
+        state: directory
+      with_items:
+        - dashboards
 
-    - name: generate and apply manifests
+    - name: copy dashboards
+      copy:
+        src: "{{ role_path }}/files/{{ item }}"
+        dest: "{{ temp_dir.path }}/kube-prometheus/{{ item }}"
+      with_items:
+        - dashboards/idrac-host-stats.json
+        - dashboards/pi-hole-exporter.json
+
+    - name: render setup file
+      template:
+        src: "main.jsonnet.j2"
+        dest: "{{ temp_dir.path }}/kube-prometheus/main.jsonnet"
+
+    - name: generate manifests
       shell:
-        cmd: |
-          ./build.sh main.jsonnet
-          kubectl apply --server-side -f manifests/setup
-          until kubectl get servicemonitors --all-namespaces ; do date; sleep 1; echo ""; done
-          kubectl apply -f manifests/
+        cmd: ./build.sh main.jsonnet
         chdir: "{{ temp_dir.path }}/kube-prometheus"
+      when: not skip_manifest_build | default('no') | bool
+
+    - name: additional scrape configs
+      block:
+        - name: copy prometheus-additional.yaml
+          copy:
+            src: "{{ role_path }}/files/prometheus-additional.yaml"
+            dest: "{{ temp_dir.path }}/"
+
+        - name: create or update secret
+          shell: kubectl -n monitoring create secret generic additional-scrape-configs --from-file={{ temp_dir.path }}/prometheus-additional.yaml --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: apply setup manifests
+      shell: |
+        kubectl apply --server-side -f {{ temp_dir.path }}/kube-prometheus/manifests/setup
+        until kubectl get servicemonitors --all-namespaces ; do date; sleep 1; echo ""; done
+      when: not skip_kubectl_apply | default('no') | bool
+
+    - name: apply manifests
+      shell: kubectl apply -f {{ temp_dir.path }}/kube-prometheus/manifests/
+      when: not skip_kubectl_apply | default('no') | bool
 
   environment:
     PATH: "{{ ansible_env.PATH }}:{{ _gopath.stdout }}/bin"
@@ -78,3 +111,4 @@
       file:
         path: "{{ temp_dir.path }}"
         state: absent
+      when: not skip_kubectl_apply | default('no') | bool

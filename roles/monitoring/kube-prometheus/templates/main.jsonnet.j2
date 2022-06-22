@@ -29,6 +29,59 @@ local kp =
         namespace: 'monitoring',
         baseDomain: 'techn.is',
       },
+      grafana+: {
+        datasources: [
+          {
+            "access": "proxy",
+            "editable": false,
+            "name": "prometheus",
+            "orgId": 1,
+            "type": "prometheus",
+            "url": "http://prometheus-k8s.monitoring.svc:9090",
+            "version": 1
+          },
+          {
+            "access": "proxy",
+            "database": "monitoring",
+            "editable": true,
+            "name": "influxdb",
+            "orgId": 1,
+            "password": "{{ influxdb_pass | default(omit) }}",
+            "user": "admin",
+            "type": "influxdb",
+            "url": "http://influxdb.monitoring.svc:8086",
+            "version": 1
+          },
+          {
+            "access": "proxy",
+            "editable": true,
+            "name": "loki",
+            "org_id": 1,
+            "type": "loki",
+            "url": "http://loki.monitoring.svc:3100",
+            "version": 1,
+          },
+          {
+            "access": "proxy",
+            "editable": true,
+            "name": "prometheus-ext-truenas",
+            "orgId": 1,
+            "type": "prometheus",
+            "url": "http://192.168.1.11:10086",
+            "version": 1
+          },
+        ],
+        plugins: [
+          'flant-statusmap-panel',
+          'grafana-clock-panel',
+          'grafana-piechart-panel',
+          'grafana-simple-json-datasource',
+        ],
+        dashboards+:: {
+          'idrac-host-stats.json': (import 'dashboards/idrac-host-stats.json'),
+          'pi-hole-exporter.json': (import 'dashboards/pi-hole-exporter.json'),
+        },
+      },
       other: {},
     },
     alertmanager+: {
@@ -84,6 +137,10 @@ local kp =
               },
             },
           },
+          additionalScrapeConfigs: {
+            name: 'additional-scrape-configs',
+            key: 'prometheus-additional.yaml'
+          },
         },
       },
       ingress: ingress(
@@ -119,4 +176,3 @@ local kp =
 { ['node-exporter-' + name]: kp.nodeExporter[name] for name in std.objectFields(kp.nodeExporter) } +
 { ['prometheus-' + name]: kp.prometheus[name] for name in std.objectFields(kp.prometheus) } +
 { ['prometheus-adapter-' + name]: kp.prometheusAdapter[name] for name in std.objectFields(kp.prometheusAdapter) }
-
