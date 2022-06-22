@@ -1,0 +1,4 @@
+addon_manfifests:
+  - keel.yaml
+  - homeassistant.yaml
+  - watchtower/
