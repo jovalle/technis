@@ -4,6 +4,7 @@ metadata:
   name: influxdb
   namespace: monitoring
 spec:
+  storageClassName: longhorn
   accessModes:
     - ReadWriteOnce
   resources:
