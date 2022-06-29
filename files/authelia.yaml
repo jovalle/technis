@@ -1,0 +1,198 @@
+---
+kind: Middleware
+apiVersion: traefik.containo.us/v1alpha1
+metadata:
+  labels:
+    app.kubernetes.io/instance: authelia
+    app.kubernetes.io/name: authelia
+    argocd.argoproj.io/instance: authelia
+  name: forwardauth-authelia
+  namespace: auth
+spec:
+  forwardAuth:
+    address: http://authelia.auth.svc.cluster.local/api/verify?rd=https%3A%2F%2Fauth.techn.is%2F
+    authResponseHeaders:
+      - Remote-User
+      - Remote-Name
+      - Remote-Email
+      - Remote-Groups
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: authelia
+  namespace: auth
+  labels:
+    app: authelia
+  annotations:
+    configmap.reloader.stakater.com/reload: authelia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authelia
+  template:
+    metadata:
+      labels:
+        app: authelia
+    spec:
+      containers:
+      - name: authelia
+        image: authelia/authelia:4.36
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 9091
+        env:
+          # - name: AUTHELIA_DUO_API_SECRET_KEY_FILE
+          #   value: /app/secrets/DUO_SECRET_KEY
+          - name: AUTHELIA_JWT_SECRET_FILE
+            value: /app/secrets/JWT_SECRET
+          # - name: AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE
+          #   value: /app/secrets/LDAP_PASSWORD
+          # - name: AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE
+          #   value: /app/secrets/OIDC_HMAC_SECRET
+          # - name: AUTHELIA_IDENTITY_PROVIDERS_OIDC_ISSUER_PRIVATE_KEY_FILE
+          #   value: /app/secrets/OIDC_ISSUER_PRIVATE_KEY
+          # - name: AUTHELIA_SESSION_REDIS_PASSWORD_FILE
+          #   value: /app/secrets/REDIS_PASSWORD
+          # - name: AUTHELIA_REDIS_HIGH_AVAILABILITY_SENTINEL_PASSWORD_FILE
+          #   value: /app/secrets/REDIS_SENTINEL_PASSWORD
+          - name: AUTHELIA_SESSION_SECRET_FILE
+            value: /app/secrets/SESSION_SECRET
+          # - name: AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE
+          #   value: /app/secrets/SMTP_PASSWORD
+          - name: AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE
+            value: /app/secrets/STORAGE_ENCRYPTION_KEY
+          # - name: AUTHELIA_STORAGE_POSTGRES_PASSWORD_FILE
+          #   value: /app/secrets/STORAGE_ENCRYPTION_KEY
+        volumeMounts:
+          - name: config
+            # mountPath: /etc/authelia
+            mountPath: /config
+          - name: data
+            mountPath: /var/lib/authelia
+          - mountPath: /app/secrets
+            name: secrets
+            readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: authelia
+            items:
+            - key: configuration.yml
+              path: configuration.yml
+            - key: users.yml
+              path: users.yml
+        - name: data
+          emptyDir: {}
+        - name: secrets
+          secret:
+            secretName: authelia
+            items:
+              # - key: DUO_SECRET_KEY
+              #   path: DUO_SECRET_KEY
+              - key: JWT_SECRET
+                path: JWT_SECRET
+              # - key: OIDC_HMAC_SECRET
+              #   path: OIDC_HMAC_SECRET
+              # - key: OIDC_ISSUER_PRIVATE_KEY
+              #   path: OIDC_ISSUER_PRIVATE_KEY
+              # - key: REDIS_PASSWORD
+              #   path: REDIS_PASSWORD
+              # - key: REDIS_SENTINEL_PASSWORD
+              #   path: REDIS_SENTINEL_PASSWORD
+              - key: SESSION_SECRET
+                path: SESSION_SECRET
+              # - key: SMTP_PASSWORD
+              #   path: SMTP_PASSWORD
+              - key: STORAGE_ENCRYPTION_KEY
+                path: STORAGE_ENCRYPTION_KEY
+              # - key: STORAGE_PASSWORD
+                # path: STORAGE_PASSWORD
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: authelia
+  namespace: auth
+spec:
+  selector:
+    app: authelia
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9091
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: authelia
+  namespace: auth
+spec:
+  rules:
+    - host: auth.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: authelia
+                port:
+                  number: 80
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: authelia
+  namespace: auth
+data:
+  configuration.yml: |-
+    server:
+      host: 0.0.0.0
+      port: 9091
+    log:
+      level: debug
+    authentication_backend:
+      password_reset:
+        disable: true
+      file:
+        path: /config/users.yml
+    access_control:
+      default_policy: deny
+      rules:
+        - domain:
+          - '*.techn.is'
+          - techn.is
+          policy: one_factor
+    session:
+      name: authelia_session
+      domain: techn.is
+      expiration: 1h
+      inactivity: 5m
+      remember_me_duration: 1M
+      redis:
+        host: redis.redis.svc.cluster.local
+        port: 6379
+        database_index: 0
+        maximum_active_connections: 8
+        minimum_idle_connections: 0
+    regulation:
+      max_retries: 3
+      find_time: 2m
+      ban_time: 5m
+    storage:
+      local:
+        path: /var/lib/authelia/db.sqlite3
+    notifier:
+      disable_startup_check: false
+      filesystem:
+        filename: /tmp/authelia/notification.txt
+  users.yml: |
+    users:
+      root:
+        displayname: "root"
+        password: "$6$rounds=50000$V1RibU1xS1BQSktN$3jRvNSJUPxPiMfbL4YnS6gWUObnCdbs4ebJfB1XJwfytbkXkt5UueOxIURFqAIs/nOtYnHD0RXhHKYmI7ZEhj1"
+        groups:
+          - admins
+          - dev

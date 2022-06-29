@@ -1,0 +1,82 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: redis
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 6379
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: redis
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: redis
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: redis
+          image: redis:6.2.6
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 6379
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "America/New_York"
+            # - name: ALLOW_EMPTY_PASSWORD
+            #   value: "no"
+            # - name: REDIS_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: redis
+            #       key: redis-password
+            - name: REDIS_TLS_ENABLED
+              value: "no"
+            - name: REDIS_PORT
+              value: "6379"
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: redis
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  ports:
+    - name: redis
+      port: 6379
+  selector:
+    app: redis

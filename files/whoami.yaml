@@ -2,6 +2,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: whoami
+  namespace: default
   labels:
     app: whoami
 spec:
@@ -25,6 +26,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: whoami
+  namespace: default
 spec:
   ports:
     - name: web
@@ -37,6 +39,9 @@ kind: Ingress
 apiVersion: networking.k8s.io/v1
 metadata:
   name: whoami
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
 spec:
   rules:
     - host: whoami.techn.is
