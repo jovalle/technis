@@ -1,5 +1,5 @@
 - name: apply longhorn manifest
-  command: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.2.4/deploy/longhorn.yaml
+  command: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.0/deploy/longhorn.yaml
 
 - name: apply longhorn UI ingress
   shell: |
@@ -9,6 +9,8 @@
     metadata:
       name: longhorn
       namespace: longhorn-system
+      annotations:
+        traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
     spec:
       rules:
       - host: longhorn.{{ ingress_domain }}

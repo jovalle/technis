@@ -1,0 +1,100 @@
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: influxdb2
+  name: influxdb2
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb2
+  serviceName: influxdb2
+  template:
+    metadata:
+      labels:
+        app: influxdb2
+    spec:
+      containers:
+        - image: influxdb:2.3.0
+          imagePullPolicy: IfNotPresent
+          name: influxdb2
+          ports:
+            - containerPort: 8086
+              name: influxdb2
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 8086
+            initialDelaySeconds: 30
+            failureThreshold: 3
+            timeoutSeconds: 1
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8086
+            initialDelaySeconds: 30
+            failureThreshold: 3
+            timeoutSeconds: 1
+            periodSeconds: 10
+          startupProbe:
+            tcpSocket:
+              port: 8086
+            initialDelaySeconds: 30
+            failureThreshold: 30
+            timeoutSeconds: 1
+            periodSeconds: 5
+          volumeMounts:
+            - mountPath: /var/lib/influxdb2
+              name: data
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+        namespace: monitoring
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10G
+        storageClassName: longhorn
+        volumeMode: Filesystem
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: influxdb2
+  namespace: monitoring
+spec:
+  ports:
+    - name: influxdb2
+      port: 8086
+      protocol: TCP
+      targetPort: 8086
+  selector:
+    app: influxdb2
+  type: ClusterIP
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  labels:
+    app: influxdb2
+  name: influxdb2
+  namespace: monitoring
+spec:
+  rules:
+  - host: influxdb2.techn.is
+    http:
+      paths:
+      - backend:
+          service:
+            name: influxdb2
+            port:
+              number: 8086
+        path: /
+        pathType: Prefix
