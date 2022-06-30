@@ -28,18 +28,9 @@ local kp =
       common+: {
         namespace: 'monitoring',
         baseDomain: 'techn.is',
+        publicDomain: 'technis.io',
       },
       grafana+: {
-        auth: {
-          proxy+: {
-            "enabled": true,
-            "header_name": "Remote-User"
-            "header_property": "username"
-            "auto_sign_up": "true"
-            "headers": "Groups:Remote-Group"
-            "enable_login_token": "false"
-          },
-        },
         datasources: [
           {
             "access": "proxy",
@@ -60,17 +51,6 @@ local kp =
             "user": "admin",
             "type": "influxdb",
             "url": "http://influxdb.monitoring.svc:8086",
-            "version": 1
-          },
-          {
-            "access": "proxy",
-            "database": "monitoring",
-            "editable": true,
-            "name": "influxdb2",
-            "orgId": 1,
-            "token": "{{ influxdb2_token | default(omit) }}",
-            "type": "influxdb",
-            "url": "http://influxdb2.monitoring.svc:8086",
             "version": 1
           },
           {
@@ -101,45 +81,73 @@ local kp =
         dashboards+:: {
           'idrac-host-stats.json': (import 'dashboards/idrac-host-stats.json'),
           'pi-hole-exporter.json': (import 'dashboards/pi-hole-exporter.json'),
-          'vsphere-datatsores.json': {import 'dashboards/vsphere-datastores.json'},
-          'vsphere-hosts.json': {import 'dashboards/vsphere-hosts.json'},
-          'vsphere-overview.json': {import 'dashboards/vsphere-overview.json'},
-          'vsphere-vms.json': {import 'dashboards/vsphere-vms.json'},
+          'vsphere-datatsores.json': (import 'dashboards/vsphere-datastores.json'),
+          'vsphere-hosts.json': (import 'dashboards/vsphere-hosts.json'),
+          'vsphere-overview.json': (import 'dashboards/vsphere-overview.json'),
+          'vsphere-vms.json': (import 'dashboards/vsphere-vms.json'),
         },
       },
       other: {},
     },
-    alertmanager+: {
-      alertmanager+: {
-        spec+: {
-          externalUrl: 'https://alertmanager.' + $.values.common.baseDomain,
+    grafana+: {
+      config+: {
+        stringData: {
+          "grafana.ini": "[date_formats]\ndefault_timezone = UTC\n[auth.proxy]\nenabled = true\nheader_name = Remote-User\nheader_property = username\nauto_sign_up = true\nheaders = Groups:Remote-Group\nenable_login_token = false\n[security]\nallow_embedding = true\nadmin_user = root\n"
         },
       },
-      ingress: ingress(
-        { name: 'grafana' },
-        'grafana.' + $.values.common.baseDomain,
-        {
-          name: $.grafana.service.metadata.name,
-          port: {
-            name: $.grafana.service.spec.ports[0].name,
-          },
-        },
-      ),
-    },
-    grafana+: {
-      ingress: ingress(
-        {
+      ingress: {
+        apiVersion: 'networking.k8s.io/v1',
+        kind: 'Ingress',
+        metadata: {
           name: 'grafana',
           namespace: $.values.common.namespace,
-        },
-        'grafana.' + $.values.common.baseDomain,
-        {
-          name: $.grafana.service.metadata.name,
-          port: {
-            name: $.grafana.service.spec.ports[0].name,
+          annotations: {
+            "traefik.ingress.kubernetes.io/router.middlewares": "auth-forwardauth-authelia@kubernetescrd",
           },
         },
-      ),
+        spec: {
+          rules: [
+            {
+              host: 'grafana.' + $.values.common.baseDomain,
+              http: {
+                paths: [
+                  {
+                    path: '/',
+                    pathType: 'Prefix',
+                    backend: {
+                      service: {
+                        name: $.grafana.service.metadata.name,
+                        port: {
+                          name: $.grafana.service.spec.ports[0].name,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              host: 'grafana.' + $.values.common.publicDomain,
+              http: {
+                paths: [
+                  {
+                    path: '/',
+                    pathType: 'Prefix',
+                    backend: {
+                      service: {
+                        name: $.grafana.service.metadata.name,
+                        port: {
+                          name: $.grafana.service.spec.ports[0].name,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            }
+          ],
+        },
+      },
     },
     prometheus+: {
       prometheus+: {
@@ -147,7 +155,7 @@ local kp =
           externalUrl: 'https://prometheus.' + $.values.common.baseDomain,
           replicas: 1,
           retention: '7d',
-          retentionSize: '40GB',
+          retentionSize: '10GB',
           storage: {
             volumeClaimTemplate: {
               metadata: {
@@ -157,7 +165,7 @@ local kp =
                 storageClassName: 'longhorn',
                 accessModes: ['ReadWriteOnce'],
                 resources: {
-                  requests: { storage: '40Gi' },
+                  requests: { storage: '10Gi' },
                 },
               },
             },

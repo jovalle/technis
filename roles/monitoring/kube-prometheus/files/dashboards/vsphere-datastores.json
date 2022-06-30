@@ -47,7 +47,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -114,7 +114,7 @@
           "alias": "$tag_source",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -160,7 +160,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -177,7 +177,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -269,7 +269,7 @@
           "alias": "Total Capacity",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -323,7 +323,7 @@
           "alias": "Free Capacity",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -382,7 +382,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -494,7 +494,7 @@
           "alias": "Total Capacity",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -548,7 +548,7 @@
           "alias": "Free Capacity",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -641,7 +641,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> keep(columns: [\"vcenter\"])\r\n  |> distinct(column: \"vcenter\")\r\n  |> group()",
         "hide": 0,
@@ -668,7 +668,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_cluster_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"clustername\"])\r\n  |> distinct(column: \"clustername\")\r\n  |> group()\r\n",
         "hide": 0,
@@ -695,7 +695,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] =~ /${vcenter:regex}/)\r\n  |> filter(fn: (r) => r[\"clustername\"] =~ /${clustername:regex}/)\r\n  |> keep(columns: [\"esxhostname\"])\r\n  |> distinct(column: \"esxhostname\")\r\n  |> group()",
         "hide": 0,
@@ -722,7 +722,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_datastore_disk\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] =~ /${vcenter:regex}/)\r\n  |> keep(columns: [\"dsname\"])\r\n  |> distinct(column: \"dsname\")\r\n  |> group()",
         "hide": 0,

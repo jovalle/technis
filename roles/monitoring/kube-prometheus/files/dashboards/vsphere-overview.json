@@ -51,7 +51,7 @@
       "collapsed": false,
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -67,7 +67,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -196,7 +196,7 @@
           "alias": "vCenter Summary",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -238,7 +238,7 @@
           "alias": "Cluster Summary",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -280,7 +280,7 @@
           "alias": "ESXi Summary",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -322,7 +322,7 @@
           "alias": "VM Summary",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -364,7 +364,7 @@
           "alias": "Datastore Summary",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -425,7 +425,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "description": "",
       "fieldConfig": {
@@ -583,7 +583,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -643,7 +643,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -709,7 +709,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -775,7 +775,7 @@
       "collapsed": false,
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -791,7 +791,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -874,7 +874,7 @@
           "alias": "$tag_clustername",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -946,7 +946,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -1030,7 +1030,7 @@
           "alias": "$tag_clustername",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -1095,7 +1095,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -1162,7 +1162,7 @@
           "alias": "$tag_source",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "groupBy": [
             {
@@ -1208,7 +1208,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -1289,7 +1289,7 @@
           "alias": "$tag_clustername - Received",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -1345,7 +1345,7 @@
           "alias": "$tag_clustername - Transmited",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -1404,7 +1404,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -1486,7 +1486,7 @@
           "alias": "$tag_clustername - ReadAverage",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -1542,7 +1542,7 @@
           "alias": "$tag_clustername - WriteAverage",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -1602,7 +1602,7 @@
       "collapsed": true,
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -1615,7 +1615,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "fieldConfig": {
             "defaults": {
@@ -1674,7 +1674,7 @@
             {
               "datasource": {
                 "type": "influxdb",
-                "uid": "JVR-xu37k"
+                "name": "influxdb2"
               },
               "groupBy": [
                 {
@@ -1732,7 +1732,7 @@
       "collapsed": false,
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -1748,7 +1748,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -1834,7 +1834,7 @@
           "alias": "$tag_esxhostname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -1899,7 +1899,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -1985,7 +1985,7 @@
           "alias": "$tag_esxhostname mem usage average",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2043,7 +2043,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -2127,7 +2127,7 @@
           "alias": "$tag_esxhostname net usage average",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2185,7 +2185,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -2267,7 +2267,7 @@
           "alias": "$tag_vcenter CPU",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2328,7 +2328,7 @@
           "alias": "$tag_vcenter RAM",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2387,7 +2387,7 @@
       "collapsed": false,
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -2403,7 +2403,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -2489,7 +2489,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2559,7 +2559,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -2642,7 +2642,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2700,7 +2700,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -2781,7 +2781,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2840,7 +2840,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -2921,7 +2921,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -2979,7 +2979,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -3059,7 +3059,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -3120,7 +3120,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -3200,7 +3200,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -3260,7 +3260,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "JVR-xu37k"
+        "name": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -3340,7 +3340,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -3397,7 +3397,7 @@
           "alias": "$tag_vmname",
           "datasource": {
             "type": "influxdb",
-            "uid": "JVR-xu37k"
+            "name": "influxdb2"
           },
           "dsType": "influxdb",
           "groupBy": [
@@ -3588,7 +3588,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_cluster_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"clustername\"])\r\n  |> distinct(column: \"clustername\")\r\n  |> group()\r\n",
         "hide": 0,
@@ -3619,7 +3619,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"esxhostname\"])\r\n  |> distinct(column: \"esxhostname\")\r\n  |> group()",
         "hide": 0,
@@ -3650,7 +3650,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_datastore_disk\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"dsname\"])\r\n  |> distinct(column: \"dsname\")\r\n  |> group()",
         "hide": 0,
@@ -3682,7 +3682,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "JVR-xu37k"
+          "name": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_vm_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"vmname\"])\r\n  |> distinct(column: \"vmname\")\r\n  |> group()",
         "hide": 0,
