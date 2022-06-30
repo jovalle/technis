@@ -30,6 +30,16 @@ local kp =
         baseDomain: 'techn.is',
       },
       grafana+: {
+        auth: {
+          proxy+: {
+            "enabled": true,
+            "header_name": "Remote-User"
+            "header_property": "username"
+            "auto_sign_up": "true"
+            "headers": "Groups:Remote-Group"
+            "enable_login_token": "false"
+          },
+        },
         datasources: [
           {
             "access": "proxy",
@@ -50,6 +60,17 @@ local kp =
             "user": "admin",
             "type": "influxdb",
             "url": "http://influxdb.monitoring.svc:8086",
+            "version": 1
+          },
+          {
+            "access": "proxy",
+            "database": "monitoring",
+            "editable": true,
+            "name": "influxdb2",
+            "orgId": 1,
+            "token": "{{ influxdb2_token | default(omit) }}",
+            "type": "influxdb",
+            "url": "http://influxdb2.monitoring.svc:8086",
             "version": 1
           },
           {
@@ -80,6 +101,10 @@ local kp =
         dashboards+:: {
           'idrac-host-stats.json': (import 'dashboards/idrac-host-stats.json'),
           'pi-hole-exporter.json': (import 'dashboards/pi-hole-exporter.json'),
+          'vsphere-datatsores.json': {import 'dashboards/vsphere-datastores.json'},
+          'vsphere-hosts.json': {import 'dashboards/vsphere-hosts.json'},
+          'vsphere-overview.json': {import 'dashboards/vsphere-overview.json'},
+          'vsphere-vms.json': {import 'dashboards/vsphere-vms.json'},
         },
       },
       other: {},

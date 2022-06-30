@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: cluster
   tasks:
     - name: install packages
       apt:
