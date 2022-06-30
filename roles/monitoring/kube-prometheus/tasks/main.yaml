@@ -68,9 +68,8 @@
       copy:
         src: "{{ role_path }}/files/{{ item }}"
         dest: "{{ temp_dir.path }}/kube-prometheus/{{ item }}"
-      with_items:
-        - dashboards/idrac-host-stats.json
-        - dashboards/pi-hole-exporter.json
+      with_fileglob:
+        - "{{ role_path }}/files/dashboards/*"
 
     - name: render setup file
       template:
