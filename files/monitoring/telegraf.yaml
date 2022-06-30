@@ -1,0 +1,30 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: telegraf
+  namespace: monitoring
+  annotations:
+    configmap.reloader.stakater.com/reload: telegraf-config
+spec:
+  selector:
+    matchLabels:
+      app: telegraf
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: telegraf
+    spec:
+      containers:
+        - image: telegraf:1.23.0
+          name: telegraf
+          volumeMounts:
+            - mountPath: /etc/telegraf/telegraf.conf
+              name: telegraf
+              subPath: telegraf.conf
+              readOnly: true
+      volumes:
+        - name: telegraf
+          configMap:
+            name: telegraf-config
