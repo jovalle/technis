@@ -66,8 +66,8 @@
 
     - name: copy dashboards
       copy:
-        src: "{{ role_path }}/files/{{ item }}"
-        dest: "{{ temp_dir.path }}/kube-prometheus/{{ item }}"
+        src: "{{ item }}"
+        dest: "{{ temp_dir.path }}/kube-prometheus/dashboards/{{ item | basename }}"
       with_fileglob:
         - "{{ role_path }}/files/dashboards/*"
 

@@ -48,7 +48,7 @@
       "collapsed": false,
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -65,7 +65,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -278,7 +278,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "query": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_sys\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"uptime_latest\")\r\n  |> filter(fn: (r) => r[\"esxhostname\"] =~ /${esxi:regex}/)\r\n  |> group(columns: [\"esxhostname\"])\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -286,7 +286,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "hide": false,
           "query": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"usagemhz_average\")\r\n  |> filter(fn: (r) => r[\"esxhostname\"] =~ /${esxi:regex}/)\r\n  |> group(columns: [\"esxhostname\"])\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> yield(name: \"mean\")",
@@ -295,7 +295,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "hide": false,
           "query": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_mem\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"usage_average\" or r[\"_field\"] == \"totalCapacity_average\")\r\n  |> filter(fn: (r) => r[\"esxhostname\"] =~ /${esxi:regex}/)\r\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n  |> map(fn: (r) => ({ r with  _value: float(v: r.usage_average) * float(v: r.totalCapacity_average) / 100.00 * 1024.00 }))\r\n  |> group(columns: [\"esxhostname\",\"_field\"])\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n",
@@ -304,7 +304,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "hide": false,
           "query": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"usage_average\")\r\n  |> filter(fn: (r) => r[\"cpu\"] == \"instance-total\")\r\n  |> filter(fn: (r) => r[\"esxhostname\"] =~ /${esxi:regex}/)\r\n  |> group(columns: [\"esxhostname\"])\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> yield(name: \"mean\")",
@@ -313,7 +313,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "hide": false,
           "query": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_mem\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"usage_average\")\r\n  |> filter(fn: (r) => r[\"esxhostname\"] =~ /${esxi:regex}/)\r\n  |> group(columns: [\"esxhostname\"])\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> yield(name: \"mean\")",
@@ -326,7 +326,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "CPU usage as a percentage during the interval.",
       "fieldConfig": {
@@ -408,7 +408,7 @@
           "alias": "CPU usage % $tag_cpu",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -465,7 +465,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -571,7 +571,7 @@
           "alias": "RAM usage %",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -622,7 +622,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "Time that the virtual machine was ready, but could not get scheduled to run on the physical CPU during last measurement interval.",
       "fieldConfig": {
@@ -723,7 +723,7 @@
           "alias": "CPU Ready",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -774,7 +774,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "Network utilization (combined transmit-rates and receive-rates) during the interval.",
       "fieldConfig": {
@@ -859,7 +859,7 @@
           "alias": "$tag_interface bytesRx",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -913,7 +913,7 @@
           "alias": "$tag_interface bytesTx",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -970,7 +970,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "The average time a read, or write, from the virtual disk takes.",
       "fieldConfig": {
@@ -1051,7 +1051,7 @@
           "alias": "Write - $tag_disk",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1105,7 +1105,7 @@
           "alias": "Read - $tag_disk",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1162,7 +1162,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "The average time a read, or write, from the datastore takes.",
       "fieldConfig": {
@@ -1243,7 +1243,7 @@
           "alias": "$tag_adapter Read",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1297,7 +1297,7 @@
           "alias": "$tag_adapter Write",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1368,7 +1368,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "fieldConfig": {
             "defaults": {
@@ -1837,7 +1837,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "description": "CPU usage as a percentage during the interval.",
           "fieldConfig": {
@@ -1979,7 +1979,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "fieldConfig": {
             "defaults": {
@@ -2121,7 +2121,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "description": "CPU Temperature",
           "fieldConfig": {
@@ -2264,7 +2264,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "description": "Network utilization (combined transmit-rates and receive-rates) during the interval.",
           "fieldConfig": {
@@ -2454,7 +2454,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "description": "The average time a read, or write, from the virtual disk takes.",
           "fieldConfig": {
@@ -2642,7 +2642,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "description": "The average time a read, or write, from the datastore takes.",
           "fieldConfig": {
@@ -2830,7 +2830,7 @@
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "description": "Time that the virtual machine was ready, but could not get scheduled to run on the physical CPU during last measurement interval.",
           "fieldConfig": {
@@ -3066,7 +3066,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> keep(columns: [\"vcenter\"])\r\n  |> distinct(column: \"vcenter\")\r\n  |> group()",
         "hide": 0,
@@ -3093,7 +3093,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_cluster_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"clustername\"])\r\n  |> distinct(column: \"clustername\")\r\n  |> group()\r\n",
         "hide": 0,
@@ -3120,7 +3120,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"esxhostname\"])\r\n  |> distinct(column: \"esxhostname\")\r\n  |> group()",
         "hide": 0,
@@ -3147,7 +3147,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_datastore_disk\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"dsname\"])\r\n  |> distinct(column: \"dsname\")\r\n  |> group()",
         "hide": 0,
@@ -3174,7 +3174,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_esxi_arm\")\r\n  |> keep(columns: [\"hostname\"])\r\n  |> distinct(column: \"hostname\")\r\n  |> group()",
         "hide": 0,
