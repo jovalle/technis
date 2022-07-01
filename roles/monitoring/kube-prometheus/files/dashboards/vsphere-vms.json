@@ -48,7 +48,7 @@
       "collapsed": false,
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "gridPos": {
         "h": 1,
@@ -65,7 +65,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "fieldConfig": {
         "defaults": {
@@ -376,7 +376,7 @@
           "alias": "Uptime",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -424,7 +424,7 @@
           "alias": "CPU Usage MHz",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -472,7 +472,7 @@
           "alias": "RAM Usage",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -520,7 +520,7 @@
           "alias": "CPU Usage %",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -568,7 +568,7 @@
           "alias": "RAM Usage %",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -619,7 +619,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "CPU usage as a percentage during the interval.",
       "fieldConfig": {
@@ -737,7 +737,7 @@
           "alias": "CPU usage %",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -791,7 +791,7 @@
           "alias": "CPU Ready %",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -848,7 +848,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "Amount of guest physical memory that is being actively read or written by guest. Activeness is estimated by ESXi.",
       "fieldConfig": {
@@ -950,7 +950,7 @@
           "alias": "RAM usage %",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1007,7 +1007,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "Time that the virtual machine was ready, but could not get scheduled to run on the physical CPU during last measurement interval.",
       "fieldConfig": {
@@ -1114,7 +1114,7 @@
           "alias": "Core $tag_cpu",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1177,7 +1177,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "Network utilization (combined transmit-rates and receive-rates) during the interval.",
       "fieldConfig": {
@@ -1263,7 +1263,7 @@
           "alias": "$tag_interface bytesRx",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1317,7 +1317,7 @@
           "alias": "$tag_interface bytesTx",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1374,7 +1374,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "The average time a read, or write, from the virtual disk takes.",
       "fieldConfig": {
@@ -1455,7 +1455,7 @@
           "alias": "Write - $tag_disk",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1509,7 +1509,7 @@
           "alias": "Read - $tag_disk",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1566,7 +1566,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "name": "influxdb2"
+        "uid": "influxdb2"
       },
       "description": "The average time a read, or write, from the datastore takes.",
       "fieldConfig": {
@@ -1647,7 +1647,7 @@
           "alias": "ReadAverage $tag_disk",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1701,7 +1701,7 @@
           "alias": "WriteAverage $tag_disk",
           "datasource": {
             "type": "influxdb",
-            "name": "influxdb2"
+            "uid": "influxdb2"
           },
           "groupBy": [
             {
@@ -1855,7 +1855,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> keep(columns: [\"vcenter\"])\r\n  |> distinct(column: \"vcenter\")\r\n  |> group()",
         "hide": 0,
@@ -1882,7 +1882,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_cluster_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] == \"${vcenter}\")\r\n  |> keep(columns: [\"clustername\"])\r\n  |> distinct(column: \"clustername\")\r\n  |> group()\r\n",
         "hide": 0,
@@ -1909,7 +1909,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_host_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] =~ /${vcenter:regex}/)\r\n  |> filter(fn: (r) => r[\"clustername\"] =~ /${clustername:regex}/)\r\n  |> keep(columns: [\"esxhostname\"])\r\n  |> distinct(column: \"esxhostname\")\r\n  |> group()",
         "hide": 0,
@@ -1936,7 +1936,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_datastore_disk\")\r\n  |> keep(columns: [\"dsname\"])\r\n  |> distinct(column: \"dsname\")\r\n  |> group()",
         "hide": 0,
@@ -1964,7 +1964,7 @@
         },
         "datasource": {
           "type": "influxdb",
-          "name": "influxdb2"
+          "uid": "influxdb2"
         },
         "definition": "from(bucket: v.defaultBucket)\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vsphere_vm_cpu\")\r\n  |> filter(fn: (r) => r[\"vcenter\"] =~ /${vcenter:regex}/)\r\n  |> filter(fn: (r) => r[\"clustername\"] =~ /${clustername:regex}/)\r\n  |> keep(columns: [\"vmname\"])\r\n  |> distinct(column: \"vmname\")\r\n  |> group()",
         "hide": 0,

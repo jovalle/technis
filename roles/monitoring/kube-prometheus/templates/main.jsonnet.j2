@@ -38,8 +38,19 @@ local kp =
             "name": "prometheus",
             "orgId": 1,
             "type": "prometheus",
+            "uid": "prometheus1",
             "url": "http://prometheus-k8s.monitoring.svc:9090",
-            "version": 1
+            "version": 1,
+          },
+          {
+            "access": "proxy",
+            "editable": true,
+            "name": "prometheus-ext-illmatic",
+            "orgId": 1,
+            "type": "prometheus",
+            "uid": "prometheus2",
+            "url": "http://192.168.1.11:10086",
+            "version": 1,
           },
           {
             "access": "proxy",
@@ -50,8 +61,27 @@ local kp =
             "password": "{{ influxdb_pass | default(omit) }}",
             "user": "admin",
             "type": "influxdb",
+            "uid": "influxdb1",
             "url": "http://influxdb.monitoring.svc:8086",
-            "version": 1
+            "version": 1,
+          },
+          {
+            "access": "proxy",
+            "editable": true,
+            "jsonData": {
+              "defaultBucket": "monitoring",
+              "organization": "technis",
+              "version": "Flux"
+            },
+            "orgId", 1,
+            "name": "influxdb2",
+            "secureJsonData": {
+              "token": "{{ influxdb2_token | default(omit) }}"
+            },
+            "type": "influxdb",
+            "uid": "influxdb2",
+            "url": "http://influxdb2.monitoring.svc:8086",
+            "version": 1,
           },
           {
             "access": "proxy",
@@ -59,17 +89,9 @@ local kp =
             "name": "loki",
             "org_id": 1,
             "type": "loki",
+            "uid": "loki",
             "url": "http://loki.monitoring.svc:3100",
             "version": 1,
-          },
-          {
-            "access": "proxy",
-            "editable": true,
-            "name": "prometheus-ext-truenas",
-            "orgId": 1,
-            "type": "prometheus",
-            "url": "http://192.168.1.11:10086",
-            "version": 1
           },
         ],
         plugins: [
@@ -155,7 +177,7 @@ local kp =
           externalUrl: 'https://prometheus.' + $.values.common.baseDomain,
           replicas: 1,
           retention: '7d',
-          retentionSize: '10GB',
+          retentionSize: '40GB',
           storage: {
             volumeClaimTemplate: {
               metadata: {
@@ -165,7 +187,7 @@ local kp =
                 storageClassName: 'longhorn',
                 accessModes: ['ReadWriteOnce'],
                 resources: {
-                  requests: { storage: '10Gi' },
+                  requests: { storage: '40Gi' },
                 },
               },
             },
