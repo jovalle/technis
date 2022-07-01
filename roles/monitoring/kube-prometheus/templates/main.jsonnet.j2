@@ -73,10 +73,10 @@ local kp =
               "organization": "technis",
               "version": "Flux"
             },
-            "orgId", 1,
+            "orgId": 1,
             "name": "influxdb2",
             "secureJsonData": {
-              "token": "{{ influxdb2_token | default(omit) }}"
+              "token": "{{ influxdb2_token | default(omit) }}",
             },
             "type": "influxdb",
             "uid": "influxdb2",
@@ -114,7 +114,7 @@ local kp =
     grafana+: {
       config+: {
         stringData: {
-          "grafana.ini": "[date_formats]\ndefault_timezone = UTC\n[auth.proxy]\nenabled = true\nheader_name = Remote-User\nheader_property = username\nauto_sign_up = true\nheaders = Groups:Remote-Group\nenable_login_token = false\n[security]\nallow_embedding = true\nadmin_user = root\n"
+          "grafana.ini": "[date_formats]\ndefault_timezone = UTC\n[auth.proxy]\nenabled = true\nheader_name = Remote-User\nheader_property = username\nauto_sign_up = true\nheaders = Groups:Remote-Group\nenable_login_token = false\n[security]\nallow_embedding = true\nadmin_user = root\nadmin_password = {{ root_password }}\n"
         },
       },
       ingress: {
