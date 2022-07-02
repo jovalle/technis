@@ -190,12 +190,6 @@ data:
         filename: /tmp/authelia/notification.txt
   users.yml: |
     users:
-      admin:
-        displayname: "admin"
-        password: "$6$rounds=50000$V1RibU1xS1BQSktN$3jRvNSJUPxPiMfbL4YnS6gWUObnCdbs4ebJfB1XJwfytbkXkt5UueOxIURFqAIs/nOtYnHD0RXhHKYmI7ZEhj1"
-        groups:
-          - admins
-          - dev
       root:
         displayname: "root"
         password: "$6$rounds=50000$V1RibU1xS1BQSktN$3jRvNSJUPxPiMfbL4YnS6gWUObnCdbs4ebJfB1XJwfytbkXkt5UueOxIURFqAIs/nOtYnHD0RXhHKYmI7ZEhj1"
