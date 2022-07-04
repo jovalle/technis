@@ -44,7 +44,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
 spec:
   rules:
-    - host: whoami.techn.is
+    - host: whoami.technis.io
       http:
         paths:
           - path: /
