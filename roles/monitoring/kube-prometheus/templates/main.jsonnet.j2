@@ -56,13 +56,18 @@ local kp =
             "access": "proxy",
             "database": "monitoring",
             "editable": true,
+            "jsonData": {
+              "httpMode": "GET",
+            },
             "name": "influxdb",
             "orgId": 1,
-            "password": "{{ influxdb_pass | default(omit) }}",
-            "user": "admin",
+            "secureJsonData": {
+              "password": "{{ influxdb_pass | default(omit) }}",
+            },
             "type": "influxdb",
             "uid": "influxdb1",
             "url": "http://influxdb.monitoring.svc:8086",
+            "user": "admin",
             "version": 1,
           },
           {
@@ -117,59 +122,16 @@ local kp =
           "grafana.ini": "[date_formats]\ndefault_timezone = UTC\n[auth.proxy]\nenabled = true\nheader_name = Remote-User\nheader_property = username\nauto_sign_up = true\nheaders = Groups:Remote-Group\nenable_login_token = false\n[security]\nallow_embedding = true\nadmin_user = root\nadmin_password = {{ root_password }}\n"
         },
       },
-      ingress: {
-        apiVersion: 'networking.k8s.io/v1',
-        kind: 'Ingress',
-        metadata: {
-          name: 'grafana',
-          namespace: $.values.common.namespace,
-          annotations: {
-            "traefik.ingress.kubernetes.io/router.middlewares": "auth-forwardauth-authelia@kubernetescrd",
+      ingress: ingress(
+        { name: 'grafana' },
+        'grafana.' + $.values.common.publicDomain,
+        {
+          name: $.grafana.service.metadata.name,
+          port: {
+            name: $.grafana.service.spec.ports[0].name,
           },
         },
-        spec: {
-          rules: [
-            {
-              host: 'grafana.' + $.values.common.baseDomain,
-              http: {
-                paths: [
-                  {
-                    path: '/',
-                    pathType: 'Prefix',
-                    backend: {
-                      service: {
-                        name: $.grafana.service.metadata.name,
-                        port: {
-                          name: $.grafana.service.spec.ports[0].name,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              host: 'grafana.' + $.values.common.publicDomain,
-              http: {
-                paths: [
-                  {
-                    path: '/',
-                    pathType: 'Prefix',
-                    backend: {
-                      service: {
-                        name: $.grafana.service.metadata.name,
-                        port: {
-                          name: $.grafana.service.spec.ports[0].name,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            }
-          ],
-        },
-      },
+      ),
     },
     prometheus+: {
       prometheus+: {
