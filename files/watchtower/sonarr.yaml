@@ -92,7 +92,7 @@ spec:
         - name: tv
           nfs:
             server: illmatic.techn.is
-            path: /mnt/hulkpool/tvshows
+            path: /mnt/whirlpool/tvshows
         - name: localtime
           hostPath:
             path: /etc/localtime
