@@ -10,7 +10,7 @@ metadata:
   namespace: auth
 spec:
   forwardAuth:
-    address: http://authelia.auth.svc.cluster.local/api/verify?rd=https%3A%2F%2Fauth.techn.is%2F
+    address: http://authelia.auth.svc.cluster.local/api/verify?rd=https%3A%2F%2Fauth.technis.io%2F
     authResponseHeaders:
       - Remote-User
       - Remote-Name
@@ -130,7 +130,7 @@ metadata:
   namespace: auth
 spec:
   rules:
-    - host: auth.techn.is
+    - host: auth.technis.io
       http:
         paths:
           - path: /
@@ -162,12 +162,12 @@ data:
       default_policy: deny
       rules:
         - domain:
-          - '*.techn.is'
-          - techn.is
+          - '*.technis.io'
+          - technis.io
           policy: one_factor
     session:
       name: authelia_session
-      domain: techn.is
+      domain: technis.io
       expiration: 1h
       inactivity: 5m
       remember_me_duration: 1M
