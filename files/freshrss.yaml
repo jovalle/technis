@@ -1,0 +1,86 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: freshrss
+  namespace: technis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: longhorn
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: freshrss
+  name: freshrss
+  namespace: technis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: freshrss
+  template:
+    metadata:
+      labels:
+        app: freshrss
+    spec:
+      containers:
+        - env:
+            - name: CRON_MIN
+              value: "1,31"
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+          image: linuxserver/freshrss:latest
+          name: freshrss
+          ports:
+            - containerPort: 80
+              name: web
+          volumeMounts:
+            - mountPath: /config
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: freshrss
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: freshrss
+  namespace: technis
+spec:
+  ports:
+    - name: web
+      port: 80
+      protocol: TCP
+  selector:
+    app: freshrss
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: freshrss
+  namespace: technis
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
+spec:
+  rules:
+    - host: rss.technis.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: freshrss
+                port:
+                  number: 80
