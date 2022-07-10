@@ -1,0 +1,74 @@
+- name: install network UPS tools
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - nut-server
+    - nut-client
+
+- name: copypasta general configs
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/nut/{{ item }}"
+  register: configs_copy
+  with_items:
+    - ups.conf
+    - upsd.conf
+    - nut.conf
+    - upsset.conf
+    - hosts.conf
+
+- name: render sensitive configs
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/nut/{{ item }}"
+  register: configs_template
+  with_items:
+    - upsmon.conf
+    - upsd.users
+
+- name: restart services
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  when: configs_copy.changed or configs_template.changed
+  with_items:
+    - nut-server
+    - nut-client
+    - nut-monitor
+
+- name: restart driver
+  shell: |
+    upsdrvctl stop
+    upsdrvctl start
+  when: configs_copy.changed or configs_template.changed
+
+- name: query UPS via NUT server
+  shell: upsc tripplite@localhost
+  register: upsc
+
+- name: check for expected metric
+  fail:
+    msg: "FATAL: ups.load metric not returned"
+  when: "'ups.load' not in upsc.stdout"
+
+- name: install web server for dashboard
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - apache2
+    - nut-cgi
+
+- name: enable cgid module
+  command: a2enmod cgi
+  register: cgid
+
+- name: restart apache
+  systemd:
+    name: apache2
+    state: restarted
+  when: "'already enabled' not in cgid.stdout"
+
+- name: check dashboard
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}/cgi-bin/nut/upsstats.cgi"
+    status_code: 200
