@@ -1,6 +1,45 @@
-- name: install telegraf
+- name: install prereqs
   apt:
-    name: telegraf
+    name: "{{ item }}"
+  with_items:
+    - python3
+    - python3-distutils
+    - python3-pip
+
+- name: install pip requirements
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - click
+
+- name: check telegraf binary
+  command: which telegraf
+  ignore_errors: yes
+  register: telegraf_installed
+
+- name: install telegraf
+  block:
+    - name: create tmpdir
+      tempfile:
+        state: directory
+      register: tmpdir
+    - apt:
+        name: telegraf
+        update_cache: yes
+  rescue:
+    - set_fact:
+        deb_pkg: "telegraf_1.23.1-1_{{ 'armhf' if (ansible_architecture == 'armv6l') else ('arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64') }}.deb"
+    - debug: var=deb_pkg
+    - get_url:
+        url: https://dl.influxdata.com/telegraf/releases/{{ deb_pkg }}
+        dest: "{{ tmpdir.path }}/{{ deb_pkg }}"
+    - apt: deb="{{ tmpdir.path }}/{{ deb_pkg }}"
+  always:
+    - name: cleanup tmpdir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+  when: telegraf_installed.rc != 0
 
 - name: render base configuration
   template:

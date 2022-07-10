@@ -1,11 +1,12 @@
 [control_plane]
+cerberus
+erebus
 zagreus
-asphodel
-tartarus
 
 [nodes]
-elysium
-erebus
+# asphodel
+# tartarus
+# elysium
 
 [raspi]
 asphodel
@@ -14,7 +15,8 @@ elysium
 erebus
 
 [telegraf]
-sentry
+observer  ansible_ssh_user=jay
+# sentry
 
 [cluster:children]
 control_plane
@@ -24,7 +26,7 @@ nodes
 cni_plugin=cilium
 cri_plugin=containerd.io
 infrastructure_provisioner=terraform #TODO: support multiple (e.g. terraform + baremetal (raspi))
-k3s_version=v1.23.6+k3s1
+k3s_version=v1.24.1+k3s1
 k8s_provisioner=k3s
 apiserver_endpoint=192.168.1.100
 ingress_endpoint=192.168.10.1

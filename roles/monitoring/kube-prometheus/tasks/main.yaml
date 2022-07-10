@@ -64,12 +64,18 @@
       with_items:
         - dashboards
 
+    - name: enumerate dashboard files
+      set_fact:
+        dashboards: "{{ lookup('fileglob', '{{ role_path }}/files/dashboards/*', wantlist=true) | list }}"
+
+    - debug: var=dashboards
+
     - name: copy dashboards
       copy:
         src: "{{ item }}"
         dest: "{{ temp_dir.path }}/kube-prometheus/dashboards/{{ item | basename }}"
-      with_fileglob:
-        - "{{ role_path }}/files/dashboards/*"
+      with_items:
+        - "{{ dashboards }}"
 
     - name: render setup file
       template:
