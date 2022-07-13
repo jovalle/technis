@@ -142,13 +142,6 @@
                 "type": "mean"
               }
             ]
-          ],
-          "tags": [
-            {
-              "key": "host",
-              "operator": "=",
-              "value": "sentry"
-            }
           ]
         }
       ],
@@ -980,13 +973,6 @@
                 "type": "mean"
               }
             ]
-          ],
-          "tags": [
-            {
-              "key": "host",
-              "operator": "=",
-              "value": "sentry"
-            }
           ]
         }
       ],
