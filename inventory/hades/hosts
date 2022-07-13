@@ -9,9 +9,9 @@ zagreus
 # elysium
 
 [raspi]
-asphodel
-tartarus
-elysium
+# asphodel
+# tartarus
+# elysium
 erebus
 
 [telegraf]
