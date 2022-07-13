@@ -9,6 +9,8 @@
   copy:
     src: "{{ item }}"
     dest: "/etc/nut/{{ item }}"
+    user: root
+    group: nut
   register: configs_copy
   with_items:
     - ups.conf
@@ -21,6 +23,8 @@
   template:
     src: "{{ item }}.j2"
     dest: "/etc/nut/{{ item }}"
+    user: root
+    group: nut
   register: configs_template
   with_items:
     - upsmon.conf
@@ -37,14 +41,24 @@
     - nut-monitor
 
 - name: restart driver
-  shell: |
-    upsdrvctl stop
-    upsdrvctl start
+  block:
+    - name: stop driver
+      shell: upsdrvctl stop
+    - name: start driver
+      shell: upsdrvctl start
   when: configs_copy.changed or configs_template.changed
 
 - name: query UPS via NUT server
-  shell: upsc tripplite@localhost
-  register: upsc
+  block:
+    - name: query tripplite@localhost
+      shell: upsc tripplite@localhost
+      register: upsc
+  rescue:
+    - name: start driver again
+      shell: upsdrvctl start
+    - name: query tripplite@localhost again
+      shell: upsc tripplite@localhost
+      register: upsc
 
 - name: check for expected metric
   fail:
