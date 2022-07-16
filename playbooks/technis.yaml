@@ -26,9 +26,6 @@
     - name: cert-manager
       tags:
         - cert-manager
-    - name: metallb
-      tags:
-        - metallb
     - name: storage
       tags:
         - storage

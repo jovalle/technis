@@ -1,3 +1,4 @@
+# Source: https://kube-vip.io/manifests/rbac.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -30,7 +31,7 @@ subjects:
 - kind: ServiceAccount
   name: kube-vip
   namespace: kube-system
----
+--- # Source: https://kube-vip.io/docs/installation/daemonset/#example-bgp-manifest
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -51,6 +52,9 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/master
+                operator: Exists
             - matchExpressions:
               - key: node-role.kubernetes.io/control-plane
                 operator: Exists
@@ -79,24 +83,22 @@ spec:
           value: "true"
         - name: bgp_routerinterface
           value: "eth0"
+        - name: bgp_routerid
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         - name: bgp_as
-          value: "{{ kube_vip_bgp_asn | default('65000') }}"
+          value: "{{ kube_vip_bgp_asn }}"
+        - name: bgp_peeraddress
+        - name: bgp_peerpass
         - name: bgp_peeras
-          value: "{{ kube_vip_bgp_peer_asn | default('65001') }}"
+          value: "{{ kube_vip_bgp_peer_asn }}"
         - name: bgp_peers
-          value: "{{ kube_vip_bgp_peer_ip | default('192.168.1.1') }}:{{ kube_vip_bgp_peer_asn | default('65001') }}::false"
+          value: "{{ kube_vip_bgp_peer_ip }}:{{ kube_vip_bgp_peer_asn }}::false"
 {% endif %}
-        - name: vip_leaderelection
-          value: "true"
-        - name: vip_leaseduration
-          value: "5"
-        - name: vip_renewdeadline
-          value: "3"
-        - name: vip_retryperiod
-          value: "1"
         - name: address
-          value: "{{ kube_apiserver_vip | default('192.168.1.100') }}"
-        image: ghcr.io/kube-vip/kube-vip:{{ kube_vip_version | default('v0.4.2') }}
+          value: "{{ kube_vip_address }}"
+        image: ghcr.io/kube-vip/kube-vip:{{ kube_vip_version }}
         imagePullPolicy: Always
         name: kube-vip
         resources: {}
@@ -113,4 +115,9 @@ spec:
         operator: Exists
       - effect: NoExecute
         operator: Exists
-  updateStrategy: {}
+  updatestrategy: {}
+status:
+  currentnumberscheduled: 0
+  desirednumberscheduled: 0
+  numbermisscheduled: 0
+  numberready: 0
