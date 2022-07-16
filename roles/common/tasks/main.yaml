@@ -41,11 +41,12 @@
     - 50-cloud-init.yaml
     - 99-netcfg-vmware.yaml
 
+- name: get primary interface name
+  set_fact:
+    target_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] | default('eth0') }}"
+
 - name: configure netplan
   block:
-    - name: get primary interface name
-      set_fact:
-        target_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] | default('eth0') }}"
     - name: get primary interface mac address
       set_fact:
         mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
@@ -68,6 +69,7 @@
     - name: apply new net config
       command: netplan apply
       when: netplan.changed
+  when: target_interface != 'eth0'
 
 - name: set hostname
   shell: |
@@ -104,7 +106,7 @@
     path: /etc/hosts
     line: "127.0.0.1       {{ hostvars[inventory_hostname]['ansible_hostname'] }}.{{ lan_domain }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
     insertbefore: BOF
-  when: infrastructure_provisioner != 'vagrant'
+  when: infrastructure_provisioner | default('none') != 'vagrant'
 
 - name: set cluster nodes aliases in /etc/hosts
   lineinfile:
@@ -113,27 +115,27 @@
     line: "{{ hostvars[item]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}      {{ hostvars[item]['ansible_hostname'] }}.{{ lan_domain }} {{ hostvars[item]['ansible_hostname'] }}"
   with_items:
     - "{{ groups.all }}"
-  when: infrastructure_provisioner == 'vagrant'
+  when: infrastructure_provisioner | default('none') == 'vagrant'
 
 - debug: var=ansible_fqdn
 
 - name: disable local dns cache
   block:
-  - name: disable resolved
-    systemd:
-      name: systemd-resolved
-      state: stopped
-      enabled: no
-    notify: reboot host
-  - name: check resolv.conf type
-    stat:
-      path: /etc/resolv.conf
-    register: resolv
-  - name: undo resolv.conf symlink
-    file:
-      path: /etc/resolv.conf
-      state: absent
-    when: resolv.stat.islnk is defined and resolv.stat.islnk
+    - name: disable resolved
+      systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: no
+      notify: reboot host
+    - name: check resolv.conf type
+      stat:
+        path: /etc/resolv.conf
+      register: resolv
+    - name: undo resolv.conf symlink
+      file:
+        path: /etc/resolv.conf
+        state: absent
+      when: resolv.stat.islnk is defined and resolv.stat.islnk
 
 - name: disable swap in /etc/fstab
   replace:
@@ -143,6 +145,17 @@
 
 - name: disable swap
   command: swapoff -a
+
+- name: tweak kernel
+  sysctl:
+    name: '{{ item.param }}'
+    value: '{{ item.value }}'
+    state: present
+  loop:
+    - { param: fs.inotify.max_queued_events, value: 16384 }
+    - { param: fs.inotify.max_user_instances, value: 1280 }
+    - { param: fs.inotify.max_user_watches, value: 655360 }
+    - { param: kernel.pid_max, value: 131072 }
 
 - name: renew dhcp lease
   command: dhclient -v

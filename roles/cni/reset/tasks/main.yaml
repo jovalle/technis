@@ -5,8 +5,12 @@
 - name: delete any virtual interfaces
   shell: |
     ip a | grep -e 'inet.*cali.*$' | awk '{print $NF}' | xargs -I {} ip link delete {}
-    ip link delete cilium_net || true
-    ip link delete cilium_vxlan || true
+  ignore_errors: yes
+
+- name: reset loopback interface
+  shell: |
+    ip addr flush dev lo
+    ip addr add 127.0.0.1/8 dev lo
   ignore_errors: yes
 
 - name: remove CNI files
