@@ -1,6 +1,0 @@
-metallb_version: v0.12.1
-metallb_mode: bgp
-metallb_bgp_asn: 64500
-metallb_bgp_peer_address: 192.168.1.1
-metallb_bgp_peer_asn: 64501
-metallb_bgp_addresses: 192.168.10.1-192.168.10.253

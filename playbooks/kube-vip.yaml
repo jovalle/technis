@@ -1,3 +1,4 @@
 - hosts: control_plane
+  run_once: yes
   roles:
     - kube-vip

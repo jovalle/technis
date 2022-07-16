@@ -1,5 +1,5 @@
-kube_vip_version: v0.4.4
-kube_vip_mode: bgp
-kube_vip_bgp_asn: 64500
-kube_vip_bgp_peer_asn: 64501
+kube_vip_bgp_asn: 64501
+kube_vip_bgp_peer_asn: 64500
 kube_vip_bgp_peer_ip: 192.168.1.1
+kube_vip_mode: bgp
+kube_vip_global_range: 192.168.10.11-192.168.10.99
