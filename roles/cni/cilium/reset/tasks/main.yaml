@@ -9,3 +9,8 @@
     - bin_check.rc == 0
     - uninstall_cilium | default(False) | bool
   ignore_errors: yes
+
+- name: delete any virtual interfaces
+  shell: |
+    ip link delete cilium_net || true
+    ip link delete cilium_vxlan || true
