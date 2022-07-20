@@ -1,7 +1,7 @@
 # Set credentials for for vsphere
 # export VSPHERE_USER="administrator@vsphere.local"
 # export VSPHERE_PASSWORD=""
-# export VSPHERE_SERVER=mothership.technis.local
+# export VSPHERE_SERVER=mothership.technis.lan
 provider "vsphere" {
     user           = var.vsphere_user
     password       = var.vsphere_password
@@ -26,7 +26,7 @@ data "vsphere_datastore" "datastore" {
 }
 
 data "vsphere_host" "host" {
-    name = "nexus.technis.local"
+    name = "nexus.technis.lan"
     datacenter_id = data.vsphere_datacenter.dc.id
 }
 
