@@ -1,0 +1,24 @@
+- name: run preflight check
+  block:
+    - name: deploy preflight pods
+      shell: >
+        helm install cilium-preflight cilium/cilium --version {{ cilium_version }} \
+          --namespace=kube-system \
+          --set preflight.enabled=true \
+          --set agent=false \
+          --set operator.enabled=false
+      register: preflight_install
+    - name: get cluster node count for preflight check
+      shell: kubectl get nodes --no-headers | wc -l
+      register: cluster_node_count
+    - name: wait for preflight pods to become ready
+      shell: kubectl -n kube-system get ds cilium-pre-flight-check -o jsonpath='{.status.numberReady}'
+      register: cilium_preflight_ds_ready_count
+      until: cilium_preflight_ds_ready_count.stdout == cluster_node_count.stdout
+      retries: 5
+  always:
+    - name: cleanup preflight check pods
+      shell: helm delete cilium-preflight --namespace=kube-system
+      failed_when:
+        - preflight_install.rc != 0
+        - preflight_install.rc != 1

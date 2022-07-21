@@ -98,6 +98,16 @@
         - name: create or update secret
           shell: kubectl -n monitoring create secret generic additional-scrape-configs --from-file={{ temp_dir.path }}/prometheus-additional.yaml --dry-run=client -o yaml | kubectl apply -f -
 
+    - name: set RBAC for prometheus
+      block:
+        - name: copy prometheus-rbac.yaml
+          copy:
+            src: "{{ role_path }}/files/prometheus-additional.yaml"
+            dest: "{{ temp_dir.path }}/"
+
+        - name: update RBAC
+          shell: kubectl -n monitoring apply -f {{ temp_dir.path }}/prometheus-rbac.yaml
+
     - name: apply setup manifests
       shell: |
         kubectl apply --server-side -f {{ temp_dir.path }}/kube-prometheus/manifests/setup
