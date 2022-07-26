@@ -123,6 +123,9 @@ local kp =
         {
           name: 'grafana',
           namespace: $.values.common.namespace,
+          annotations: {
+            traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
+          },
         },
         'grafana.' + $.values.common.publicDomain,
         {
