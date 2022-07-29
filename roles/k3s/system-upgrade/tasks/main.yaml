@@ -1,0 +1,15 @@
+- name: deploy upgrade plan
+  import_role:
+    name: kubectl
+  vars:
+    source_role: k3s/system-upgrade
+    file_type: template
+    target_list:
+      - upgrade-plan.yaml
+
+- name: wait for upgrades to complete
+  shell: kubectl wait --for=condition=complete job -l upgrade.cattle.io/version={{ k3s_version }}
+  register: system_upgrade
+  retries: 12
+  delay: 10
+  until: system_upgrade.rc == 0

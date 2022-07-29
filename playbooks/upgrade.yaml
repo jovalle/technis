@@ -1,0 +1,12 @@
+- hosts: control_plane[0]
+  pre_tasks:
+    - name: get current version
+      shell: kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.nodeInfo.kubeletVersion}'
+      register: current_version
+    - name: assert params
+      assert:
+        that:
+          - k3s_version is defined
+          - k3s_version != current_version
+  roles:
+    - k3s/system-upgrade
