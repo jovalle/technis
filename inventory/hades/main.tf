@@ -1,12 +1,8 @@
-# Set credentials for for vsphere
+# Set credentials for vSphere provider
 # export VSPHERE_USER="administrator@vsphere.local"
 # export VSPHERE_PASSWORD=""
-# export VSPHERE_SERVER=mothership.technis.lan
+# export VSPHERE_SERVER=mothership.technis.net
 provider "vsphere" {
-    user           = var.vsphere_user
-    password       = var.vsphere_password
-    vsphere_server = var.vsphere_server
-
     # Self-signed cert for now
     allow_unverified_ssl = true
 }
@@ -21,12 +17,12 @@ data "vsphere_compute_cluster" "cluster" {
 }
 
 data "vsphere_datastore" "datastore" {
-    name = "SSD"
+    name = "NVMe"
     datacenter_id = data.vsphere_datacenter.dc.id
 }
 
 data "vsphere_host" "host" {
-    name = "nexus.technis.lan"
+    name = "nexus.technis.net"
     datacenter_id = data.vsphere_datacenter.dc.id
 }
 
@@ -36,12 +32,22 @@ data "vsphere_network" "network" {
 }
 
 data "vsphere_virtual_machine" "template" {
-    name = "Templates/ubuntu-server-2204"
+    name = "templates/ubuntu-server"
     datacenter_id = data.vsphere_datacenter.dc.id
 }
 
+locals {
+   vms = {
+    "zagreus"  = { name = "Ubuntu Server - zagreus", mac_addr = "68:61:64:65:73:25" },
+    "thanatos" = { name = "Ubuntu Server - thanatos", mac_addr = "68:61:64:65:73:27" },
+    # "orpheus" = { name = "Ubuntu Server - orpheus", mac_addr = "68:61:64:65:73:28" },
+  }
+}
+
 resource "vsphere_virtual_machine" "vm" {
-    name = "Ubuntu Server - zagreus"
+    for_each = local.vms
+
+    name = each.value.name
     resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
     datastore_id = data.vsphere_datastore.datastore.id
 
@@ -62,7 +68,7 @@ resource "vsphere_virtual_machine" "vm" {
     network_interface {
         network_id = data.vsphere_network.network.id
         use_static_mac = true
-        mac_address = "68:61:64:65:73:25"
+        mac_address = each.value.mac_addr
     }
 
     disk {

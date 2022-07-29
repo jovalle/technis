@@ -1,15 +1,31 @@
 - name: apt upgrade
-  apt:
-    upgrade: full
-    update_cache: yes
-    cache_valid_time: 3600
-    force_apt_get: yes
-    autoclean: yes
-    autoremove: yes
-  register: apt_upgrade
-  retries: 5
-  until: apt_upgrade is success
-  when: apt_upgrade | default(False) | bool
+  block:
+    - name: attempt 1st upgrade
+      apt:
+        upgrade: full
+        update_cache: yes
+        cache_valid_time: 3600
+        force_apt_get: yes
+        autoclean: yes
+        autoremove: yes
+      register: apt_upgrade
+      retries: 5
+      until: apt_upgrade is success
+      when: apt_upgrade | default(False) | bool
+  rescue:
+    - name: attempt to rectify apt interruption
+      shell: dpkg --configure -a
+    - name: attempt 2nd upgrade
+      apt:
+        upgrade: full
+        update_cache: yes
+        cache_valid_time: 3600
+        force_apt_get: yes
+        autoclean: yes
+        autoremove: yes
+      register: apt_upgrade
+      retries: 5
+      until: apt_upgrade is success
 
 - name: install common apt packages
   apt:
@@ -261,3 +277,6 @@
     msg: "Requesting a reboot"
   notify: reboot host
   when: reboot | default('no') | bool
+
+- name: flush handler calls for immediate effect
+  meta: flush_handlers
