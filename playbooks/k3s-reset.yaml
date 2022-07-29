@@ -9,3 +9,5 @@
       when: not cluster_wipe_confirmation | default("no") | bool
   roles:
     - k3s/reset
+    - cni/reset
+    - cri/reset

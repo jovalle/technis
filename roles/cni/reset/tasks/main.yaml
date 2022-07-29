@@ -13,6 +13,10 @@
     ip addr add 127.0.0.1/8 dev lo
   ignore_errors: yes
 
+- name: delete extraneous addresses on eth0
+  shell: |
+    ip addr show eth0 | grep 'inet '| grep -v brd | awk '{print $2}' | xargs -I {} ip addr del {} dev eth0
+
 - name: remove CNI files
   file:
     path: '{{ item }}'
