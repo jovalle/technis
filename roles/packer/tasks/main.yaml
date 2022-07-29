@@ -1,0 +1,40 @@
+- name: create temp dir
+  tempfile:
+    state: directory
+  register: tempdir
+
+- debug: var=tempdir.path
+
+- name: generate VM template
+  block:
+    - name: create http dir for cloud-init
+      file:
+        path: "{{ tempdir.path }}/http"
+        state: directory
+
+    - name: create cloud-init meta-data config
+      file:
+        path: "{{ tempdir.path }}/http/meta-data"
+        state: touch
+
+    - name: render packer files
+      template:
+        src: "{{ item.name }}.j2"
+        dest: "{{ tempdir.path }}/{% if item.subdir is defined %}{{ item.subdir + '/' }}{% endif %}{{ item.name }}"
+      with_items:
+        - { name: setup.sh }
+        - { name: ubuntu.pkr.hcl }
+        - { name: user-data, subdir: "http" }
+
+    - name: initialize and build template
+      shell:
+        chdir: "{{ tempdir.path }}"
+        cmd: |
+          packer init .
+          packer build -force .
+
+  always:
+    - name: cleanup temp dir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent

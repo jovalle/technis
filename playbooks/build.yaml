@@ -1,0 +1,24 @@
+- hosts: localhost
+  gather_facts: yes
+  vars:
+    provisioner: "{{ infrastructure_provisioner | default('none') }}"
+  tasks:
+    - name: turn it off and on again
+      block:
+        - name: "{{ provisioner }}/destroy"
+          include_role:
+            name: "{{ provisioner }}/destroy"
+          when: rebuild | default(False) | bool
+        - name: "{{ provisioner }}/up"
+          include_role:
+            name: "{{ provisioner }}/up"
+      when:
+        - provisioner != 'none'
+
+- hosts: all
+  roles:
+    - wait-for-server
+
+- hosts: cluster
+  roles:
+    - common

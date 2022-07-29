@@ -14,3 +14,6 @@
 - name: deploy k3s on worker node
   include_tasks: worker.yaml
   when: inventory_hostname in groups['nodes']
+
+- name: wait for node to be ready
+  shell: kubectl wait --for=condition=Ready node {{ inventory_hostname }} --timeout=600s

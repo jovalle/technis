@@ -3,3 +3,8 @@
     pushd {{ ansible_inventory_sources[0] }} && \
     terraform apply -auto-approve && \
     popd
+  register: terraform_apply
+
+- name: print terraform output
+  debug:
+    var: terraform_apply.stdout_lines
