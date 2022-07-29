@@ -48,6 +48,25 @@
     dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
   when: inventory_hostname == groups['control_plane'][0]
 
+- name: expose traefik dashboard
+  copy:
+    content: |
+      apiVersion: traefik.containo.us/v1alpha1
+      kind: IngressRoute
+      metadata:
+        name: traefik-internal-dashboard
+        namespace: kube-system
+      spec:
+        entryPoints:
+          - websecure
+        routes:
+          - kind: Rule
+            match: Host(`traefik.{{ ingress_domain }}`)
+            services:
+              - kind: TraefikService
+                name: api@internal
+    dest: /var/lib/rancher/k3s/server/manifests/traefik-ingressroute.yaml
+
 - name: init cluster inside the transient k3s-init service
   command:
     cmd: "systemd-run -p RestartSec=2 \
