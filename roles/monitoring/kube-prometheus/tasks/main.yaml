@@ -102,7 +102,7 @@
       block:
         - name: copy prometheus-rbac.yaml
           copy:
-            src: "{{ role_path }}/files/prometheus-additional.yaml"
+            src: "{{ role_path }}/files/prometheus-rbac.yaml"
             dest: "{{ temp_dir.path }}/"
 
         - name: update RBAC
