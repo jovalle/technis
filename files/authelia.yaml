@@ -171,12 +171,6 @@ data:
       expiration: 1h
       inactivity: 5m
       remember_me_duration: 1M
-      redis:
-        host: redis.redis.svc.cluster.local
-        port: 6379
-        database_index: 0
-        maximum_active_connections: 8
-        minimum_idle_connections: 0
     regulation:
       max_retries: 3
       find_time: 2m
