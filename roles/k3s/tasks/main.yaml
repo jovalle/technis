@@ -17,3 +17,4 @@
 
 - name: wait for node to be ready
   shell: kubectl wait --for=condition=Ready node {{ inventory_hostname }} --timeout=600s
+  delegate_to: "{{ groups['control_plane'][0] }}"
