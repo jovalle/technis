@@ -106,8 +106,8 @@ local kp =
           'grafana-simple-json-datasource',
         ],
         dashboards+:: {
-{% for d in dashboards %}
-          '{{ d | basename }}': (import 'dashboards/{{ d | basename }}'),
+{% for dashboard in dashboards %}
+          '{{ dashboard | basename }}': (import 'dashboards/{{ dashboard | basename }}'),
 {% endfor %}
         },
       },
@@ -124,7 +124,7 @@ local kp =
           name: 'grafana',
           namespace: $.values.common.namespace,
           annotations: {
-            traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
+            "traefik.ingress.kubernetes.io/router.middlewares": "auth-forwardauth-authelia@kubernetescrd"
           },
         },
         'grafana.' + $.values.common.publicDomain,
