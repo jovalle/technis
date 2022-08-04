@@ -41,9 +41,10 @@ spec:
     spec:
       dnsPolicy: ClusterFirst
       enableServiceLinks: true
+      hostNetwork: true
       containers:
         - name: flaresolverr
-          image: "ghcr.io/flaresolverr/flaresolverr:v1.2.8"
+          image: "flaresolverr/flaresolverr:latest"
           imagePullPolicy: IfNotPresent
           env:
             - name: LOG_LEVEL
