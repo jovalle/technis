@@ -1,0 +1,308 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: homer
+  namespace: technis
+data:
+  config.yml: |-
+    ---
+    # Homepage configuration
+    # See https://fontawesome.com/icons for icons options
+
+    title: "Technis Web Services"
+    subtitle: "Dashboard"
+    icon: "fas fa-solid fa-cloud"
+
+    header: true
+    footer: false
+    columns: "4"
+
+    # Optional theme customization
+    theme: default
+    colors:
+      light:
+        highlight-primary: "#3367d6"
+        highlight-secondary: "#4285f4"
+        highlight-hover: "#5a95f5"
+        background: "#f5f5f5"
+        card-background: "#ffffff"
+        text: "#363636"
+        text-header: "#ffffff"
+        text-title: "#303030"
+        text-subtitle: "#424242"
+        card-shadow: rgba(0, 0, 0, 0.1)
+        link-hover: "#363636"
+      dark:
+        highlight-primary: "#3367d6"
+        highlight-secondary: "#4285f4"
+        highlight-hover: "#5a95f5"
+        background: "#131313"
+        card-background: "#2b2b2b"
+        text: "#eaeaea"
+        text-header: "#ffffff"
+        text-title: "#fafafa"
+        text-subtitle: "#f5f5f5"
+        card-shadow: rgba(0, 0, 0, 0.4)
+        link-hover: "#ffdd57"
+
+    # Optional message
+    # message:
+    #  style: "is-warning" # See https://bulma.io/documentation/components/message/#colors for styling options.
+    #  title: ""
+    #  icon: "fa fa-grin"
+    #  content: ""
+
+    # Optional navbar
+    # links: [] # Allows for navbar (dark mode, layout, and search) without any links
+    links:
+      - name: "Code"
+        icon: "fa-brands fa-github"
+        url: "https://github.com/jovalle"
+        target: "_blank" # new tab
+      - name: "Blog"
+        icon: "fa-solid fa-blog"
+        url: "https://jovalle.github.io"
+      - name: "Wiki"
+        icon: "fa-solid fa-book"
+        url: "https://wiki.technis.io"
+      - name: "Assets"
+        icon: "fa-solid fa-sitemap"
+        url: "https://assets.technis.io"
+
+    # Styling
+    tags:
+      external: &external
+        - tag: "external"
+          tagstyle: "is-medium is-danger"
+      internal: &internal
+        - tag: "internal"
+          tagstyle: "is-medium is-info"
+      private: &private
+        - tag: "private"
+          tagstyle: "is-medium is-success"
+      public: &public
+        - tag: "public"
+          tagstyle: "is-medium is-warning"
+
+    # Services
+    # First level array represent a group.
+    # Leave only a "items" key if not using group (group name, icon & tagstyle are optional, section separation will not be displayed).
+    services:
+      - name: "Monitoring"
+        icon: "fa-brands fa-watchman-monitoring"
+        items:
+          - name: "Goldpinger"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/goldpinger.png"
+            subtitle: "Node to node health ping mesh"
+            <<: *internal
+            url: "https://goldpinger.techn.is"
+            target: "_blank"
+          - name: "Grafana"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/grafana.png"
+            subtitle: "Grafana"
+            <<: *external
+            url: "https://grafana.technis.io/"
+            target: "_blank"
+          - name: "Scrutiny"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/scrutiny.png"
+            subtitle: "SMART data at a glance"
+            <<: *internal
+            url: "https://storage.techn.is"
+            target: "_blank"
+          - name: "Status Page"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/uptime-kuma.png"
+            subtitle: "Powered by Uptime Kuma"
+            <<: *external
+            url: "https://status.technis.io"
+            target: "_blank"
+      - name: "Virtualization"
+        icon: "fa-solid fa-network-wired"
+        items:
+          - name: "vCenter"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/vmware.png"
+            subtitle: "vCenter Server Appliance Management Interface"
+            <<: *internal
+            url: "https://mothership.techn.is"
+            target: "_blank"
+          - name: "ESXi"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/vmwareesxi.png"
+            subtitle: "ESXi Management Portal"
+            <<: *private
+            url: "https://nexus.technis.net"
+            target: "_blank"
+          - name: "TrueNAS SCALE"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/truenas-scale.png"
+            subtitle: "TrueNAS SCALE VM Management Portal"
+            <<: *internal
+            url: "https://illmatic.techn.is/ui/vm"
+            target: "_blank"
+      - name: "Media Server"
+        icon: "fa-solid fa-photo-film"
+        items:
+          - name: "Plex (Local)"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/plexdrive.png"
+            subtitle: "Plex Media Server"
+            <<: *private
+            url: "https://192.168.1.11:32400/web/index.html#!/"
+            target: "_blank"
+          - name: "Plex (Public)"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/plex.png"
+            subtitle: "Plex Media Server"
+            <<: *external
+            url: "https://watchtower.technis.io/web/index.html#!/"
+            target: "_blank"
+          - name: "Tautulli"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/tautulli.png"
+            subtitle: "Plex Monitoring and Analytics"
+            <<: *external
+            url: "https://tautulli.technis.io"
+            target: "_blank"
+          - name: "Sonarr"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/sonarr.png"
+            subtitle: "TV Series Management"
+            <<: *internal
+            url: "https://sonarr.techn.is"
+            target: "_blank"
+          - name: "Radarr"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/radarr.png"
+            subtitle: "Movie Collection Management"
+            <<: *internal
+            url: "https://radarr.techn.is"
+            target: "_blank"
+      - name: "Management"
+        icon: "fa-solid fa-server"
+        items:
+          - name: "Cloudflare"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/cloudflare.png"
+            subtitle: "Public DNS Management"
+            <<: *public
+            url: "https://dash.cloudflare.com/login"
+            target: "_blank"
+          - name: "iDRAC"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/idrac.png"
+            subtitle: "Integrated Dell Remote Access Controller"
+            <<: *private
+            url: "https://stalker.technis.net/login.html/"
+            target: "_blank"
+          - name: "pfSense"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/pfsense.png"
+            subtitle: "Core Router"
+            <<: *internal
+            url: "https://warpgate.techn.is"
+            target: "_blank"
+          - name: "Portainer"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/portainer.png"
+            subtitle: "Container Management"
+            <<: *internal
+            url: "https://portainer.techn.is"
+            target: "_blank"
+          - name: "Snipe-IT"
+            logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/snipe-it-alt.png"
+            subtitle: "IT Asset Management"
+            <<: *internal
+            url: "https://snipe-it.techn.is"
+            target: "_blank"
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: homer
+  namespace: technis
+  annotations:
+    configmap.reloader.stakater.com/reload: "homer"
+    keel.sh/policy: all
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "0 1 * * *"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homer
+  template:
+    metadata:
+      labels:
+        app: homer
+    spec:
+      containers:
+        - name: homer
+          image: b4bz/homer:latest
+          env:
+            - name: GID
+              value: "1000"
+            - name: UID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: INIT_ASSETS
+              value: "0"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /www/assets
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: 200m
+            requests:
+              memory: 128Mi
+              cpu: 100m
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      volumes:
+        - name: config
+          configMap:
+            name: homer
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: homer
+  namespace: technis
+spec:
+  selector:
+    app: homer
+  ports:
+    - port: 8080
+      protocol: TCP
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: homer
+  namespace: technis
+spec:
+  rules:
+    - host: portal.techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homer
+                port:
+                  number: 8080
+    - host: techn.is
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homer
+                port:
+                  number: 8080
