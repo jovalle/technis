@@ -2016,7 +2016,7 @@
               "left": "Daily Consumption (kWh)",
               "operator": "*",
               "reducer": "sum",
-              "right": "0.16"
+              "right": "0.20"
             },
             "mode": "binary",
             "reduce": {
@@ -2226,7 +2226,7 @@
               "left": "Monthly Consumption (kWh)",
               "operator": "*",
               "reducer": "sum",
-              "right": "0.16"
+              "right": "0.20"
             },
             "mode": "binary",
             "reduce": {
