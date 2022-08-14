@@ -16,6 +16,10 @@
   tags:
     - nvtop
 
+- include_role:
+    name: gpu/nvidia/k3s
+  when: k8s_provisioner | default('k8s') == 'k3s'
+
 # Not working due to lack of interactive shell for `ctr run` but here for ref
 #- name: pull gpu container image
 #  shell: ctr image pull docker.io/nvidia/cuda:11.0-base
