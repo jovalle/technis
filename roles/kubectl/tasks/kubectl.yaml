@@ -21,18 +21,18 @@
   block:
     - name: "{{ source_role }} | gather manifest(s) from host"
       copy:
-        src: "{{ item }}"
-        dest: "{{ tempdir.path }}/{{ item | basename }}"
-      with_fileglob:
-        - "{{ target_fileglob }}"
+        src: "{{ fileglob_item }}"
+        dest: "{{ tempdir.path }}/{{ fileglob_item | basename }}"
+      loop: "{{ lookup('fileglob', '{{ target_fileglob }}', wantlist=True) }}"
+      loop_control:
+        loop_var: fileglob_item
       when: file_type == "fileglob"
 
     - name: "{{ source_role }} | fetch manifest(s) from host"
       copy:
         src: "{{ copy_item }}"
         dest: "{{ tempdir.path }}/{{ copy_item }}"
-      with_items:
-        - "{{ target_list }}"
+      loop: "{{ target_list }}"
       loop_control:
         loop_var: copy_item
       when: file_type == "static"
@@ -41,39 +41,36 @@
       template:
         src: "{{ template_item }}.j2"
         dest: "{{ tempdir.path }}/{{ template_item | basename }}"
-      with_items:
-        - "{{ target_list }}"
+      loop: "{{ target_list }}"
       loop_control:
         loop_var: template_item
       when: file_type == "template"
 
     - name: "{{ source_role }} | clean slate for manifest(s)"
       command: kubectl delete -f {{ tempdir.path }}/{{ delete_item | basename }}
-      with_items:
-        - "{{ target_list }}"
+      loop: "{{ target_list }}"
       loop_control:
         loop_var: delete_item
       when: (mode is defined and mode == "replace") and (file_type == "static" or file_type == "template")
       ignore_errors: yes
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
-      command: kubectl {{ command | default('apply') }} -f {{ tempdir.path }}/{{ item | basename }}
-      with_fileglob:
-        - "{{ target_fileglob }}"
+      command: kubectl {{ command | default('apply') }} -f {{ tempdir.path }}/{{ fileglob_item | basename }}
+      loop: "{{ lookup('fileglob', '{{ target_fileglob }}', wantlist=True) }}"
+      loop_control:
+        loop_var: fileglob_item
       when: file_type == "fileglob"
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
       command: kubectl {{ command | default("apply") }} -f {{ tempdir.path }}/{{ static_item | basename }}
-      with_items:
-        - "{{ target_list }}"
+      loop: "{{ target_list }}"
       loop_control:
         loop_var: static_item
       when: file_type == "static" or file_type == "template"
 
     - name: "{{ source_role }} | clean slate for manifest(s)"
       command: kubectl delete -f {{ delete_item | basename }}
-      with_items:
-        - "{{ target_list }}"
+      loop: "{{ target_list }}"
       loop_control:
         loop_var: delete_item
       when: (mode is defined and mode == "replace") and (file_type == "remote")
@@ -81,8 +78,7 @@
 
     - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
       command: kubectl {{ command | default("apply") }} -f {{ remote_item }}
-      with_items:
-        - "{{ target_list }}"
+      loop: "{{ target_list }}"
       loop_control:
         loop_var: remote_item
       when: file_type == "remote"
