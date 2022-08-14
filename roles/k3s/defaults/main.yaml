@@ -1,26 +1,4 @@
-k3s_token: technis
-k3s_version: v1.24.1+k3s1
 apiserver_endpoint: 192.168.1.100
-kube_vip_version: v0.4.4
-server_init_args: >-
-  {% if groups['control_plane'] | length > 1 %}
-    {% if inventory_hostname == groups['control_plane'][0] %}
-      --cluster-init
-    {% else %}
-      --server https://{{ apiserver_endpoint }}:6443
-    {% endif %}
-    --token {{ k3s_token }}
-  {% endif %}
-  {{ extra_server_args | default('') }}
-extra_server_args: >-
-  --tls-san "{{ apiserver_endpoint }}"
-  --disable servicelb
-  --disable metrics-server
-  {% if cni_plugin | default('none') != 'none' %}
-  {% if disable_kube_proxy | default(True) | bool %}
-  --disable-kube-proxy
-  {% endif %}
-  --disable-network-policy
-  --flannel-backend=none
-  --kube-apiserver-arg="enable-aggregator-routing=true"
-  {% endif %}
+k3s_existing_cluster: no
+k3s_token: technis
+k3s_version: v1.24.3+k3s1

@@ -30,7 +30,7 @@
   import_role:
     name: kubectl
   vars:
-    source_role: kube-vip
     file_type: template
+    source_role: kube-vip
     target_list:
       - kube-vip-cloud-controller.yaml
