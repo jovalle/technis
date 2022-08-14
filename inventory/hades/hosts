@@ -1,7 +1,6 @@
 [control_plane]
 cerberus
 zagreus
-thanatos
 
 [nodes]
 

@@ -1,3 +1,7 @@
+- name: deploy raspberry pi changes
+  include_tasks: rpi.yaml
+  when: ansible_architecture | regex_search('arm|aarch')
+
 - name: apt upgrade
   block:
     - name: attempt 1st upgrade
@@ -9,12 +13,16 @@
         autoclean: yes
         autoremove: yes
       register: apt_upgrade
-      retries: 5
       until: apt_upgrade is success
       when: apt_upgrade | default(False) | bool
   rescue:
     - name: attempt to rectify apt interruption
       shell: dpkg --configure -a
+      ignore_errors: yes
+      register: dpkg_configure
+    - name: assume broken dependency
+      shell: apt --fix-broken install -y
+      when: dpkg_configure.rc != 0
     - name: attempt 2nd upgrade
       apt:
         upgrade: full
@@ -24,7 +32,6 @@
         autoclean: yes
         autoremove: yes
       register: apt_upgrade
-      retries: 5
       until: apt_upgrade is success
 
 - name: install common apt packages
@@ -37,7 +44,6 @@
     autoclean: yes
     autoremove: yes
   register: apt_install_common
-  retries: 5
   until: apt_install_common is success
 
 - name: install common pip packages
@@ -46,16 +52,6 @@
   register: pip_install_common
   retries: 5
   until: pip_install_common is success
-
-- name: cleanup netplans
-  file:
-    path: "/etc/netplan/{{ item }}"
-    state: absent
-  with_items:
-    - 00-installer-config.yaml
-    - 00-installer-config.yaml.BeforeVMwareCustomization
-    - 50-cloud-init.yaml
-    - 99-netcfg-vmware.yaml
 
 - name: get primary interface name
   set_fact:
@@ -67,7 +63,29 @@
       set_fact:
         mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
     - debug: var=mac_addr
-    - name: set primary interface to eth0
+    - name: check if cloud-init network config exists
+      stat:
+        path: /etc/netplan/50-cloud-init.yaml
+      register: netplan_cloud_init
+    - name: check if subiquity network config exists
+      stat:
+        path: /etc/netplan/00-installer-config.yaml
+      register: netplan_subiquity
+    - name: cleanup netplans
+      file:
+        path: "/etc/netplan"
+        state: absent
+      ignore_errors: yes
+      when:
+        - not netplan_cloud_init.stat.exists
+        - not netplan_subiquity.stat.exists
+    - name: rename primary interface in cloud-init network config
+      replace:
+        path: /etc/netplan/50-cloud-init.yaml
+        regexp: "set-name:(.*)"
+        replace: 'set-name: eth0'
+      when: netplan_cloud_init.stat.exists
+    - name: set eth0 as primary interface
       copy:
         content: |
           # Ansible managed
@@ -77,15 +95,14 @@
                 dhcp4: true
                 match:
                   macaddress: {{ mac_addr }}
-                optional: true
                 set-name: eth0
             version: 2
-        dest: /etc/netplan/00-technis.yaml
+        dest: /etc/netplan/00-installer-config.yaml
       register: netplan
+      when: not netplan_cloud_init.stat.exists
     - name: apply new net config
       command: netplan apply
       when: netplan.changed
-  when: target_interface != 'eth0'
 
 - name: set hostname
   shell: |
@@ -156,7 +173,7 @@
 - name: disable swap in /etc/fstab
   replace:
     dest: /etc/fstab
-    regexp: '^(.* swap .*)'
+    regexp: '^(.*swap.*)'
     replace: '#\1'
 
 - name: disable swap
@@ -172,9 +189,6 @@
     - { param: fs.inotify.max_user_instances, value: 1280 }
     - { param: fs.inotify.max_user_watches, value: 655360 }
     - { param: kernel.pid_max, value: 131072 }
-
-- name: renew dhcp lease
-  command: dhclient -v
 
 - name: create ~/.ssh dir if missing
   file:
@@ -226,13 +240,6 @@
     name: root
     password: "$6$rounds=4096$aEPEL1bIDTcZ$YnEvgJKmQrHnyF.OmpdSasUjxwtqn2C1CugUUAyGq9GGI/B3Qz9CTcuj2G/L5uxNhidEd7jXynNXVzZfJm2YB."
 
-- name: deploy raspberry pi changes
-  include_tasks: rpi.yaml
-  when: ansible_architecture | regex_search('arm|aarch')
-
-- name: flush handler calls for immediate effect
-  meta: flush_handlers
-
 - name: start time services
   service:
     name: systemd-timesyncd
@@ -275,6 +282,7 @@
 - name: request reboot
   debug:
     msg: "Requesting a reboot"
+  changed_when: true
   notify: reboot host
   when: reboot | default('no') | bool
 

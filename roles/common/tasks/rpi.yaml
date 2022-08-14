@@ -1,3 +1,26 @@
+- name: set authorized_key for root user
+  authorized_key:
+    user: root
+    state: present
+    key: "{{ ssh_public_key }}"
+  ignore_errors: yes
+
+- name: check if pi user exist
+  command: id -un pi
+  register: pi_user
+  ignore_errors: yes
+
+- name: kill all running pi user processes
+  command: pkill -u pi
+  ignore_errors: yes
+  when: pi_user.rc == 0
+
+- name: disable pi user
+  user:
+    name: pi
+    password: '!'
+  when: pi_user.rc == 0
+
 - name: check for dphys-swapfile
   stat:
     path: /etc/dphys-swapfile
@@ -85,6 +108,17 @@
     line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
     backrefs: true
   notify: reboot host
+
+- name: set GPU memory to minimum
+  lineinfile:
+    path: /boot/firmware/config.txt
+    regexp: '^.*gpu_mem=.*$'
+    line: 'gpu_mem=16'
+  notify: reboot host
+
+- name: install raspi utilities
+  apt:
+    name: libraspberrypi-bi
 
 # Fixes known issue with ubuntu server 21.10
 # Source: https://github.com/k3s-io/k3s/issues/4188#issuecomment-982503626
