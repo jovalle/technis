@@ -1,4 +1,4 @@
-- name: install fail2ban ackage
+- name: install package
   apt:
     name: fail2ban
     update_cache: yes
@@ -20,12 +20,11 @@
       maxretry = 3
       findtime = 300
       bantime = 3600
-      ignoreip = 127.0.0.1
+      ignoreip = 127.0.0.1 {{ lan_network | default('192.168.1.0/24') }}
     dest: /etc/fail2ban/jail.local
   register: configure_sshd
 
-#TODO: allowlist LAN_NETWORK
-- name: restart fail2ban
+- name: restart service
   systemd:
     name: fail2ban
     state: restarted
