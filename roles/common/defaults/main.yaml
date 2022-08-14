@@ -38,5 +38,5 @@ common_packages_apt:
   - vim
   - zip
 common_packages_pip:
+  - kubernetes
 default_interface: eth0
-default_interface_inet: dhcp
