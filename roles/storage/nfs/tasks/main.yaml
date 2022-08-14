@@ -2,10 +2,10 @@
   import_role:
     name: kubectl
   vars:
+    file_type: template
+    source_role: storage/nfs
     target_list:
     - namespace.yaml
     - rbac.yaml
     - deployment.yaml
     - storageclass.yaml
-    source_role: storage/nfs
-    file_type: template

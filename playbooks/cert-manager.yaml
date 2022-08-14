@@ -1,5 +1,0 @@
-- hosts: control_plane
-  run_once: yes
-  tasks:
-    - name: deploy cert-manager
-      shell: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.7.1/cert-manager.yaml
