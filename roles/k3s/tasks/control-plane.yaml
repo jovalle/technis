@@ -11,19 +11,18 @@
   args:
     warn: false  # The ansible systemd module does not support reset-failed
 
-- name: create manifests directory on first control plane node
+- name: create manifests directory on new cluster
   file:
     path: /var/lib/rancher/k3s/server/manifests
     state: directory
     owner: root
     group: root
     mode: 0644
-  when: inventory_hostname == groups['control_plane'][0]
+  when:
+    - inventory_hostname == groups['control_plane'][0]
+    - not k3s_existing_cluster | default(true) | bool
 
-- include_role:
-    name: kube-vip
-
-- name: copy traefik custom config on first control plane node
+- name: copy traefik custom config on new cluster
   copy:
     content: |
       apiVersion: helm.cattle.io/v1
@@ -46,7 +45,9 @@
             spec:
               loadBalancerIP: "{{ ingress_endpoint | default('192.168.1.200') }}"
     dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
-  when: inventory_hostname == groups['control_plane'][0]
+  when:
+    - inventory_hostname == groups['control_plane'][0]
+    - not k3s_existing_cluster | default(true) | bool
 
 - name: expose traefik dashboard
   copy:
@@ -69,11 +70,9 @@
 
 - name: init cluster inside the transient k3s-init service
   command:
-    cmd: "systemd-run -p RestartSec=2 \
-                      -p Restart=on-failure \
-                      --unit=k3s-init \
-                      k3s server {{ server_init_args }}"
-    creates: "/etc/systemd/system/k3s.service"
+    cmd: >-
+      systemd-run -p RestartSec=2 -p Restart=on-failure --unit=k3s-init --description="k3s-init" k3s server {{ server_init_args }}
+    creates: /etc/systemd/system/k3s.service
   args:
     warn: false  # The ansible systemd module does not support transient units
 
@@ -96,8 +95,8 @@
 
 - name: render k3s service file
   template:
-    src: "k3s.service.j2"
-    dest: "/etc/systemd/system/k3s.service"
+    src: k3s.service.j2
+    dest: /etc/systemd/system/k3s.service
     owner: root
     group: root
     mode: 0644
@@ -110,6 +109,20 @@
     state: restarted
     enabled: yes
   when: k3s_service.changed
+
+- name: create k3s symlinks
+  file:
+    src: /usr/local/bin/k3s
+    dest: /usr/local/bin/{{ item }}
+    state: link
+    force: yes
+  with_items:
+    - kubectl
+    - crictl
+    - ctr
+
+- include_role:
+    name: kube-vip
 
 - name: wait for node-token
   wait_for:
@@ -160,15 +173,3 @@
       --server=https://{{ apiserver_endpoint }}:6443
       --kubeconfig ~{{ ansible_user }}/.kube/config
   changed_when: true
-
-- name: create kubectl symlink
-  file:
-    src: /usr/local/bin/k3s
-    dest: /usr/local/bin/kubectl
-    state: link
-
-- name: create crictl symlink
-  file:
-    src: /usr/local/bin/k3s
-    dest: /usr/local/bin/crictl
-    state: link
