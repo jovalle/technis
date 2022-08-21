@@ -17,7 +17,7 @@ spec:
         app: telegraf
     spec:
       containers:
-        - image: telegraf:1.23.0
+        - image: telegraf:1.23.3
           name: telegraf
           volumeMounts:
             - mountPath: /etc/telegraf/telegraf.conf
