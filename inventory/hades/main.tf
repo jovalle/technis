@@ -32,15 +32,13 @@ data "vsphere_network" "network" {
 }
 
 data "vsphere_virtual_machine" "template" {
-    name = "templates/ubuntu-server"
+    name = "Templates/ubuntu-server-2204"
     datacenter_id = data.vsphere_datacenter.dc.id
 }
 
 locals {
    vms = {
     "zagreus"  = { name = "Ubuntu Server - zagreus", mac_addr = "68:61:64:65:73:25" },
-    "thanatos" = { name = "Ubuntu Server - thanatos", mac_addr = "68:61:64:65:73:27" },
-    # "orpheus" = { name = "Ubuntu Server - orpheus", mac_addr = "68:61:64:65:73:28" },
   }
 }
 
@@ -52,6 +50,7 @@ resource "vsphere_virtual_machine" "vm" {
     datastore_id = data.vsphere_datastore.datastore.id
 
     num_cpus = 8
+    num_cores_per_socket = 8
     memory = 16384
     guest_id = "ubuntu64Guest"
 
