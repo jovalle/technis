@@ -4,13 +4,15 @@
     provisioner: "{{ infrastructure_provisioner | default('none') }}"
   vars_prompt:
     - name: cluster_wipe_confirmation
-      prompt: WARNING! Provisioner {{ provisioner }} state will be wiped. Continue?
+      prompt: Wipe provisioned resources?
       private: no
       default: no
-  pre_tasks:
-    - fail:
-      when: not cluster_wipe_confirmation | default("no") | bool
   tasks:
     - name: "{{ provisioner }}/destroy"
       include_role:
         name: "{{ provisioner }}/destroy"
+      when: cluster_wipe_confirmation | default('no') | bool
+    - name: "{{ provisioner }}/destroy"
+      include_role:
+        name: "{{ provisioner }}/up"
+      when: provision | default('yes') | bool
