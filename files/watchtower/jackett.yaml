@@ -52,7 +52,7 @@ spec:
             - name: UMASK_SET
               value: "022"
           ports:
-            - containerPort: 8989
+            - containerPort: 9117
           volumeMounts:
             - name: config
               mountPath: /config
