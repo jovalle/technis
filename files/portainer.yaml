@@ -181,6 +181,7 @@ kind: Ingress
 apiVersion: networking.k8s.io/v1
 metadata:
   name: portainer
+  namespace: portainer
   annotations:
     ingress.kubernetes.io/protocol: https
 spec:
