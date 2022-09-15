@@ -286,7 +286,7 @@ metadata:
   namespace: technis
 spec:
   rules:
-    - host: portal.techn.is
+    - host: homer.techn.is
       http:
         paths:
           - path: /
@@ -296,7 +296,7 @@ spec:
                 name: homer
                 port:
                   number: 8080
-    - host: techn.is
+    - host: tws.technis.io
       http:
         paths:
           - path: /
