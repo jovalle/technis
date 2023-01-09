@@ -49,6 +49,11 @@
     - inventory_hostname == groups['control_plane'][0]
     - not k3s_existing_cluster | default(true) | bool
 
+- name: ensure manifests dir exists
+  file:
+    path: /var/lib/rancher/k3s/server/manifests/
+    state: directory
+
 - name: expose traefik dashboard
   copy:
     content: |
@@ -67,6 +72,9 @@
               - kind: TraefikService
                 name: api@internal
     dest: /var/lib/rancher/k3s/server/manifests/traefik-ingressroute.yaml
+
+- debug:
+    msg: systemd-run -p RestartSec=2 -p Restart=on-failure --unit=k3s-init --description="k3s-init" k3s server {{ server_init_args }}
 
 - name: init cluster inside the transient k3s-init service
   command:

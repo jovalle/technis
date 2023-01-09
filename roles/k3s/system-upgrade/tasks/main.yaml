@@ -11,5 +11,5 @@
   shell: kubectl wait --for=condition=complete job -l upgrade.cattle.io/version={{ k3s_version }}
   register: system_upgrade
   retries: 12
-  delay: 10
+  delay: 20
   until: system_upgrade.rc == 0
