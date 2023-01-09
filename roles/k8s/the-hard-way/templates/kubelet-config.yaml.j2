@@ -13,7 +13,6 @@ clusterDomain: "cluster.local"
 clusterDNS:
   - "{{ k8s_cluster_dns | default('10.32.0.10') }}"
 podCIDR: "{{ k8s_pod_cidr | default('10.200.0.0/16') }}"
-resolvConf: "/run/systemd/resolve/resolv.conf"
 runtimeRequestTimeout: "15m"
 tlsCertFile: "/var/lib/kubelet/{{ inventory_hostname }}.pem"
 tlsPrivateKeyFile: "/var/lib/kubelet/{{ inventory_hostname }}-key.pem"

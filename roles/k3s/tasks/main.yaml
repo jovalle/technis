@@ -24,7 +24,7 @@
       --flannel-backend=none
       --kube-apiserver-arg='enable-aggregator-routing=true'
       {% endif %}
-      {% if ansible_facts.services['systemd-resolved.service'].state == 'running' %}
+      {% if ansible_facts.services['systemd-resolved.service'].state == 'running' or (systemd_resolved | default(False) | bool) %}
       --resolv-conf=/run/systemd/resolve/resolv.conf
       {% endif %}
 

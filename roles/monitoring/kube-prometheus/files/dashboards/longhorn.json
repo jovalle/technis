@@ -170,7 +170,7 @@
             "type": "prometheus",
             "uid": "prometheus1"
           },
-          "expr": "count(longhorn_volume_robustness==3) OR on() vector(0)",
+          "expr": "count(longhorn_volume_robustness==1) OR on() vector(0)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
