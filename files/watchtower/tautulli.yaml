@@ -58,15 +58,11 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 180
             tcpSocket:
               port: 8181
           readinessProbe:
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 180
             tcpSocket:
               port: 8181
           resources:

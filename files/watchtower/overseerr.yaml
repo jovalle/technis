@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: overseerr
-          image: ghcr.io/linuxserver/overseerr:latest
+          image: linuxserver/overseerr:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: PGID
