@@ -1,1 +1,1 @@
-longhorn_version: master # v1.3, at time of writing, does not support K8s 1.25+
+longhorn_version: v1.4.0
