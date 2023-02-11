@@ -5,6 +5,7 @@ common_packages_apt:
   - ca-certificates
   - curl
   - dnsutils
+  - fail2ban
   - fio
   - git
   - glances
