@@ -1,5 +1,7 @@
 # Technis
 
+![Technis Logo](logo.svg)
+
 Test bed for all things virtualization, automation, and Kubernetes.
 
 ## Current Environments
