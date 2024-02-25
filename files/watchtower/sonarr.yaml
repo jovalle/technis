@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: sonarr
-          image: ghcr.io/linuxserver/sonarr:latest
+          image: ghcr.io/linuxserver/sonarr:version-4.0.0.748
           imagePullPolicy: IfNotPresent
           env:
             - name: PGID
@@ -62,7 +62,7 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 5
             timeoutSeconds: 5
             tcpSocket:
@@ -87,11 +87,11 @@ spec:
             claimName: sonarr
         - name: downloads
           nfs:
-            server: illmatic.techn.is
+            server: nexus.techn.is
             path: /mnt/hulkpool/downloads
         - name: tv
           nfs:
-            server: illmatic.techn.is
+            server: nexus.techn.is
             path: /mnt/whirlpool/tvshows
         - name: localtime
           hostPath:

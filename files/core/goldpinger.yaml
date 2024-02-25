@@ -122,6 +122,12 @@ metadata:
   namespace: goldpinger
   labels:
     app: goldpinger
+  annotations:
+    gethomepage.dev/description: Cluster Latency Mesh
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: Services
+    gethomepage.dev/icon: https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/goldpinger.png
+    gethomepage.dev/name: Goldpinger
 spec:
   rules:
     - host: goldpinger.techn.is

@@ -134,7 +134,7 @@ data:
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/truenas-scale.png"
             subtitle: "TrueNAS SCALE VM Management Portal"
             <<: *internal
-            url: "https://illmatic.techn.is/ui/vm"
+            url: "https://nexus.techn.is/ui/vm"
             target: "_blank"
       - name: "Media Server"
         icon: "fa-solid fa-photo-film"
@@ -143,13 +143,13 @@ data:
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/plexdrive.png"
             subtitle: "Plex Media Server"
             <<: *private
-            url: "https://192.168.1.11:32400/web/index.html#!/"
+            url: "https://192.168.0.4:32400/web/"
             target: "_blank"
           - name: "Plex (Public)"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/plex.png"
             subtitle: "Plex Media Server"
             <<: *external
-            url: "https://watchtower.technis.io/web/index.html#!/"
+            url: "https://app.plex.tv"
             target: "_blank"
           - name: "Tautulli"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/tautulli.png"
@@ -188,7 +188,7 @@ data:
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/pfsense.png"
             subtitle: "Core Router"
             <<: *internal
-            url: "https://warpgate.techn.is"
+            url: "https://warpgate.techn.is:8443"
             target: "_blank"
           - name: "Portainer"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/portainer.png"
@@ -296,6 +296,16 @@ spec:
                 name: homer
                 port:
                   number: 8080
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: homer-public
+  namespace: technis
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
+spec:
+  rules:
     - host: tws.technis.io
       http:
         paths:

@@ -1,3 +1,4 @@
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -9,7 +10,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 10Gi
 ---
 kind: Deployment
 apiVersion: apps/v1
@@ -94,9 +95,9 @@ spec:
       port: 443 # DNS set to LB IP
       targetPort: 8443
   selector:
-    name: unifi
+    app: unifi
   type: LoadBalancer
-  loadBalancerIP: 192.168.10.10
+  loadBalancerIP: 192.168.1.254
 ---
 kind: Service
 apiVersion: v1
@@ -119,6 +120,30 @@ spec:
       protocol: UDP
       port: 10001
   selector:
-    name: unifi
+    app: unifi
   type: LoadBalancer
-  loadBalancerIP: 192.168.10.10
+  loadBalancerIP: 192.168.1.254
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: insecure
+  namespace: technis
+spec:
+  insecureSkipVerify: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: unifi
+  namespace: technis
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`unifi.techn.is`)
+      services:
+        - name: unifi-tcp
+          port: 8443
+          serversTransport: insecure
