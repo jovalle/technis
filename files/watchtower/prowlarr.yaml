@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: jackett
+  name: prowlarr
   namespace: watchtower
 spec:
   storageClassName: longhorn
@@ -14,35 +14,33 @@ spec:
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: jackett
+  name: prowlarr
   namespace: watchtower
   annotations:
     keel.sh/policy: all
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "0 1 * * *"
   labels:
-    app: jackett
+    app: prowlarr
     tier: watchtower
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jackett
+      app: prowlarr
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: jackett
+        app: prowlarr
         tier: watchtower
     spec:
       containers:
-        - name: jackett
-          image: ghcr.io/linuxserver/jackett:latest
+        - name: prowlarr
+          image: lscr.io/linuxserver/prowlarr:latest
           imagePullPolicy: IfNotPresent
           env:
-            - name: AUTO_UPDATE
-              value: "true"
             - name: PGID
               value: "1000"
             - name: PUID
@@ -52,7 +50,7 @@ spec:
             - name: UMASK_SET
               value: "022"
           ports:
-            - containerPort: 9117
+            - containerPort: 9696
           volumeMounts:
             - name: config
               mountPath: /config
@@ -60,17 +58,17 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 10
             tcpSocket:
-              port: 9117
+              port: 9696
           readinessProbe:
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 10
             tcpSocket:
-              port: 9117
+              port: 9696
           resources:
             requests:
               cpu: 100m
@@ -82,43 +80,44 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: jackett
+            claimName: prowlarr
         - name: localtime
           hostPath:
             path: /etc/localtime
+            type: ""
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: jackett
+  name: prowlarr
   namespace: watchtower
   labels:
-    app: jackett
+    app: prowlarr
     tier: watchtower
 spec:
   selector:
-    app: jackett
+    app: prowlarr
   ports:
-    - port: 9117
+    - port: 9696
       protocol: TCP
 ---
 kind: Ingress
 apiVersion: networking.k8s.io/v1
 metadata:
-  name: jackett
+  name: prowlarr
   namespace: watchtower
   labels:
-    app: jackett
+    app: prowlarr
     tier: watchtower
 spec:
   rules:
-    - host: jackett.techn.is
+    - host: prowlarr.techn.is
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: jackett
+                name: prowlarr
                 port:
-                  number: 9117
+                  number: 9696

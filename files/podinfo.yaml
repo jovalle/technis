@@ -100,7 +100,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    # traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: auth-forwardauth-authelia@kubernetescrd
   labels:
     app: podinfo
   name: podinfo

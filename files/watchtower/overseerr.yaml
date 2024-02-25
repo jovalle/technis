@@ -58,13 +58,13 @@ spec:
               mountPath: /etc/localtime
               readOnly: true
           livenessProbe:
-            initialDelaySeconds: 60
+            initialDelaySeconds: 180
             periodSeconds: 10
             timeoutSeconds: 10
             tcpSocket:
               port: 5055
           readinessProbe:
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 10
             tcpSocket:
