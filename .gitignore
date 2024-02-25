@@ -5,6 +5,8 @@
 .terraform
 .terraform.lock.hcl
 .vagrant
+files/experimental
+files/experimental/*
 files/kube-prometheus/manifests
 files/kube-prometheus/vendor
 key.json
