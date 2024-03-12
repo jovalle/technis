@@ -107,16 +107,6 @@ metadata:
     tier: watchtower
 spec:
   rules:
-    - host: tautulli.technis.io
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: tautulli
-                port:
-                  number: 8181
     - host: tautulli.techn.is
       http:
         paths:
