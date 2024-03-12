@@ -122,13 +122,13 @@ data:
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/vmware.png"
             subtitle: "vCenter Server Appliance Management Interface"
             <<: *internal
-            url: "https://mothership.techn.is"
+            url: "https://mothership.technis.net"
             target: "_blank"
           - name: "ESXi"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/vmwareesxi.png"
             subtitle: "ESXi Management Portal"
             <<: *private
-            url: "https://nexus.technis.net"
+            url: "https://core.technis.net"
             target: "_blank"
           - name: "TrueNAS SCALE"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/truenas-scale.png"
@@ -143,7 +143,7 @@ data:
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/plexdrive.png"
             subtitle: "Plex Media Server"
             <<: *private
-            url: "https://192.168.0.4:32400/web/"
+            url: "https://192.168.0.6:32400/web/"
             target: "_blank"
           - name: "Plex (Public)"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/plex.png"
@@ -188,7 +188,7 @@ data:
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/pfsense.png"
             subtitle: "Core Router"
             <<: *internal
-            url: "https://warpgate.techn.is:8443"
+            url: "https://192.168.0.1:8443"
             target: "_blank"
           - name: "Portainer"
             logo: "https://raw.githubusercontent.com/jovalle/dashboard-icons/master/png/portainer.png"

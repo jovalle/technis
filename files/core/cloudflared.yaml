@@ -1,0 +1,103 @@
+--- # https://github.com/cloudflare/argo-tunnel-examples/blob/master/named-tunnel-k8s/README.md
+kind: ConfigMap
+metadata:
+  name: cloudflared
+  namespace: cloudflared
+apiVersion: v1
+data:
+  config.yaml: |
+    # Name of the tunnel you want to run
+    tunnel: k8s
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    # Serves the metrics server under /metrics and the readiness server under /ready
+    metrics: 0.0.0.0:2000
+    # Autoupdates applied in a k8s pod will be lost when the pod is removed or restarted, so
+    # autoupdate doesn't make sense in Kubernetes. However, outside of Kubernetes, we strongly
+    # recommend using autoupdate.
+    no-autoupdate: true
+    # The `ingress` block tells cloudflared which local service to route incoming
+    # requests to. For more about ingress rules, see
+    # https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress
+    # Remember, these rules route traffic from cloudflared to a local service. To route traffic
+    # from the internet to cloudflared, run `cloudflared tunnel route dns <tunnel> <hostname>`.
+    # E.g. `cloudflared tunnel route dns example-tunnel tunnel.example.com`.
+    ingress:
+    # This rule matches any traffic which didn't match a previous rule, and responds with HTTP 404.
+    - service: http_status:404
+# --- # created by `kubectl create secret generic tunnel-credentials --from-file=credentials.json=${HOME}/.cloudflared/k8s.json`; see private repo
+# kind: Secret
+# apiVersion: v1
+# metadata:
+#   name: tunnel-credentials
+#   namespace: cloudflared
+# type: Opaque
+# data:
+#   credentials.json: REDACTED
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: cloudflared
+    keel.sh/policy: all
+    keel.sh/pollSchedule: 0 1 * * *
+    keel.sh/trigger: poll
+  name: cloudflared
+  namespace: cloudflared
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: cloudflared
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+      containers:
+        - args:
+            - tunnel
+            - --config
+            - /etc/cloudflared/config/config.yaml
+            - run
+          image: cloudflare/cloudflared:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /ready
+              port: 2000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: cloudflared
+          volumeMounts:
+            - mountPath: /etc/cloudflared/config
+              name: config
+              readOnly: true
+            - mountPath: /etc/cloudflared/creds
+              name: creds
+              readOnly: true
+      volumes:
+        - name: creds
+          secret:
+            defaultMode: 420
+            secretName: tunnel-credentials
+        - configMap:
+            defaultMode: 420
+            items:
+              - key: config.yaml
+                path: config.yaml
+            name: cloudflared
+          name: config
