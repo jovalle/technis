@@ -1,0 +1,67 @@
+- name: install dependencies
+  apt:
+    name: ['socat', 'conntrack', 'ipset']
+    state: present
+
+- name: get binaries for nodes
+  include_role:
+    name: k8s/binary
+  with_items:
+    - kubelet
+    - kube-proxy
+  loop_control:
+    loop_var: binary
+
+- name: create installation directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /etc/cni/net.d
+    - /opt/cni/bin
+    - /var/lib/kubelet
+    - /var/lib/kube-proxy
+    - /var/lib/kubernetes
+    - /var/run/kubernetes
+
+- name: deploy worker binaries
+  block:
+    - name: create temporary directory
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: extract worker binaries
+      unarchive:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: true
+        mode: 0755
+        owner: root
+        group: root
+      with_items:
+        - { src: https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-amd64.tar.gz, dest: /usr/local/bin/ }
+  always:
+    - name: cleanup temporary directory
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+
+- name: render config
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: kubelet-config.yaml.j2, dest: /var/lib/kubelet/kubelet-config.yaml }
+    - { src: kubelet.service.j2, dest: /etc/systemd/system/kubelet.service }
+    - { src: kube-proxy-config.yaml.j2, dest: /var/lib/kube-proxy/kube-proxy-config.yaml }
+    - { src: kube-proxy.service.j2, dest: /etc/systemd/system/kube-proxy.service }
+
+- name: enable service
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  with_items:
+    - kubelet
+    - kube-proxy

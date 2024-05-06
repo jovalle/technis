@@ -1,8 +1,0 @@
-- name: install helm
-  shell:
-    cmd: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    creates: /usr/local/bin/helm
-
-- name: deploy chart
-  include_tasks: chart.yaml
-  when: helm_chart_name is defined

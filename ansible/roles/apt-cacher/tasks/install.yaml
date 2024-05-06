@@ -1,0 +1,27 @@
+- name: remove configuration if not apt-cacher-ng server
+  file:
+    name: /etc/apt/apt.conf.d/proxy
+    state: absent
+  notify: apt update
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: install apt-cacher-ng
+  package:
+    name: apt-cacher-ng
+    state: present
+
+- name: enable TLS passthrough
+  lineinfile:
+    path: /etc/apt-cacher-ng/acng.conf
+    line: 'PassThroughPattern: ^(.*):443$'
+  register: conf
+  notify: restart apt-cacher-ng
+
+- name: start apt-cacher-ng
+  systemd:
+    name: apt-cacher-ng
+    daemon_reload: true
+    state: started
+    enabled: true

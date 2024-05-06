@@ -1,0 +1,27 @@
+- hosts: cluster
+  ignore_unreachable: False
+  roles:
+
+    # Prepare nodes for respective roles
+    - role: common
+      tags:
+        - common
+
+    # Distributed HA VIP for kube-apiservers
+    - role: keepalived
+      tags:
+        - keepalived
+        - vip
+      when: keepalived_vip is defined | default('no') | bool
+
+    # Install barebones K3s
+    - role: k3s
+      tags:
+        - k3s
+
+# Update local kubeconfig for remote access
+- hosts: localhost
+  roles:
+    - { role: kubectl/context, target_context: "kubernetes-admin@{{ cluster }}" }
+  tags:
+    - kubeconfig

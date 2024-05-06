@@ -1,0 +1,55 @@
+- name: download k3s binary
+  get_url:
+    url: https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s{{ '-arm64' if (ansible_architecture | regex_search('arm|aarch')) else '' }}
+    checksum: sha256:https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/sha256sum-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.txt
+    dest: /usr/local/bin/k3s
+    owner: root
+    group: root
+    mode: 0755
+
+- name: gather service facts
+  service_facts:
+
+- name: set arguments for k3s systemd unit
+  set_fact:
+    extra_server_args: >-
+      --tls-san '{{ apiserver_endpoint }}'
+      --disable servicelb
+      --disable metrics-server
+      {% if cni_plugin | default('none') != 'none' %}
+      {% if disable_kube_proxy | default(True) | bool %}
+      --disable-kube-proxy
+      --kube-apiserver-arg='enable-aggregator-routing=true'
+      {% endif %}
+      --disable-network-policy
+      --flannel-backend=none
+      {% endif %}
+
+# {% if ansible_facts.services['systemd-resolved.service'].state == 'running' or (systemd_resolved | default(False) | bool) %}
+# --resolv-conf=/run/systemd/resolve/resolv.conf
+# {% endif %}
+
+- name: set arguments for k3s-init transient systemd unit
+  set_fact:
+    server_init_args: >-
+      {% if groups['control_plane'] | length > 1 %}
+      {% if ansible_hostname == hostvars[groups['control_plane'][0]]['ansible_hostname'] %}
+      --cluster-init
+      {% else %}
+      --server https://{{ hostvars[groups['control_plane'][0]]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:6443
+      {% endif %}
+      --token {{ k3s_token }}
+      {% endif %}
+      {{ extra_server_args | default('') }}
+
+- name: deploy k3s on control plane node
+  include_tasks: control-plane.yaml
+  when: inventory_hostname in groups['control_plane']
+
+- name: deploy k3s on role-less node
+  include_tasks: node.yaml
+  when: inventory_hostname in groups['nodes']
+
+- name: wait for node to be ready
+  shell: kubectl wait --for=condition=Ready node {{ inventory_hostname }} --timeout=600s
+  delegate_to: "{{ groups['control_plane'][0] }}"

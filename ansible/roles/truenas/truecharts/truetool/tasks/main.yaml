@@ -1,0 +1,16 @@
+- name: clone repo
+  git:
+    repo: https://github.com/truecharts/truetool
+    dest: "{{ truetool_install_path }}"
+
+- name: enable truenas scale features
+  shell:
+    chdir: "{{ truetool_install_path }}"
+    cmd: ./truetool.sh --apt-enable --kubeapi-enable --helm-enable
+
+- name: set cron job for apps
+  cron:
+    name: "auto-update apps" # minor releases only
+    hour: "5"
+    weekday: "1-5"
+    job: "{{ truetool_install_path }}/truetool.sh --no-color -b 14 -sup --apt-enable --kubeapi-enable --helm-enable"

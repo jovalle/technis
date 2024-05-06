@@ -1,0 +1,115 @@
+- name: start time services
+  service:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
+
+- name: run timedatectl status
+  command: /usr/bin/timedatectl
+  changed_when: false
+  check_mode: no
+  register: timedatectl_result
+
+- name: copy timesyncd config
+  copy:
+    content: |
+      [Time]
+      NTP={{ common_ntp_servers | join(' ') }}
+      FallbackNTP={{ common_ntp_fallback_servers | join(' ') }}
+    dest: /etc/systemd/timesyncd.conf
+    mode: 0644
+  notify: restart timesyncd
+
+- name: set timezone
+  command: /usr/bin/timedatectl set-timezone {{ common_timezone }}
+  when: common_timezone not in timedatectl_result.stdout_lines[0]
+  notify: restart timesyncd
+
+- name: enable ntp
+  command: /usr/bin/timedatectl set-ntp true
+
+- name: disable local dns cache
+  block:
+    - name: disable resolved
+      systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: no
+      notify: reboot host
+    - name: check resolv.conf type
+      stat:
+        path: /etc/resolv.conf
+      register: resolv
+    - name: undo resolv.conf symlink
+      file:
+        path: /etc/resolv.conf
+        state: absent
+      when: resolv.stat.islnk is defined and resolv.stat.islnk
+
+#TODO
+# - name: configure resolv
+
+- name: configure netplan
+  block:
+    - name: get primary interface mac address
+      set_fact:
+        mac_addr: "{{ hostvars[inventory_hostname]['ansible_' + target_interface]['macaddress'] }}"
+    - debug: var=mac_addr
+    - name: check if cloud-init network config exists
+      stat:
+        path: /etc/netplan/50-cloud-init.yaml
+      register: netplan_cloud_init
+    - name: check if subiquity network config exists
+      stat:
+        path: /etc/netplan/00-installer-config.yaml
+      register: netplan_subiquity
+    - name: cleanup netplans
+      file:
+        path: "/etc/netplan"
+        state: absent
+      ignore_errors: true
+      when:
+        - not netplan_cloud_init.stat.exists
+        - not netplan_subiquity.stat.exists
+    - name: rename primary interface in cloud-init network config
+      replace:
+        path: /etc/netplan/50-cloud-init.yaml
+        regexp: "set-name:(.*)"
+        replace: 'set-name: eth0'
+      when: netplan_cloud_init.stat.exists
+    - name: set eth0 as primary interface
+      copy:
+        content: |
+          # Ansible managed
+          network:
+            ethernets:
+              eth0:
+                dhcp4: true
+                match:
+                  macaddress: {{ mac_addr }}
+                set-name: eth0
+            version: 2
+        dest: /etc/netplan/00-installer-config.yaml
+      register: netplan
+      when: not netplan_cloud_init.stat.exists
+    - name: apply new net config
+      command: netplan apply
+      when: netplan.changed
+
+# Fix to Cilium bug in arm64 / Ubuntu 22.04 (https://github.com/cilium/cilium/issues/18131)
+- name: prepare node for Strict Reverse Path Forwarding
+  block:
+    - name: clear known kernel param conflicts
+      lineinfile:
+        path: /etc/sysctl.d/10-network-security.conf
+        regex: "^net.ipv4.conf(.*).rp_filter(.*)$"
+        state: absent
+    - name: disable kernel params
+      copy:
+        dest: /etc/sysctl.d/99-cilium-cni.conf
+        content: |
+          net.ipv4.conf.default.rp_filter=0
+          net.ipv4.conf.*.rp_filter=0
+      notify: reboot host
+  when:
+    - cni_plugin | default('none') == 'cilium'
