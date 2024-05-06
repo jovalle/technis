@@ -1,8 +1,0 @@
-- name: deploy cert-manager
-  import_role:
-    name: kubectl
-  vars:
-    file_type: remote
-    source_role: cert-manager
-    target_list:
-      - https://github.com/jetstack/cert-manager/releases/download/{{ cert_manager_version }}/cert-manager.yaml

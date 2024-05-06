@@ -1,0 +1,85 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+tasks:
+
+  default:
+    vars: &vars
+      cluster: "{{.cluster}}"
+    cmds:
+      - task: init
+      - task: force-apply
+
+  init:
+    desc: Terraform init
+    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    vars: *vars
+    cmds:
+      - terraform init
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
+      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+
+  apply:
+    desc: Terraform apply
+    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    vars: *vars
+    cmds:
+      - terraform apply
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
+      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+
+  destroy:
+    desc: Terraform destroy
+    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    vars: *vars
+    cmds:
+      - terraform destroy
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
+      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+
+  force-apply:
+    desc: Terraform apply without prompt
+    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    vars: *vars
+    cmds:
+      - terraform apply -auto-approve
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
+      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+
+  force-destroy:
+    desc: Terraform destroy without prompt
+    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    vars: *vars
+    cmds:
+      - terraform destroy -auto-approve
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
+      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+
+  reset:
+    desc: Terraform reset
+    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    vars: *vars
+    cmds:
+      - terraform destroy -auto-approve
+      - terraform apply -auto-approve
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
+      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"

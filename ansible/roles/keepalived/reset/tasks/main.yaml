@@ -1,0 +1,15 @@
+- name: stop service
+  systemd:
+    name: keepalived
+    state: stopped
+  ignore_errors: true
+
+- name: uninstall package
+  package:
+    name: keepalived
+    state: absent
+
+- name: remove config
+  file:
+    path: /etc/keepalived
+    state: absent

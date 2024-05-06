@@ -1,0 +1,150 @@
+- import_playbook: rebuild.yaml
+  when:
+    - rebuild is defined
+    - rebuild | default(False) | bool
+
+- hosts: all
+  tasks:
+    - setup:
+
+- hosts: all
+  roles:
+    - { role: common, tags: ['prepare'] }
+
+- hosts: etcd
+  vars:
+    cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }},{% endfor %}127.0.0.1"
+    cert_id: etcd-peer
+    target_dir: /etc/etcd/pki
+  roles:
+    - certificate
+    - etcd
+  tags:
+    - etcd
+
+- hosts: control_plane
+  vars:
+    target_dir: /etc/kubernetes/pki
+  roles:
+    - { role: certificate, cert_id: admin, cert_organization: "system:masters" }
+    - { role: certificate, cert_id: kube-controller-manager, cert_common_name: "system:kube-controller-manager", cert_organization: "system:kube-controller-manager" }
+    - { role: certificate, cert_id: kube-scheduler, cert_common_name: "system:kube-scheduler", cert_organization: "system:kube-scheduler" }
+    - { role: certificate, cert_id: service-account, cert_common_name: service-accounts, cert_organization: Kubernetes }
+    - { role: certificate, cert_id: kubernetes, cert_organization: Kubernetes, cert_hostname: "10.32.0.1,{% for i in groups['control_plane'] %}{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }},{% endfor %}127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local,{{ k8s_apiserver_endpoint }}" }
+    - { role: certificate, cert_id: apiserver-etcd-client, cert_hostname: "{% for i in groups['etcd'] %}{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }},{% endfor %}127.0.0.1,localhost", src_dir: /etc/etcd/pki }
+  tags:
+    - certs
+    - control_plane
+
+- hosts: nodes
+  vars:
+    target_dir: /var/lib/kubelet
+    k8s_config_dir: "/var/lib/kubelet"
+    k8s_config_ca: "{{ k8s_config_dir }}/ca.pem"
+  roles:
+    - { role: certificate, cert_id: "{{ inventory_hostname }}", cert_common_name: "system:nodes:{{ inventory_hostname }}", cert_organization: "system:nodes", cert_hostname: "{{ inventory_hostname }},{{ hostvars[inventory_hostname]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}" }
+    - { role: certificate, cert_id: kube-proxy, cert_common_name: "system:kube-proxy", cert_organization: "system:node-proxier" }
+  tags:
+    - certs
+    - nodes
+
+- hosts: cluster
+  tasks:
+    - name: get kubectl
+      vars:
+        version_flag: version
+      include_role:
+        name: k8s/binary
+      with_items:
+        - kubectl
+      loop_control:
+        loop_var: binary
+  tags:
+    - prepare
+
+- hosts: nodes
+  vars:
+    k8s_config_dir: "/var/lib/kubelet"
+  roles:
+    - { role: kubectl/config, k8s_config_name: "{{ inventory_hostname }}", k8s_config_id: "system:node:{{ inventory_hostname }}", k8s_config: "/etc/kubernetes/config/{{ inventory_hostname }}" }
+    - { role: kubectl/config, k8s_config_name: kube-proxy }
+  tags:
+    - kubeconfig
+    - nodes
+
+- hosts: control_plane
+  vars:
+    k8s_config_server: "https://127.0.0.1:6443"
+  roles:
+    - { role: kubectl/config, k8s_config_name: kube-controller-manager }
+    - { role: kubectl/config, k8s_config_name: kube-scheduler }
+    - { role: kubectl/config, k8s_config_name: admin, k8s_config_user: admin}
+    # - k8s/encryption
+  tags:
+    - kubeconfig
+    - control_plane
+
+- name: deploy keepalived
+  vars:
+    keepalived_vip: "{{ k8s_apiserver_endpoint }}"
+    keepalived_ingress_vip: "{{ k8s_ingress_endpoint }}"
+  import_playbook: keepalived.yaml
+  tags:
+    - control_plane
+    - keepalived
+
+- hosts: cluster
+  roles:
+    - k8s/the-hard-way
+  tags:
+    - deploy
+
+- hosts: control_plane
+  run_once: true
+  tasks:
+    - name: check control plane vip
+      command: curl --cacert /etc/kubernetes/pki/ca.pem https://{{ k8s_apiserver_endpoint }}:6443/version
+  tags:
+    - validate
+
+- hosts: nodes
+  roles:
+    - cri/containerd
+    - { role: cni, cni_plugin: none }
+  tags:
+    - deploy
+
+- hosts: control_plane
+  run_once: true
+  tasks:
+    - name: set labels for node
+      include_role:
+        name: kubectl/label
+      vars:
+        node_name: "{{ item }}"
+        node_role: "worker"
+      with_items:
+        - "{{ groups['nodes'] }}"
+    - name: set labels for ingress nodes
+      include_role:
+        name: kubectl/label
+      vars:
+        node_name: "{{ item }}"
+        node_role: "ingress"
+      with_items:
+        - "{{ groups['ingress'] }}"
+  roles:
+    - k8s/rbac
+
+- hosts: localhost
+  roles:
+    - { role: kubectl/context, target_context: "kubernetes-admin@{{ cluster }}" }
+
+- hosts: cluster
+  tasks:
+    - name: get kubectl version
+      command: kubectl version
+      register: kubectl_version
+    - name: print kubectl version
+      debug:
+        var: kubectl_version.stdout_lines

@@ -1,0 +1,21 @@
+- name: stop service
+  systemd:
+    name: haproxy
+    state: stopped
+  ignore_errors: true
+
+- name: uninstall package
+  package:
+    name: haproxy
+    state: absent
+
+- name: remove config
+  file:
+    path: /etc/haproxy
+    state: absent
+
+- name: revert kernel param
+  sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    sysctl_file: /etc/sysctl.d/ip_nonlocal_bind.conf
+    state: absent

@@ -1,0 +1,7 @@
+skip_list:
+  - latest[git]
+warn_list:
+  - command-instead-of-shell
+  - deprecated-command-syntax
+  - experimental
+  - no-changed-when

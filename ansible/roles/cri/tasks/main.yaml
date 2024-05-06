@@ -1,0 +1,13 @@
+- name: reset {{ cri_plugin }} container runtime (cri)
+  include_role:
+    name: cri/reset
+  when:
+  - cri_reset is defined
+  - cri_reset
+
+- name: setup {{ cri_plugin }} container runtime (cri)
+  include_role:
+    name: cri/{{ cri_plugin }}
+  when:
+    - cri_plugin != 'none'
+    - cri_plugin != 'integrated'

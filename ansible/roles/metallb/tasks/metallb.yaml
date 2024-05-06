@@ -1,0 +1,128 @@
+- name: ensure bgp params are set if applicable
+  assert:
+    that:
+      - metallb_addresses is defined
+      - metallb_bgp_asn is defined
+      - metallb_bgp_peer_asn is defined
+      - metallb_bgp_peer_address is defined
+  when:
+    - metallb_mode == "bgp"
+
+- name: check for kube-proxy
+  command: kubectl -n kube-system get configmap kube-proxy
+  ignore_errors: true # kube-proxy may not exist
+  register: kube_proxy_cm
+
+- name: ensure strictARP is enabled in kube-proxy IPVS mod
+  block:
+    - name: get current config
+      command: kubectl -n kube-system get configmap kube-proxy -o jsonpath='{.data.config\.conf}'
+      register: kube_proxy_config
+    - name: set ipvs.strictARP to true
+      shell: >
+        kubectl -n kube-system get configmap kube-proxy -o yaml |
+        sed -e "s/strictARP: false/strictARP: true/" |
+        kubectl diff -f - -n kube-system
+      ignore_errors: true
+      when: "'strictARP: true' not in kube_proxy_config.stdout_lines"
+  when: kube_proxy_cm.rc == 0
+
+- name: deploy metallb {{ metallb_version }}
+  command: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
+
+- name: wait for webhook service
+  command: kubectl -n metallb-system get endpoints webhook-service -o jsonpath='{.subsets[0].addresses[0].ip}'
+  register: webhook_endpoint_ip
+  retries: 20
+  delay: 6
+  until: webhook_endpoint_ip.stdout != ""
+
+- name: set config
+  import_role:
+    name: kubectl
+  vars:
+    source_role: metallb
+    payload_type: template
+    crd_dependencies:
+      - bgpadvertisements.metallb.io
+      - bgppeers.metallb.io
+      - ipaddresspools.metallb.io
+    target_list:
+      - config.yaml
+
+- name: test loadbalancing
+  block:
+    - name: clean up instances
+      command: "{{ item }}"
+      ignore_errors: true
+      loop:
+        - "kubectl -n default delete deployment nginx"
+        - "kubectl -n default delete service nginx"
+      when: inventory_hostname == groups['control_plane'][0]
+
+    - name: deploy sample app
+      import_role:
+        name: kubectl
+      vars:
+        payload_type: raw
+        crd_dependencies:
+          - ingressroutes.traefik.containo.us
+        raw_manifest: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: nginx
+            namespace: default
+          spec:
+            selector:
+              matchLabels:
+                app: nginx
+            template:
+              metadata:
+                labels:
+                  app: nginx
+              spec:
+                containers:
+                  - name: nginx
+                    image: nginx:1
+                    ports:
+                      - name: http
+                        containerPort: 80
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: nginx
+            namespace: default
+          spec:
+            ports:
+              - name: http
+                port: 80
+                protocol: TCP
+                targetPort: 80
+            selector:
+              app: nginx
+            type: LoadBalancer
+        source_role: metallb
+
+    - name: get sample app loadbalancer IP
+      command: kubectl -n default get services nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+      retries: 10
+      delay: 3
+      register: sample_app_lb_ip
+
+    - name: check sample web server
+      uri:
+        url: "http://{{ sample_app_lb_ip.stdout | trim }}"
+      register: sample_query
+      retries: 30
+      delay: 4
+      until: sample_query.status == 200
+
+  always:
+    - name: clean up instances
+      command: "{{ item }}"
+      loop:
+        - "kubectl -n default delete deployment nginx"
+        - "kubectl -n default delete service nginx"
+      when: inventory_hostname == groups['control_plane'][0]

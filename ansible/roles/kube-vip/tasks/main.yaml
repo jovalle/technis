@@ -1,0 +1,36 @@
+- name: check a global range or cidr is defined
+  assert:
+    that:
+      - kube_vip_global_cidr is defined or kube_vip_global_range is defined
+
+- name: ensure admin kubeconfig is set
+  block:
+  - name: ensure k8s dir exists
+    file:
+      path: /etc/kubernetes
+      state: directory
+  - name: create symlink to k3s kubeconfig
+    file:
+      src: /etc/rancher/k3s/k3s.yaml
+      dest: /etc/kubernetes/admin.conf
+      state: link
+      force: true
+
+- name: ensure manifests directory exists
+  file:
+    path: /var/lib/rancher/k3s/server/manifests/
+    state: directory
+
+- name: render kube-vip static manifest
+  template:
+    src: kube-vip.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/kube-vip.yaml
+
+- name: deploy kube-vip Cloud Provider
+  import_role:
+    name: kubectl
+  vars:
+    payload_type: template
+    source_role: kube-vip
+    target_list:
+      - kube-vip-cloud-controller.yaml

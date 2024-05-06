@@ -1,0 +1,71 @@
+- name: install dep libs
+  apt:
+    name: libseccomp2
+    state: latest
+    update_cache: true
+
+#TODO: Compile from source to add arm64 support
+- name: get runc
+  get_url:
+    url: https://github.com/opencontainers/runc/releases/download/v1.0.3/runc.amd64
+    dest: /usr/local/bin/runc
+    mode: 0755
+
+- name: set release tarball name
+  set_fact:
+    release_tarball_name: "cri-containerd-cni-{{ containerd_version }}-linux-{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}.tar.gz"
+
+- name: check containerd version
+  shell: containerd --version | awk '{print $3}'
+  register: containerd_version_actual
+  ignore_errors: true
+
+- name: get source
+  block:
+    - name: create tempdir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: get release tarball checksum
+      uri:
+        url: https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}.sha256sum
+        return_content: true
+      register: release_tarball_checksum
+    - debug:
+        msg: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+    - name: download release tarball
+      get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/{{ release_tarball_name }}"
+        dest: "{{ tempdir.path }}"
+        checksum: "sha256:{{ release_tarball_checksum.content.partition(' ')[0] }}"
+    - name: unarchive release tarball
+      shell:
+        cmd: "tar --no-overwrite-dir -C / -xzf {{ tempdir.path }}/{{ release_tarball_name }}"
+        creates: /usr/local/bin/containerd-shim-runc-v2
+  always:
+    - name: cleanup tempdir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+  when: containerd_version not in containerd_version_actual.stdout
+
+- name: ensure config dir exists
+  file:
+    path: /etc/containerd
+    state: directory
+
+- name: render config
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: config.toml.j2, dest: /etc/containerd/config.toml }
+    - { src: containerd.service.j2, dest: /etc/systemd/system/containerd.service }
+  notify: restart containerd
+
+- name: enable service
+  systemd:
+    name: containerd
+    state: started
+    enabled: true
+    daemon_reload: true
