@@ -1,0 +1,74 @@
+- hosts: cluster
+  serial: 1
+  pre_tasks:
+    - assert:
+        that:
+          - version is defined
+          - version != 0
+    - name: print expected k8s version
+      debug:
+        var: version
+    - name: get current version
+      command: kubeadm version -o json
+      register: kubeadm_version_json
+    - name: set kubeadm version fact
+      set_fact:
+        kubeadm_version: "{{ kubeadm_version_json.stdout | from_json | json_query('clientVersion.gitVersion') }}"
+    - name: print actual k8s version
+      debug:
+        var: kubeadm_version
+    - name: determine kubectl delegate
+      block: # avoiding jinja2 templating warning
+        - set_fact:
+            kubectl_delegate: "{{ groups['control_plane'][0] }}"
+          when: inventory_hostname != groups['control_plane'][0]
+        - set_fact:
+            kubectl_delegate: "{{ groups['control_plane'][1] }}"
+          when: inventory_hostname == groups['control_plane'][0]
+    - name: get kubelet version
+      command: kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.nodeInfo.kubeletVersion}'
+      register: kubelet_version
+      delegate_to: "{{ kubectl_delegate }}"
+  tasks:
+    - name: upgrade node
+      block:
+        - name: upgrade kubeadm package
+          command: apt-get install -y --allow-change-held-packages --allow-downgrades kubeadm={{ version }}-00
+          args:
+            warn: no
+        - name: kubeadm upgrade apply
+          command: kubeadm upgrade apply -y v{{ version }}
+          when: inventory_hostname == groups['control_plane'][0]
+        - name: kubeadm upgrade node
+          command: kubeadm upgrade node
+          when: inventory_hostname != groups['control_plane'][0]
+      when: version | string not in kubeadm_version
+    - name: upgrade kubelet
+      block:
+        - name: drain node
+          command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
+          delegate_to: "{{ kubectl_delegate }}"
+        - name: upgrade kubelet and kubectl
+          command: apt-get install -y --allow-change-held-packages --allow-downgrades kubelet={{ version }}-00 kubectl={{ version }}-00
+          args:
+            warn: no
+          register: kubelet_upgrade
+          changed_when: "'kubelet is already the newest version' not in kubelet_upgrade.stdout_lines"
+        - name: restart kubelet
+          systemd:
+            name: kubelet
+            daemon_reload: true
+            state: restarted
+            enabled: true
+          when: kubelet_upgrade.changed
+        - name: uncordon node
+          command: kubectl uncordon {{ inventory_hostname }}
+          delegate_to: "{{ kubectl_delegate }}"
+      when: version | string not in kubelet_version.stdout
+    - name: validate kubelet version
+      command: kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.nodeInfo.kubeletVersion}'
+      register: kubelet_version_latest
+      retries: 12
+      delay: 10
+      until: version | string in kubelet_version_latest.stdout
+      delegate_to: "{{ kubectl_delegate }}"

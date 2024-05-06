@@ -1,0 +1,67 @@
+- hosts: "{{ target_node | default(omit) }}"
+  ignore_unreachable: true
+  pre_tasks:
+    - name: assert params
+      assert:
+        that:
+          - target_node is defined
+          - target_node in groups['all']
+      tags:
+        - always
+  roles:
+    - role: k3s/remove
+      tags:
+        - uninstall
+    - role: k3s/reset
+      tags:
+        - uninstall
+        - reset
+    - role: cni/reset
+      tags:
+        - uninstall
+        - reset
+    - role: cri/reset
+      tags:
+        - uninstall
+        - reset
+
+- hosts: localhost
+  gather_facts: true
+  ignore_unreachable: true
+  vars:
+    provisioner: "{{ infrastructure_provisioner | default('none') }}"
+  tasks:
+    - name: turn it off and on again
+      block:
+        - name: "{{ provisioner }}/destroy"
+          include_role:
+            name: "{{ provisioner }}/destroy"
+          when: rebuild | default(False) | bool
+        - name: "{{ provisioner }}/up"
+          include_role:
+            name: "{{ provisioner }}/up"
+      when:
+        - provisioner != 'none'
+  tags:
+    - provision
+
+- hosts: "{{ target_node | default(omit) }}"
+  pre_tasks:
+    - name: assert params
+      assert:
+        that:
+          - target_node is defined
+          - target_node in groups['all']
+      tags:
+        - always
+  roles:
+    - wait-for-server
+    - common
+    - cri
+    - k3s
+    - gpu
+    - role: cni
+      when: inventory_hostname in groups['control_plane']
+  tags:
+    - deploy
+    - k3s

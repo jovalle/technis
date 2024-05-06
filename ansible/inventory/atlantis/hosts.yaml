@@ -1,0 +1,46 @@
+all:
+  children:
+    cluster:
+      children:
+        control_plane:
+          hosts:
+            cyborg004:
+              ansible_ssh_private_key_file: ~/.ssh/technis
+              ansible_ssh_user: root
+              infrastructure_provisioner: terraform
+              k8s_provisioner: kubeadm
+            cyborg005:
+              ansible_ssh_private_key_file: ~/.ssh/technis
+              ansible_ssh_user: root
+              infrastructure_provisioner: terraform
+              k8s_provisioner: kubeadm
+            cyborg006:
+              ansible_ssh_private_key_file: ~/.ssh/technis
+              ansible_ssh_user: root
+              infrastructure_provisioner: terraform
+              k8s_provisioner: kubeadm
+        nodes:
+          hosts:
+            cyborg007: {}
+            cyborg008:
+              ansible_ssh_private_key_file: ~/.ssh/technis
+              ansible_ssh_user: root
+              infrastructure_provisioner: terraform
+              k8s_provisioner: kubeadm
+            cyborg009:
+              ansible_ssh_private_key_file: ~/.ssh/technis
+              ansible_ssh_user: root
+              infrastructure_provisioner: terraform
+              k8s_provisioner: kubeadm
+    etcd:
+      hosts:
+        cyborg001: {}
+        cyborg002: {}
+        cyborg003: {}
+    ingress:
+      hosts:
+        cyborg007:
+          ansible_ssh_private_key_file: ~/.ssh/technis
+          ansible_ssh_user: root
+          infrastructure_provisioner: terraform
+          k8s_provisioner: kubeadm

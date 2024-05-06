@@ -1,0 +1,142 @@
+- name: install jsonnet
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - golang
+    - jsonnet
+
+- name: get GOPATH
+  command: go env GOPATH
+  register: _gopath
+
+- name: create temp dir
+  tempfile:
+    state: directory
+  register: temp_dir
+
+- name: deploy kube-prometheus
+  block:
+    - name: git clone kube-prometheus
+      git:
+        repo: "https://github.com/prometheus-operator/kube-prometheus.git"
+        dest: "{{ temp_dir.path }}/kube-prometheus"
+        version: "release-0.13"
+        version: "main"
+
+    - name: install go dependencies
+      shell:
+        cmd: go install -a "{{ item }}"
+        chdir: "{{ temp_dir.path }}/kube-prometheus"
+      with_items:
+        - github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest
+        - github.com/brancz/gojsontoyaml@latest
+
+    - name: render jsonnet profile
+      copy:
+        content: |
+          {
+            "version": 1,
+            "dependencies": [
+              {
+                "source": {
+                  "git": {
+                    "remote": "https://github.com/prometheus-operator/kube-prometheus.git",
+                    "subdir": "jsonnet/kube-prometheus"
+                  }
+                },
+                "version": "main"
+              }
+            ],
+            "legacyImports": true
+          }
+        dest: "{{ temp_dir.path }}/kube-prometheus/jsonnetfile.json"
+
+    - name: install base jsonnet library
+      shell:
+        cmd: |
+          jb install github.com/prometheus-operator/kube-prometheus/jsonnet/kube-prometheus@main
+          jb update
+        chdir: "{{ temp_dir.path }}/kube-prometheus"
+
+    - name: ensure extra dirs exist
+      file:
+        path: "{{ temp_dir.path }}/kube-prometheus/{{ item }}"
+        state: directory
+      with_items:
+        - dashboards
+
+    - name: enumerate dashboard files
+      set_fact:
+        dashboards: "{{ lookup('fileglob', '{{ role_path }}/files/dashboards/*', wantlist=true) | list }}"
+
+    - debug: var=dashboards
+
+    # - name: copy dashboards
+    #   copy:
+    #     src: "{{ item }}"
+    #     dest: "{{ temp_dir.path }}/kube-prometheus/dashboards/{{ item | basename }}"
+    #   with_items:
+    #     - "{{ dashboards }}"
+
+    - name: render setup file
+      template:
+        src: "main.jsonnet.j2"
+        dest: "{{ temp_dir.path }}/kube-prometheus/main.jsonnet"
+
+    - name: generate manifests
+      shell:
+        cmd: ./build.sh main.jsonnet
+        chdir: "{{ temp_dir.path }}/kube-prometheus"
+      when: not skip_manifest_build | default('no') | bool
+
+    # - name: tweak dashboard providers
+    #   block:
+    #     - name: copy grafana-dashboards.yaml
+    #       copy:
+    #         src: "{{ role_path }}/files/grafana-dashboards.yaml"
+    #         dest: "{{ temp_dir.path }}/"
+
+    #     - name: update dashboards config
+    #       shell: kubectl -n monitoring apply -f {{ temp_dir.path }}/grafana-dashboards.yaml
+
+    - name: additional scrape configs
+      block:
+        - name: copy prometheus-additional.yaml
+          copy:
+            src: "{{ role_path }}/files/prometheus-additional.yaml"
+            dest: "{{ temp_dir.path }}/"
+
+        - name: create or update secret
+          shell: kubectl -n monitoring create secret generic additional-scrape-configs --from-file={{ temp_dir.path }}/prometheus-additional.yaml --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: set RBAC for prometheus
+      block:
+        - name: copy prometheus-rbac.yaml
+          copy:
+            src: "{{ role_path }}/files/prometheus-rbac.yaml"
+            dest: "{{ temp_dir.path }}/"
+
+        - name: update RBAC
+          shell: kubectl -n monitoring apply -f {{ temp_dir.path }}/prometheus-rbac.yaml
+
+    - name: apply setup manifests
+      shell: |
+        kubectl apply --server-side -f {{ temp_dir.path }}/kube-prometheus/manifests/setup
+        until kubectl get servicemonitors --all-namespaces ; do date; sleep 1; echo ""; done
+      when: not skip_kubectl_apply | default('no') | bool
+
+    - name: wait for CRDs
+      shell: kubectl wait --for condition=Established --all CustomResourceDefinition --namespace=monitoring
+
+    - name: apply manifests
+      shell: kubectl apply -f {{ temp_dir.path }}/kube-prometheus/manifests/
+      when: not skip_kubectl_apply | default('no') | bool
+
+  environment:
+    PATH: "{{ ansible_env.PATH }}:{{ _gopath.stdout }}/bin"
+
+  always:
+    - name: cleanup temp dir
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent

@@ -1,0 +1,58 @@
+# nvtop is available in ubuntu repos but is much older than github releases
+- name: check for nvtop bin
+  stat:
+    path: /usr/local/bin/nvtop
+  register: nvtop
+
+- name: check for local nvtop version
+  shell: nvtop --version | awk '{print $NF}'
+  register: nvtop_local_version
+  when: nvtop.stat.exists
+
+- name: check for upstream nvtop version
+  uri:
+    url: https://api.github.com/repos/Syllo/nvtop/releases/latest
+    return_content: true
+    body_format: json
+  register: nvtop_upstream_latest
+
+- set_fact:
+    nvtop_upstream_version: "{{ nvtop_upstream_latest.json | json_query('tag_name') }}"
+
+- name: install nvtop
+  block:
+    - name: install prerequisites for nvtop
+      apt:
+        name: ["cmake", "libncurses5-dev", "libncursesw5-dev", "git"]
+    - name: create temp dir
+      tempfile:
+        state: directory
+      register: tempdir
+    - name: clone nvtop repo
+      git:
+        repo: https://github.com/Syllo/nvtop
+        dest: "{{ tempdir.path }}"
+    - name: create build dir
+      file:
+        path: "{{ tempdir.path }}/build"
+        state: directory
+    - name: build from source
+      shell:
+        chdir: "{{ tempdir.path }}/build"
+        cmd: cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
+    - name: run make
+      shell:
+        chdir: "{{ tempdir.path }}/build"
+        cmd: make
+    - name: run make install
+      shell:
+        chdir: "{{ tempdir.path }}/build"
+        cmd: make install
+  always:
+    - name: cleanup temp dir
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent
+  when: >
+    nvtop.stat.exists == False or
+    nvtop_local_version.stdout != nvtop_upstream_version

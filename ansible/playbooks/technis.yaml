@@ -1,0 +1,78 @@
+- hosts: observers
+  roles:
+    - monitoring/nut
+    - monitoring/telegraf
+    - cri/docker/compose
+  tags:
+    - observers
+    - technis
+
+- hosts: truenas
+  roles:
+    - truenas
+  tags:
+    - truenas
+
+- import_playbook: k3s-deploy.yaml
+
+- hosts: cluster
+  ignore_unreachable: true
+  roles:
+    - name: install container runtime
+      role: cri
+      tags: ['cri']
+
+    - name: configure GPU
+      role: gpu
+      tags: ['gpu']
+
+    - name: install container network interface
+      role: cni
+      tags: ['cni']
+
+# Deploy services and apps
+- hosts: control_plane
+  ignore_unreachable: true
+  run_once: true
+  tasks:
+    - name: deploy cert-manager
+      import_role:
+        name: cert-manager
+      tags: ['cert-manager', 'services', 'core', 'post-install']
+
+    - name: deploy storage provider
+      import_role:
+        name: storage
+      tags: ['storage', 'services', 'core', 'post-install']
+
+    - name: deploy private resources
+      import_role:
+        name: kubectl
+      vars:
+        payload_type: manifest
+        source_role: technis-private
+        crd_dependencies: certificates.cert-manager.io
+        target_list:
+          - "{{ playbook_dir }}/../../technis-private/0_namespace.yaml"
+          - "{{ playbook_dir }}/../../technis-private/1_secret.yaml"
+          - "{{ playbook_dir }}/../../technis-private/2_configmap.yaml"
+          - "{{ playbook_dir }}/../../technis-private/3_issuer.yaml"
+          - "{{ playbook_dir }}/../../technis-private/4_certificate.yaml"
+          - "{{ playbook_dir }}/../../technis-private/5_tlsstore.yaml"
+      tags: ['private', 'post-install']
+
+    - name: deploy core apps
+      import_role:
+        name: kubectl
+      vars:
+        payload_type: fileglob
+        source_role: technis
+        target_fileglob: "{{ playbook_dir }}/../files/core/*.yaml"
+      tags: ['apps', 'core', 'post-install']
+
+    - name: deploy monitoring stack
+      import_role:
+        name: deploy
+      vars:
+        target_role: monitoring
+      tags: ['monitoring', 'post-install']

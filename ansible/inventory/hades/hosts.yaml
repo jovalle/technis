@@ -1,0 +1,37 @@
+all:
+  children:
+    cluster:
+      children:
+        control_plane:
+          hosts:
+            cerberus:
+              ansible_host: 192.168.0.11
+            thanatos:
+              ansible_host: 192.168.0.13
+            zagreus:
+              ansible_host: 192.168.0.12
+        nodes:
+          hosts:
+            orpheus:
+              ansible_host: 192.168.0.14
+    external:
+      children:
+        observers:
+          hosts:
+            stargate:
+              ansible_host: 192.168.0.2
+        truenas:
+          hosts:
+            nexus:
+              ansible_host: 192.168.0.3
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/technis
+    ansible_ssh_user: root
+    apiserver_endpoint: 192.168.0.10
+    infrastructure_provisioner: terraform
+    ingress_domain: techn.is
+    ingress_endpoint: 192.168.0.20
+    k8s_provisioner: k3s
+    lan_domain: technis.net
+    lan_network: 192.168.0.0/24
+    ssh_public_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDcjsSeDM4XvNjYRH8qRZA3h5+NTQ7umSJ0Jj9j46y2DlfOj9HBO0uuSBtTyluIXnXCQB7sOV1rfNOcMk1i9kO8wrD4lapKK+fT3+wm3QvmAdn5rF9XZGUi0C+ncq0+k6pl0Y4DyWe0tMNhfLcWk7+Xlx/kAawp6gLN0zVjRc08u7oj3XlDNoZoUfS9VjKbucjxQ+j7uIfSDPAz30Oo94edGMkcxWOLEF8qYqPHAkE8Z8p1foWaB7kz1xUGnog0echJcrbEnpyw2sqFXUSXGf/ShJRwgw8cv+TlLoRNSx3qefSe0/q5Gec/bd2qM8YksqUMJ3Ihri32DpXJe8aIjNGwvwJ7EjLF2REfdDKA7Kr0CfmwZ2aehzXzfFIdtXxQuusvFIQUPvc+EWp6wMdrafWxeflFl9M2VXw+ztpJyXlEGTFjidKrCzB9stlpaRBUQ78Yv8s1//9chf5VWp5Aa4nGfm+oBY9yV9lOepnFvGgLbOYxqe2yyLZt2adFw3pxxuU=

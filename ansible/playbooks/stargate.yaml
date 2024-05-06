@@ -1,0 +1,64 @@
+---
+- name: Install Stargate appliance
+  hosts: stars
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  vars:
+    stargate_install_path: /etc/stargate
+  tasks:
+    - name: Configure static IP
+      ansible.builtin.template:
+        src: interfaces.j2
+        dest: /etc/network/interfaces
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart host
+
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install essential packages
+      ansible.builtin.apt:
+        name: "{{ item }}"
+      loop: ["dnsutils", "git", "vim"]
+
+    - name: Check to see if stargate dir exists
+      ansible.builtin.stat:
+        path: "{{ stargate_install_path }}"
+      register: check_stargate_install_path
+
+    - name: Clone repo
+      when: not check_stargate_install_path.stat.exists
+      ansible.builtin.git:
+        repo: https://github.com/jovalle/stargate
+        dest: "{{ stargate_install_path }}"
+
+    - name: Stargate | Prepare host
+      ansible.builtin.command:
+        cmd: ./setup.sh prepare
+        chdir: "{{ stargate_install_path }}"
+      register: stargate_prepare
+      changed_when: prepare.rc == 0
+      ignore_errors: true
+
+    # TODO: render encrypted .env (sops) for specific host (different cloduflared tokens)
+
+    - name: Stargate | Pull images
+      ansible.builtin.command:
+        cmd: docker-compose pull
+        chdir: "{{ stargate_install_path }}"
+      register: pull_images
+      changed_when: pull_images.rc == 0
+
+    - name: Stargate | Deploy appliance
+      ansible.builtin.command:
+        cmd: ./setup.sh deploy
+        chdir: "{{ stargate_install_path }}"
+        creates: /etc/systemd/system/stargate.service
+
+  handlers:
+    - name: Reboot host
+      ansible.builtin.reboot:
+        msg: "Host rebooted"

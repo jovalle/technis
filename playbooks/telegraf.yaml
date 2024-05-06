@@ -1,4 +1,0 @@
-- hosts: telegraf
-  become: yes
-  roles:
-    - monitoring/telegraf

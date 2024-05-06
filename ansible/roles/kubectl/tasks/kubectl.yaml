@@ -1,0 +1,120 @@
+# thanks @aserhat for the inspiration
+
+- name: assert base parameters
+  assert:
+    that:
+      - payload_type is defined
+
+- name: assert targets for applicable file types
+  assert:
+    that:
+      - target_list is defined or target_fileglob is defined
+  when: payload_type in ['remote', 'template', 'file', 'directory', 'fileglob']
+
+- name: assert manifest provided in raw type
+  assert:
+    that:
+      - raw_manifest is defined
+  when: payload_type == "raw"
+
+- name: assert target_list has elements
+  assert:
+    that:
+      - target_list | length > 0
+  when: target_list is defined
+
+- name: wait for crds to exist
+  command: kubectl get crd {{ item }}
+  register: crd_check
+  retries: 20
+  delay: 6
+  until: crd_check.rc == 0
+  with_items:
+    - "{{ crd_dependencies }}"
+  when:
+    - crd_dependencies is defined
+    - crd_dependencies | length > 0
+
+- name: render manifest
+  block:
+    - name: "{{ source_role }} | create temp dir"
+      tempfile:
+        state: directory
+      register: tempdir
+
+    - name: "{{ source_role }} | gather manifest(s) from host"
+      copy:
+        src: "{{ fileglob_item }}"
+        dest: "{{ tempdir.path }}/{{ fileglob_item | basename }}"
+      loop: "{{ lookup('fileglob', '{{ target_fileglob }}', wantlist=True) }}"
+      loop_control:
+        loop_var: fileglob_item
+      when: payload_type == "fileglob"
+
+    - name: "{{ source_role }} | fetch manifest(s) from host"
+      copy:
+        src: "{{ copy_item }}"
+        dest: "{{ tempdir.path }}/{{ copy_item | basename }}"
+      loop: "{{ target_list }}"
+      loop_control:
+        loop_var: copy_item
+      when: payload_type == "manifest"
+
+    - name: "{{ source_role }} | render manifest(s) onto target host"
+      template:
+        src: "{{ template_item }}.j2"
+        dest: "{{ tempdir.path }}/{{ template_item | basename }}"
+      loop: "{{ target_list }}"
+      loop_control:
+        loop_var: template_item
+      when: payload_type == "template"
+
+    - name: "{{ source_role }} | clean slate for manifest(s)"
+      command: kubectl delete -f {{ tempdir.path }}/{{ delete_item | basename }}
+      loop: "{{ target_list }}"
+      loop_control:
+        loop_var: delete_item
+      when: (mode is defined and mode == "replace") and (payload_type == "manifest" or payload_type == "template")
+      ignore_errors: true
+
+    - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
+      command: kubectl {{ command | default('apply') }} -f {{ tempdir.path }}/{{ fileglob_item | basename }}
+      loop: "{{ lookup('fileglob', '{{ target_fileglob }}', wantlist=True) }}"
+      loop_control:
+        loop_var: fileglob_item
+      when: payload_type == "fileglob"
+
+    - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
+      command: kubectl {{ command | default("apply") }} -f {{ tempdir.path }}/{{ manifest | basename }}
+      loop: "{{ target_list }}"
+      loop_control:
+        loop_var: manifest
+      when: payload_type == "manifest" or payload_type == "template"
+
+    - name: "{{ source_role }} | clean slate for manifest(s)"
+      command: kubectl delete -f {{ delete_item | basename }}
+      loop: "{{ target_list }}"
+      loop_control:
+        loop_var: delete_item
+      when: (mode is defined and mode == "replace") and (payload_type == "remote")
+      ignore_errors: true
+
+    - name: "{{ source_role }} | {{ command | default('apply') }} manifest(s)"
+      command: kubectl {{ command | default("apply") }} -f {{ remote_item }}
+      loop: "{{ target_list }}"
+      loop_control:
+        loop_var: remote_item
+      when: payload_type == "remote"
+
+    - name: apply raw manifest
+      shell: |
+        cat <<EOF | kubectl apply -f -
+        {{ raw_manifest }}
+        EOF
+      when: payload_type == "raw" and raw_manifest is defined
+
+  always:
+    - name: "{{ source_role }} | clean up"
+      file:
+        path: "{{ tempdir.path }}"
+        state: absent

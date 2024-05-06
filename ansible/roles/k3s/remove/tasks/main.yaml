@@ -1,0 +1,51 @@
+- name: set delegate
+  set_fact:
+    check_delegate: "{{ groups['control_plane'][0] if inventory_hostname != groups['control_plane'][0] else groups['control_plane'][1] }}"
+  tags:
+    - always
+- debug: var=check_delegate
+
+- name: remove node
+  block:
+    - name: check for node
+      command: kubectl get node {{ inventory_hostname }}
+      register: get_node
+      ignore_errors: true
+    - name: drain node
+      command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force --grace-period=0
+      when:
+        - get_node.rc == 0
+        - not skip_node_drain | default('no') | bool
+    - name: delete node
+      command: kubectl delete node {{ inventory_hostname }}
+      when: get_node.rc == 0
+  delegate_to: "{{ check_delegate }}"
+  tags:
+    - k8s
+
+- name: gather facts from ALL hosts
+  setup:
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  with_items: "{{ groups['cluster'] }}"
+  tags:
+    - always
+
+- name: eject from etcd cluster
+  block:
+    - name: get etcd member ID
+      shell: >
+        {{ base_cmd | trim }} member list | grep "{{ inventory_hostname }}" | awk '{print $3}' | awk -F '-' '{print $1}'
+      register: etcd_member_id
+    - name: remove etcd member
+      shell: >
+        {{ base_cmd | trim }} member remove {{ etcd_member_id.stdout }}
+      when:
+        - etcd_member_id.stdout != ""
+        - etcd_member_id.stdout_lines | length > 0
+  vars:
+    base_cmd: >
+      ETCDCTL_API=3 etcdctl --endpoints {% for i in groups['control_plane'] %}https://{{ hostvars[i]['ansible_' + (default_interface | default('eth0'))]['ipv4']['address'] }}:2379{% if not loop.last %},{% endif %}{% endfor %} --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt --key=/var/lib/rancher/k3s/server/tls/etcd/client.key
+  delegate_to: "{{ check_delegate }}"
+  tags:
+    - etcd

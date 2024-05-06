@@ -1,0 +1,110 @@
+- name: install network UPS tools
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - nut-server
+    - nut-client
+
+- name: copypasta general configs
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/nut/{{ item }}"
+    owner: root
+    group: nut
+  register: configs_copy
+  with_items:
+    - ups.conf
+    - upsd.conf
+    - nut.conf
+    - upsset.conf
+    - hosts.conf
+
+- name: render sensitive configs
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/nut/{{ item }}"
+    owner: root
+    group: nut
+  register: configs_template
+  with_items:
+    - upsmon.conf
+    - upsd.users
+
+- name: restart services
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - nut-server
+    - nut-client
+    - nut-monitor
+  when: configs_copy.changed or configs_template.changed
+
+- name: restart driver
+  block:
+    - name: stop driver
+      shell: upsdrvctl stop
+    - name: start driver
+      shell: upsdrvctl start
+  when: configs_copy.changed or configs_template.changed
+
+- name: query UPS via NUT server
+  block:
+    - name: query tripplite@localhost
+      shell: upsc tripplite@localhost
+      register: upsc
+  rescue:
+    - name: start driver again
+      shell: upsdrvctl start
+    - name: query tripplite@localhost again
+      shell: upsc tripplite@localhost
+      register: upsc
+
+- name: check for expected metric
+  fail:
+    msg: "FATAL: ups.load metric not returned"
+  when: "'ups.load' not in upsc.stdout"
+
+- name: install web server for dashboard
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - apache2
+    - nut-cgi
+
+- name: alter port to avoid conflicts
+  block:
+    - name: change HTTP port
+      replace:
+        dest: /etc/apache2/ports.conf
+        regexp: 'Listen 80$'
+        replace: 'Listen 8080'
+    - name: change HTTPS port
+      replace:
+        dest: /etc/apache2/ports.conf
+        regexp: 'Listen 443$'
+        replace: 'Listen 8443'
+    - name: change virtual host config port
+      replace:
+        dest: /etc/apache2/sites-enabled/000-default.conf
+        regexp: '^<VirtualHost \*:80>$'
+        replace: '<VirtualHost *:8080>'
+
+- name: enable cgid module
+  command: a2enmod cgi
+  register: cgid
+
+- name: restart apache
+  systemd:
+    name: apache2
+    state: restarted
+  when: "'already enabled' not in cgid.stdout"
+
+- name: check dashboard
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}:8080/cgi-bin/nut/upsstats.cgi"
+    status_code: 200
+
+- name: print dashboard url
+  debug:
+    msg: "http://{{ ansible_default_ipv4.address }}:8080/cgi-bin/nut/upsstats.cgi"

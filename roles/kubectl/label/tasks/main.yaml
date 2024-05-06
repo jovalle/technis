@@ -1,8 +1,0 @@
-- name: check node label
-  command: kubectl get node {{ node_name }} -o custom-columns=ROLES:.metadata.labels --no-headers
-  ignore_errors: yes
-  register: node_labels
-- name: set node label
-  command: kubectl label node {{ node_name }} node-role.kubernetes.io/{{ node_role }}=
-  ignore_errors: yes
-  when: ("node-role.kubernetes.io/%s" | format(node_role)) not in node_labels.stdout

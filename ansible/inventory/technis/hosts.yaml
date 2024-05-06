@@ -1,0 +1,17 @@
+---
+stars:
+  hosts:
+    stargate:
+      ansible_host: 192.168.31.2
+    starport:
+      ansible_host: 192.168.31.9
+  vars:
+    ansible_user: root
+    net_gateway_ip: 192.168.31.1
+
+truenas:
+  hosts:
+    nexus:
+      ansible_host: 192.168.31.3
+  vars:
+    ansible_user: root

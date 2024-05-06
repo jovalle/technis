@@ -1,38 +1,51 @@
 # Technis
 
-![Technis Logo](logo.svg)
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/jovalle/technis/main/docs/src/assets/logo.svg" align="center" width="144px" height="144px"/>
+
+</div>
+
+## 🌅 Overview
 
 Test bed for all things virtualization, automation, and Kubernetes.
 
-## Current Environments
+## 💿 Virtualization
 
-### Default
-Baremetal amd64/arm64
+### Current Environments
 
-### Atlantis
+#### Main (Technis)
+
+Baremetal amd64/arm64/armhf
+
+#### Atlantis
+
 Terraform + libvirt + KVM
 
-### Gotham/Krypton
+#### Gotham/Krypton
+
 Vagrant + Virtualbox
 
-## OS
+#### Hades
 
-`nvidia-container-runtime` does not support Debian beyond amd64. Ubuntu Server 21.10 is the pick for now as it is supported and built for Raspberry Pis and baremetal alike.
+Terraform + vSphere
 
-## Kubernetes
+## 🤖 Automation
 
-### Principles
+Taskfiles will call all the required, and differing, tooling (e.g. `terraform`, `ansible-playbook`, `taloctl` and `helm`) to provision and configure targets.
 
-* All images must have multi-arch support (at least arm64 and amd64).
-* Physical resource constraints aside (e.g. GPUs, memory, network bandwidth), no workload should be confined to a singular node.
-* In the interest of learning and technological diversity, using multiple solutions to a problem simultaneously is ideal.
+## ☸️ Kubernetes
 
-### Ingress
+Existing environments use vanilla kubernetes and k3s.
 
-Using Traefik in the homelab. Gotta love the web UI for quick and easy validation. Traefik Proxy does well to allow upstream `Ingress` (`networking.k8s.io/v1`) usage without vendor specific annotations!
+Working on adopting Talos.
 
-Running Traefik Proxy as a DaemonSet across the control plane nodes for high-availability (HA). The Traefik ingress service is of type LoadBalancer with MetalLB in the background connecting the dots. Haproxy + Keepalived would have sufficed but where's the fun in reusing that. Haproxy + Keepalived are available for manual failover scenarios should MetalLB suddenly stop functioning (again).
+## 🙏 Kudos
 
-Gave up on the Let's Encrypt + Cloudflare DNS bundle as an automated certificate resolver due to what seems to be an unsupported TLD (.is) and rate limiting obstacles while troubleshooting.
-
-Using cert-manager to issue once and maintain (cert-manager will auto-renew) a wildcard cert for the cluster workloads (*.techn.is). Setting TLSStore to leverage this cert by default and configured via CLI redirection of all HTTP requests to the "websecure" (HTTPS) entrypoint.
+- [awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted)
+- [dmacvicar/terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
+- [gandazgul/k8s-infrastructure](https://github.com/gandazgul/k8s-infrastructure)
+- [kelseyhightower/kubernetes-the-hard-way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
+- [kinvolk-archives/kubernetes-the-hard-way-vagrant](https://github.com/kinvolk-archives/kubernetes-the-hard-way-vagrant)
+- [onedr0p/home-ops](https://github.com/onedr0p/home-ops)
+- [techno-tim/launchpad](https://github.com/techno-tim/launchpad)

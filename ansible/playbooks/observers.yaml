@@ -1,0 +1,5 @@
+- hosts: observers
+  roles:
+    - monitoring/nut
+    - monitoring/telegraf
+    - cri/docker/compose

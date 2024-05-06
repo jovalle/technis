@@ -1,0 +1,112 @@
+#TODO: check that apiserver_endpoint is reachable
+#   replace with control_plane[0] IP if not reachable (kube-vip/CNI race condition)
+
+- name: check for binary
+  stat:
+    path: /usr/local/bin/cilium
+  register: cilium_binary
+
+- name: check cilium version
+  shell: /usr/local/bin/cilium version
+  register: cilium_binary_version
+  when: cilium_binary.stat.exists
+
+- name: "{% if cilium_binary.stat.exists %}upgrade{% else %}install{% endif %} binary"
+  vars:
+    arch: "{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}"
+  block:
+    - name: get files
+      shell: |
+        curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version }}/cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
+    - name: checksum
+      command: sha256sum --check cilium-linux-{{ arch }}.tar.gz.sha256sum
+    - name: unarchive tarball
+      shell: tar xzvfC cilium-linux-{{ arch }}.tar.gz /usr/local/bin
+    - name: remove artifacts
+      shell: rm cilium-linux-{{ arch }}.tar.gz{,.sha256sum}
+  when: >
+    not cilium_binary.stat.exists or
+    cilium_version not in cilium_binary_version.stdout
+
+- name: install via helm
+  block:
+    - name: add cilium repo
+      shell: |
+        helm repo add cilium https://helm.cilium.io
+        helm repo update
+    - name: get running version
+      shell: cilium version | grep -i running | awk '{print $NF}' | tr -d '^v'
+      ignore_errors: true
+      register: cilium_version_running
+    - name: set upgrade mode
+      set_fact:
+        cilium_upgrade: true
+      when:
+        - cilium_version_running.stdout != ''
+        - cilium_version != cilium_version_running.stdout
+    - include_tasks: preflight.yaml
+      when: cilium_upgrade | default('no') | bool
+    - name: install cilium chart
+      shell: >
+        helm upgrade --install cilium cilium/cilium --version {{ cilium_version }} \
+          --namespace kube-system \
+          --set bpf.masquerade=true \
+          --set egressGateway.enabled=true \
+          --set hubble.metrics.enabled="{dns,drop,tcp,flow,icmp,http}" \
+          --set hubble.relay.enabled=true \
+          --set hubble.ui.enabled=true \
+          --set k8sServiceHost="{{ apiserver_endpoint | default('192.168.1.100') }}" \
+          --set k8sServicePort=6443 \
+        {% if disable_kube_proxy | default(True) | bool %}
+          --set kubeProxyReplacement=strict \
+        {% endif %}
+          --set operator.enabled=true \
+          --set operator.prometheus.enabled=true \
+          --set operator.replicas={% if groups['cluster'] | length > 2 %}2{% else %}1{% endif %} \
+          --set prometheus.enabled=true \
+        {% if cilium_upgrade | default('no') | bool %}
+          --set upgradeCompatibility={{ '.'.join(cilium_version_running.stdout.split('.')[0:2]) }} \
+        {% endif %}
+    - name: let chart marinate
+      pause:
+        seconds: 10
+    - name: check cilium chart deployment
+      shell: helm --namespace kube-system status cilium -o json | jq -r '.info.status'
+      register: cilium_chart_deployment
+      until: cilium_chart_deployment.stdout == "deployed"
+  when: cilium_helm_install | default(True) | bool
+
+- name: deploy via CLI
+  block:
+    - name: install
+      shell: cilium install
+    - name: check status
+      shell: cilium status
+  when:
+    - not disable_kube_proxy | default(False) | bool
+    - not cilium_helm_install | default(False) | bool
+
+- name: check healthy status
+  shell: cilium status --wait
+  register: cilium_status
+  retries: 20
+  delay: 3
+  until: cilium_status.rc == 0
+
+- name: run network tests
+  block:
+    - name: start connectivity tests
+      shell: cilium connectivity test
+  always:
+    - name: cleanup tests
+      shell: kubectl delete ns cilium-test --ignore-not-found
+  tags:
+    - test
+
+- name: validate version
+  block:
+    - name: get running version
+      shell: cilium version | grep -i running | awk '{print $NF}' | tr -d '^v'
+      register: cilium_version_running
+      failed_when: cilium_version_running.stdout != cilium_version
+    - debug: var=cilium_version_running.stdout
