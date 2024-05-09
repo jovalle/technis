@@ -9,71 +9,71 @@ tasks:
       cluster: "{{.cluster}}"
     cmds:
       - task: init
-      - task: force-apply
+      - task: apply
 
   init:
     desc: Terraform init
-    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
     vars: *vars
     cmds:
       - terraform init
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
-      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
 
   apply:
     desc: Terraform apply
-    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
     vars: *vars
     cmds:
       - terraform apply
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
-      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
 
   destroy:
     desc: Terraform destroy
-    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
     vars: *vars
     cmds:
       - terraform destroy
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
-      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
 
   force-apply:
     desc: Terraform apply without prompt
-    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
     vars: *vars
     cmds:
       - terraform apply -auto-approve
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
-      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
 
   force-destroy:
     desc: Terraform destroy without prompt
-    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
     vars: *vars
     cmds:
       - terraform destroy -auto-approve
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
-      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
 
   reset:
     desc: Terraform reset
-    dir: '{{.ANSIBLE_DIR}}/inventory/{{.cluster}}'
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
     vars: *vars
     cmds:
       - terraform destroy -auto-approve
@@ -81,5 +81,5 @@ tasks:
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -d "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}"
-      - test -f "{{.ANSIBLE_DIR}}/inventory/{{.cluster}}/main.tf"
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
