@@ -4,10 +4,12 @@ version: "3"
 
 vars:
   ANSIBLE_DIR: "{{.ROOT_DIR}}/ansible"
+  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
   TERRAFORM_DIR: "{{.ROOT_DIR}}/terraform"
 
 includes:
   ansible: .taskfiles/ansible
+  talos: .taskfiles/talos
   terraform: .taskfiles/terraform
 
 tasks:
