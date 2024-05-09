@@ -1,0 +1,160 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+vars:
+  KUBERNETES_VERSION: "v1.30.0"
+  TALOS_VERSION: "v1.7.0"
+  CLUSTER: technis
+  VIP: 192.168.31.8
+  CONTROL_PLANE_NODES: 192.168.31.10 192.168.31.11 192.168.31.12
+  WORKER_NODES: 192.168.31.13 192.168.31.14 192.168.31.15
+
+tasks:
+
+  default:
+    cmds:
+      - task: apply-configs
+      - task: config-endpoint
+      - task: bootstrap-control-plane
+      - task: kubeconfig
+      - task: bootstrap-apps
+
+  generate-secrets:
+    desc: Generate secret bundle for talos cluster
+    cmd: talosctl gen secrets --force -o {{.KUBERNETES_DIR}}/bootstrap/talos/secrets.yaml
+
+  generate-config:
+    desc: Generate config for talos cluster
+    dir: '{{.KUBERNETES_DIR}}/bootstrap/talos'
+    cmd: |
+      talosctl gen config {{.CLUSTER}} https://{{.VIP}}:6443 \
+        --with-secrets secrets.yaml \
+        --config-patch @patches/allow-controlplane-workloads.yaml \
+        --config-patch @patches/cni.yaml \
+        --config-patch @patches/coredns.yaml \
+        --config-patch @patches/dhcp.yaml \
+        --config-patch @patches/install-disk.yaml \
+        --config-patch @patches/interface-names.yaml \
+        --config-patch @patches/system-extensions.yaml \
+        --config-patch @patches/longhorn.yaml \
+        --config-patch-control-plane @patches/VIP.yaml \
+        --force
+    requires:
+      vars: ["CLUSTER", "VIP"]
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/secrets.yaml
+
+  talosconfig:
+    desc: Set generated talosconfig as local default
+    cmd: cat {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig > ~/.talos/config
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig
+      - test -f ~/.talos/config
+
+  apply-config:
+    desc: Apply Talos configuration to a node
+    cmd: |
+      sops -d {{.KUBERNETES_DIR}}/bootstrap/talos/{{.role}}.secret.sops.yaml | \
+        envsubst | \
+          talosctl --context {{.CLUSTER}} apply-config --nodes {{.node}} {{.insecure}} --file /dev/stdin
+    vars:
+      insecure:
+        sh: |
+          sops -d {{.KUBERNETES_DIR}}/bootstrap/talos/{{.role}}.secret.sops.yaml | \
+            envsubst | \
+          talosctl --context {{.CLUSTER}} apply-config --nodes '{{.node}}' --file /dev/stdin --dry-run >/dev/null 2>&1 || echo -n "--insecure"
+    requires:
+      vars: ["CLUSTER", "node", "role"]
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/{{.role}}.secret.sops.yaml
+
+  apply-configs:
+    desc: Apply Talos configuration across cluster
+    cmds:
+      - for: {var: CONTROL_PLANE_NODES, split: ' '}
+        task: apply-config
+        vars:
+          CONTROL_PLANE_NODES: '{{.CONTROL_PLANE_NODES}}'
+          CLUSTER: '{{.CLUSTER}}'
+          node: '{{.ITEM}}'
+          role: "controlplane"
+
+      - for: {var: WORKER_NODES, split: ' '}
+        task: apply-config
+        vars:
+          CLUSTER: '{{.CLUSTER}}'
+          node: '{{.ITEM}}'
+          role: "worker"
+          WORKER_NODES: '{{.WORKER_NODES}}'
+    requires:
+      vars: ["CLUSTER", "CONTROL_PLANE_NODES", "WORKER_NODES"]
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig
+
+  config-endpoint:
+    desc: Update talos config with control plane endpoints
+    cmd: talosctl config endpoint {{.CONTROL_PLANE_NODES}}
+    requires:
+      vars: ["CONTROL_PLANE_NODES"]
+
+  bootstrap-control-plane:
+    desc: Bootstrap Control Plane
+    cmd: until talosctl --context {{.CLUSTER}} etcd status --nodes {{.controlplane}} || talosctl --context {{.CLUSTER}} bootstrap --nodes {{.controlplane}}; do sleep 10; done
+    vars:
+      controlplane:
+        sh: talosctl --context {{.CLUSTER}} config info --output json | jq --raw-output '.endpoints[0]' | xargs
+    preconditions:
+      - talosctl --context {{.CLUSTER}} config info >/dev/null 2>&1
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig
+
+  kubeconfig:
+    desc: Fetch kubeconfig from Talos control plane nodes
+    cmd: |
+      talosctl --context {{.CLUSTER}} kubeconfig --nodes {{.controlplane}} --force --force-context-name {{.CLUSTER}}
+    vars:
+      controlplane:
+        sh: talosctl --context {{.CLUSTER}} config info --output json | jq --raw-output '.endpoints[0]'
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig
+      - talosctl --context {{.CLUSTER}} config info >/dev/null 2>&1
+
+  bootstrap-apps:
+    desc: Bootstrap core apps via helmfile
+    cmds:
+      - until kubectl --context {{.CLUSTER}} wait --for=jsonpath='{.status.phase}'=Running pod/kube-apiserver-k8s-0 -n kube-system; do sleep 10; done
+      - helmfile --quiet --kube-context {{.CLUSTER}} --file {{.KUBERNETES_DIR}}/bootstrap/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
+      - until kubectl --context {{.CLUSTER}} wait --for=condition=Ready nodes --all --timeout=10m; do sleep 10; done
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/apps/helmfile.yaml
+
+  reset-node:
+    desc: Reset a Talos node and shut it down
+    prompt: Reset Talos '{{.node}}' node on the '{{.CLUSTER}}' cluster ... continue?
+    vars:
+      node_name:
+        sh: kubectl get nodes -o wide --no-headers | grep {{.node}} | awk '{print $1}'
+    cmds:
+      - talosctl --context {{.CLUSTER}} reset --nodes {{.node}} --graceful=false
+      - until kubectl --context {{.CLUSTER}} wait --for=jsonpath='{.status.conditions[1].reason}'=NodeStatusUnknown node/{{.node_name}}; do sleep 10; done
+      - kubectl delete node {{.node_name}}
+    requires:
+      vars: ["node", "CLUSTER"]
+    preconditions:
+      - talosctl --context {{.CLUSTER}} config info >/dev/null 2>&1
+      - talosctl --context {{.CLUSTER}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig
+
+  reset-cluster:
+    desc: Reset all the Talos nodes and shut 'em down
+    prompt: Reset Talos on the '{{.CLUSTER}}' cluster ... continue?
+    cmd: talosctl --context {{.CLUSTER}} reset --nodes {{.nodes}} --graceful=false
+    vars:
+      nodes:
+        sh: echo "{{.CONTROL_PLANE_NODES}} {{.WORKER_ENDPOINTS}}" | tr -s ' ' ','
+    requires:
+      vars: [ "CLUSTER", "nodes", "CONTROL_PLANE_NODES", "WORKER_NODES"]
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/bootstrap/talos/talosconfig
+      - talosctl --context {{.CLUSTER}} config info >/dev/null 2>&1
+      - talosctl --context {{.CLUSTER}} --nodes {{.nodes}} get machineconfig >/dev/null 2>&1
