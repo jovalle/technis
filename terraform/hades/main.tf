@@ -1,7 +1,8 @@
 # Set credentials for vSphere provider
-# export VSPHERE_USER=""
+# export VSPHERE_USER="administrator@vsphere.local"
 # export VSPHERE_PASSWORD=""
-# export VSPHERE_SERVER=""
+# export VSPHERE_SERVER=vsphere.local
+
 provider "vsphere" {
   # Self-signed cert for now
   allow_unverified_ssl = true
