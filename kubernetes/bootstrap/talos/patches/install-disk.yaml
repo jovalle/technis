@@ -2,3 +2,4 @@
 machine:
   install:
     disk: /dev/sda
+    wipe: true
