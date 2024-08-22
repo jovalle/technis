@@ -1,5 +1,10 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/helmfile.json
+environments:
+  k3s: {}
+  talos: {}
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/helmfile.json
 
 helmDefaults:
   force: true
@@ -21,14 +26,14 @@ releases:
   - name: cilium
     namespace: kube-system
     chart: cilium/cilium
-    version: 1.15.4
-    values: ["../../apps/kube-system/cilium/app/helm-values.yaml"]
+    version: 1.15.6
+    values: ["../apps/kube-system/cilium/app/values.yaml"]
 
   - name: coredns
     namespace: kube-system
     chart: coredns/coredns
-    version: 1.29.0
-    values: ["../../apps/kube-system/coredns/app/helm-values.yaml"]
+    version: 1.31.0
+    values: ["../apps/kube-system/coredns/app/values.yaml"]
     needs: ["cilium"]
 
   # Ref: https://www.talos.dev/v1.7/introduction/troubleshooting/#talos-complains-about-certificate-errors-on-kubelet-api
@@ -36,12 +41,26 @@ releases:
     namespace: kube-system
     chart: postfinance/kubelet-csr-approver
     version: 1.1.0
-    values: ["../../apps/kube-system/kubelet-csr-approver/app/helm-values.yaml"]
+    values: ["../apps/kube-system/kubelet-csr-approver/app/values.yaml"]
     needs: ["cilium", "coredns"]
+    installed: {{ eq .Environment.Name "talos" | toYaml }}
 
   - name: spegel
     namespace: kube-system
     chart: oci://ghcr.io/spegel-org/helm-charts/spegel
     version: v0.0.22
-    values: ["../../apps/kube-system/spegel/app/helm-values.yaml"]
+    values: ["../apps/kube-system/spegel/app/values.yaml"]
     needs: ["cilium", "coredns", "kubelet-csr-approver"]
+    installed: {{ eq .Environment.Name "talos" | toYaml }}
+
+  - name: argocd
+    namespace: argocd
+    chart: oci://ghcr.io/argoproj/argo-helm/argo-cd
+    version: 7.3.6
+    values: ["../apps/argocd/argocd/app/values.yaml"]
+
+  - name: traefik
+    namespace: kube-system
+    chart: oci://ghcr.io/traefik/traefik-helm-chart/traefik
+    version: v30.1.0
+    values: ["../apps/kube-system/traefik/app/values.yaml"]

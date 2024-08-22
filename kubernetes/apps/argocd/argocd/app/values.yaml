@@ -1,0 +1,10 @@
+---
+
+server:
+  ingress:
+    enabled: true
+    hosts:
+      - argocd.techn.is
+    tls:
+      - hosts:
+          - argocd.techn.is

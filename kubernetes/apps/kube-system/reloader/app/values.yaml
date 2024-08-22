@@ -1,0 +1,20 @@
+---
+
+fullnameOverride: reloader
+reloader:
+  deployment:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - reloader
+            topologyKey: "kubernetes.io/hostname"
+    replicas: 2
+  enableHA: true
+  enableMetricsByNamespace: true
+  podMonitor:
+    enabled: true

@@ -4,3 +4,6 @@ machine:
     interfaces:
       - interface: eth0
         dhcp: true
+  time:
+    servers:
+      - time.nist.gov
