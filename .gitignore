@@ -1,5 +1,7 @@
 .decrypted*
 .DS_Store
+.env
+.envrc
 .private/
 .sync-*
 .task/
@@ -7,6 +9,7 @@
 .terraform.lock.hcl
 .vagrant
 .venv/
+.vscode/settings.json
 *.ignore
 *.key
 *.log
@@ -16,12 +19,14 @@
 *copy*
 *lock.json
 *tfstate*
-config.xml
 ansible/files/experimental
 ansible/roles/monitoring/files/kube-prometheus/manifests
 ansible/roles/monitoring/files/kube-prometheus/vendor
+config.xml
 key.json
 kubeconfig
-secrets.yaml
+kubernetes/bootstrap/talos/controlplane.yaml
+kubernetes/bootstrap/talos/secrets.yaml
+kubernetes/bootstrap/talos/worker.yaml
 talosconfig
 Thumbs.db
