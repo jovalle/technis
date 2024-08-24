@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/gitrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: technis
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/jovalle/technis
+  ref:
+    branch: main
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./kubernetes/flux
+  prune: true
+  wait: false
+  sourceRef:
+    kind: GitRepository
+    name: technis
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
