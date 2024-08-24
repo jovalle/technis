@@ -1,0 +1,9 @@
+---
+kind: TLSStore
+apiVersion: traefik.io/v1alpha1
+metadata:
+  name: default
+  namespace: cert-manager
+spec:
+  defaultCertificate:
+    secretName: technis-tls
