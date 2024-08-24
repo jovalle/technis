@@ -6,4 +6,4 @@ metadata:
   namespace: cert-manager
 spec:
   defaultCertificate:
-    secretName: technis-tls
+    secretName: techn.is-tls
