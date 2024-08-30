@@ -19,5 +19,5 @@ metadata:
 spec:
   allowFirstLastIPs: "Yes"
   blocks:
-    - start: 192.168.31.224
+    - start: 192.168.31.201
       stop: 192.168.31.254
