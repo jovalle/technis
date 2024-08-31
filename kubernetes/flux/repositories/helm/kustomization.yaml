@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
   - ./cilium.yaml
   - ./coredns.yaml
+  - ./external-dns.yaml
   - ./jetstack.yaml
   - ./metrics-server.yaml
   - ./postfinance.yaml
