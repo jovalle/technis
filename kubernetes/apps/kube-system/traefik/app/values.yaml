@@ -10,7 +10,7 @@ affinity:
 deployment:
   replicas: 3
 ingressClass:
-  name: traefik
+  name: internal
 ingressRoute:
   dashboard:
     enabled: true
