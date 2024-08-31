@@ -12,35 +12,29 @@ Test bed for all things virtualization, automation, and Kubernetes.
 
 ## 💿 Virtualization
 
+### [ESXi/vSphere](docs/src/assets/friendship.png)
+
 ### Current Environments
 
-#### Main (Technis)
-
-Baremetal amd64/arm64/armhf
-
-#### Atlantis
-
-Terraform + libvirt + KVM
-
-#### Gotham/Krypton
-
-Vagrant + Virtualbox
-
-#### Hades
-
-Terraform + vSphere
+| Cluster        | Technologies                    | Description                                                                        |
+| -------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
+| Atlantis       | Terraform + libvirt + KVM       | Lab environment on Linux desktop                                                   |
+| Gotham/Krypton | Vagrant + Virtualbox            | Lab environment on Linux/macOS laptops                                             |
+| Hades          | Multi-arch baremetal            | Physical lab environment comprising of Intel/AMD mini PCs and Raspberry Pi devices |
+| Technis        | Terraform + Proxmox + baremetal | Main cluster and "production" environment                                          |
 
 ## 🤖 Automation
 
-Taskfiles will call all the required, and differing, tooling (e.g. `terraform`, `ansible-playbook`, `taloctl` and `helm`) to provision and configure targets.
+Taskfiles will call all required, and differing, tooling (e.g. `terraform`, `ansible-playbook`, `taloctl` and `helm`) to provision and configure targets.
 
 ## ☸️ Kubernetes
 
-Existing environments use vanilla kubernetes and k3s.
+### Distros
 
-Working on adopting Talos.
+- [k3s](https://k3s.io)
+- [Talos Linux](https://www.talos.dev/)
 
-## 🙏 Kudos
+## 🤝 Kudos
 
 - [awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted)
 - [dmacvicar/terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
