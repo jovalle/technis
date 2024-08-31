@@ -10,6 +10,7 @@
 .vagrant
 .venv/
 .vscode/settings.json
+*.agekey
 *.ignore
 *.key
 *.log

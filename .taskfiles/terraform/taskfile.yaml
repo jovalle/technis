@@ -11,9 +11,20 @@ tasks:
       - task: init
       - task: apply
 
+  fmt:
+    desc: Format terraform configuration files
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
+    cmd: terraform fmt
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
+
   init:
     desc: Terraform init
     dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
+    deps: ["fmt"]
     vars: *vars
     cmds:
       - terraform init
@@ -23,9 +34,23 @@ tasks:
       - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
       - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
 
+  plan:
+    desc: Terraform plan
+    dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
+    deps: ["fmt"]
+    vars: *vars
+    cmds:
+      - terraform plan
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -d "{{.ROOT_DIR}}/terraform/{{.cluster}}"
+      - test -f "{{.ROOT_DIR}}/terraform/{{.cluster}}/main.tf"
+
   apply:
     desc: Terraform apply
     dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
+    deps: ["fmt"]
     vars: *vars
     cmds:
       - terraform apply
@@ -37,7 +62,9 @@ tasks:
 
   destroy:
     desc: Terraform destroy
+    prompt: Destroy '{{.cluster}}' cluster ... are you sure?
     dir: '{{.ROOT_DIR}}/terraform/{{.cluster}}'
+    deps: ["fmt"]
     vars: *vars
     cmds:
       - terraform destroy
