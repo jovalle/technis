@@ -54,7 +54,7 @@ spec:
         rollOutPods: true
         ingress:
           annotations:
-            external-dns.alpha.kubernetes.io/target: 192.168.31.254
+            external-dns.alpha.kubernetes.io/target: internal.techn.is
           enabled: true
           className: internal
           hosts: ["hubble.techn.is"]
