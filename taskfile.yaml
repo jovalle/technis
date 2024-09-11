@@ -11,6 +11,7 @@ vars:
 
 includes:
   ansible: .taskfiles/ansible
+  flux: .taskfiles/flux
   talos: .taskfiles/talos
   terraform: .taskfiles/terraform
 
