@@ -58,12 +58,6 @@ releases:
     needs: ["cilium", "coredns", "kubelet-csr-approver"]
     installed: {{ eq .Environment.Name "talos" | toYaml }}
 
-  - name: argocd
-    namespace: argocd
-    chart: oci://ghcr.io/argoproj/argo-helm/argo-cd
-    version: 7.3.6
-    values: ["../apps/argocd/argocd/app/values.yaml"]
-
   - name: traefik
     namespace: kube-system
     chart: oci://ghcr.io/traefik/helm/traefik
