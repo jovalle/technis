@@ -6,4 +6,6 @@ machine:
         dhcp: true
   time:
     servers:
-      - time.nist.gov
+      - 129.6.15.28
+      - 132.163.97.1
+      - 132.163.96.1
