@@ -9,6 +9,7 @@ resources:
   - ./jetstack.yaml
   - ./metrics-server.yaml
   - ./postfinance.yaml
+  - ./rook-ceph.yaml
   - ./spegel.yaml
   - ./stakater.yaml
   - ./traefik.yaml
