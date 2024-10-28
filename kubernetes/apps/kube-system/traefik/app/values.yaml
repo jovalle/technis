@@ -13,9 +13,14 @@ ingressClass:
   name: internal
 ingressRoute:
   dashboard:
+    annotations:
+      external-dns.alpha.kubernetes.io/target: internal.techn.is
     enabled: true
     matchRule: Host(`traefik.techn.is`)
     entryPoints: ["websecure"]
+    services:
+      - name: api@internal
+        kind: TraefikService
 ports:
   web:
     redirectTo:
