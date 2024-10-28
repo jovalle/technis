@@ -6,8 +6,10 @@ resources:
   - ./cilium.yaml
   - ./coredns.yaml
   - ./external-dns.yaml
+  - ./intel.yaml
   - ./jetstack.yaml
   - ./metrics-server.yaml
+  - ./node-feature-discovery.yaml
   - ./postfinance.yaml
   - ./rook-ceph.yaml
   - ./spegel.yaml
