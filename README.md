@@ -33,6 +33,7 @@ Taskfiles will call all required, and differing, tooling (e.g. `terraform`, `ans
 ## 🤝 Kudos
 
 - [awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted)
+- [bjw-s/helm-charts](https://github.com/bjw-s/helm-charts)
 - [dmacvicar/terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
 - [gandazgul/k8s-infrastructure](https://github.com/gandazgul/k8s-infrastructure)
 - [kelseyhightower/kubernetes-the-hard-way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
