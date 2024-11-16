@@ -6,19 +6,19 @@ metadata:
   name: &app external-dns-pihole
   namespace: flux-system
 spec:
-  targetNamespace: network
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/apps/network/external-dns/pihole
-  prune: false
-  sourceRef:
-    kind: GitRepository
-    name: technis
   decryption:
     provider: sops
     secretRef:
       name: sops-age
   interval: 30m
+  path: ./kubernetes/apps/network/external-dns/pihole
+  prune: false
   retryInterval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: technis
+  targetNamespace: network
   timeout: 5m
