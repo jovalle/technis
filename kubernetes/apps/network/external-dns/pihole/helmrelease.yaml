@@ -5,38 +5,39 @@ kind: HelmRelease
 metadata:
   name: &app external-dns-pihole
 spec:
-  interval: 30m
   chart:
     spec:
-      chart: external-dns
-      version: 1.14.5
+      chart: &name external-dns
       sourceRef:
         kind: HelmRepository
-        name: external-dns
+        name: *name
         namespace: flux-system
+      version: 1.14.5
   install:
-    crds: CreateReplace
+    crds: &crds CreateReplace
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
+    crds: *crds
     remediation:
-      strategy: rollback
       retries: 3
+      strategy: rollback
   values:
-    domainFilters: ["techn.is"]
+    domainFilters:
+      - "techn.is"
     env:
       - name: EXTERNAL_DNS_PIHOLE_SERVER
         valueFrom:
           secretKeyRef:
-            name: &secret external-dns-pihole-secret
             key: EXTERNAL_DNS_PIHOLE_SERVER
+            name: &secret external-dns-pihole-secret
       - name: EXTERNAL_DNS_PIHOLE_PASSWORD
         valueFrom:
           secretKeyRef:
-            name: *secret
             key: EXTERNAL_DNS_PIHOLE_PASSWORD
+            name: *secret
     extraArgs:
       - --ignore-ingress-tls-spec
       - --ingress-class=internal
