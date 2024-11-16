@@ -6,13 +6,13 @@ metadata:
   name: apps
   namespace: flux-system
 spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   interval: 10m
   path: ./kubernetes/apps
   prune: true
   sourceRef:
     kind: GitRepository
     name: technis
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
