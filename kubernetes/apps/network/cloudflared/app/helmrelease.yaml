@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+    name: cloudflared
+    namespace: network
+spec:
+    chart:
+        spec:
+            chart: cloudflare-tunnel-remote
+            sourceRef:
+                kind: HelmRepository
+                name: cloudflare
+                namespace: flux-system
+            version: 0.1.2
+    install:
+        remediation:
+            retries: 3
+    interval: 30m
+    upgrade:
+        cleanupOnFail: true
+        remediation:
+            retries: 3
+            strategy: rollback
+    values:
+        cloudflare:
+            tunnel_token: ENC[AES256_GCM,data:XXpDbfgqMFIHZAynUPv0sAvWBnIVQOUJgjWLA0XLfR6W9d9bw4taqn7qmRSZFpG8YPlIiDupPxoGl/W/eijAzLd3MYbnm42ejw/rWJNSbxDZEptwpCrv/kdkr82Y8KvbvHnwO8TDuQp9LYMPxqSJpPdOuljtaRjvLm0YEzzfYve0kXEoXHIMytqhO7Fb/v/cw4fA+CELBksFLUK7V8yz0EC/lrCYYbcwtXGEQ+gshkjLKHo04sbjWQ==,iv:JCcHbAhCA7G2xkev9bFCZlXgxwXwPpsQMnrY32OZrpo=,tag:birc9s4bzoRgbKLop6QGrQ==,type:str]
+        nameOverride: cloudflared
+        replicaCount: 2
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age1vcvqgw7cga7tdg2a9w5486mjjm2gsdmkcj35nqs7rcu3v3gvad2q2zs940
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBCR3JDU3FEVGxXK3BVU2VU
+            Z1hxUmJwY2cyK3UwZ2xra1N4Y2RDVG93NWt3CnphazB5bGZxMTluU3ZuK0pocCtG
+            cnpoaXI3SkNxOFlxOGhxVjIyM25HM3cKLS0tIE1XOWNlOWZCajlpL1JyUklxc3Nn
+            aTBWRWE2K0o0M0pqMmVEZXJ4L1prTDgKuMLzz5sx4lA8TpgwL1MxzJQJZ3gV8uda
+            OfZGa8hi+uhY6cFhbI7zLLPoWTTx0jAW5CXQxdOeuJUyQJu7kXp8Hg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2024-11-16T04:16:24Z"
+    mac: ENC[AES256_GCM,data:7LwsxPP2XB8Arid+y1E4xTrEJtYKQiHrZ2FWgm6KtVQlF6V+tFCn6OQCFN4XypFww8GdCiIwrCwpWT9auNucSmUkk1+9p8gqfgTwLFEpReY5pi6bMkMXpY16RJZIZSZQLvO+5iBrLFtcjmg069qcL3CQYbk/Ry1NGrbQBEW9yi4=,iv:xu77oFkwugU1beRbE5VoMQ8LS5S517Dt/bYMuMyUv/4=,tag:h1ByMfA15MJysS5lQky8Ng==,type:str]
+    pgp: []
+    encrypted_regex: ^(tunnel_token)$
+    version: 3.9.1
