@@ -4,28 +4,29 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: rook-ceph-cluster
+  namespace: rook-ceph
 spec:
-  interval: 30m
-  timeout: 15m
   chart:
     spec:
       chart: rook-ceph-cluster
-      version: v1.15.1
       sourceRef:
         kind: HelmRepository
         name: rook-ceph
         namespace: flux-system
-  install:
-    remediation:
-      retries: 3
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
+      version: v1.15.1
   dependsOn:
     - name: rook-ceph-operator
       namespace: rook-ceph
+  install:
+    remediation:
+      retries: 3
+  interval: 30m
+  timeout: 5m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     cephBlockPools: {}
     cephClusterSpec:
@@ -40,6 +41,14 @@ spec:
             interval: 45s
     cephFileSystems: {}
     cephObjectStores: {}
+    ingress:
+      dashboard:
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.techn.is
+        host:
+          name: ceph.techn.is
+          path: "/ceph-dashboard(/|$)(.*)"
+        ingressClassName: internal
     monitoring:
       createPrometheusRules: true
       enabled: true
