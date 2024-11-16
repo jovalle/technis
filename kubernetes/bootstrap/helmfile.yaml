@@ -5,14 +5,47 @@ environments:
   talos: {}
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/helmfile.json
-
 helmDefaults:
   force: true
   recreatePods: true
   timeout: 600
   wait: true
   waitForJobs: true
-
+releases:
+  - chart: oci://ghcr.io/prometheus-community/charts/prometheus-operator-crds
+    name: prometheus-operator-crds
+    namespace: observability
+    version: 14.0.0
+  - chart: cilium/cilium
+    name: cilium
+    namespace: kube-system
+    values: ["../apps/kube-system/cilium/app/values.yaml"]
+    version: 1.16.1
+  - chart: coredns/coredns
+    name: coredns
+    namespace: kube-system
+    needs: ["cilium"]
+    values: ["../apps/kube-system/coredns/app/values.yaml"]
+    version: 1.31.0
+  - chart: postfinance/kubelet-csr-approver # Ref: https://www.talos.dev/v1.7/introduction/troubleshooting/#talos-complains-about-certificate-errors-on-kubelet-api
+    installed: { { eq .Environment.Name "talos" | toYaml } }
+    name: kubelet-csr-approver
+    namespace: kube-system
+    needs: ["cilium", "coredns"]
+    values: ["../apps/kube-system/kubelet-csr-approver/app/values.yaml"]
+    version: 1.1.0
+  - chart: oci://ghcr.io/spegel-org/helm-charts/spegel
+    installed: { { eq .Environment.Name "talos" | toYaml } }
+    name: spegel
+    namespace: kube-system
+    needs: ["cilium", "coredns", "kubelet-csr-approver"]
+    values: ["../apps/kube-system/spegel/app/values.yaml"]
+    version: v0.0.22
+  - chart: oci://ghcr.io/traefik/helm/traefik
+    name: traefik
+    namespace: kube-system
+    values: ["../apps/kube-system/traefik/app/values.yaml"]
+    version: 30.1.0
 repositories:
   - name: cilium
     url: https://helm.cilium.io
@@ -20,46 +53,3 @@ repositories:
     url: https://coredns.github.io/helm
   - name: postfinance
     url: https://postfinance.github.io/kubelet-csr-approver
-
-releases:
-
-  - name: prometheus-operator-crds
-    namespace: observability
-    chart: oci://ghcr.io/prometheus-community/charts/prometheus-operator-crds
-    version: 14.0.0
-
-  - name: cilium
-    namespace: kube-system
-    chart: cilium/cilium
-    version: 1.16.1
-    values: ["../apps/kube-system/cilium/app/values.yaml"]
-
-  - name: coredns
-    namespace: kube-system
-    chart: coredns/coredns
-    version: 1.31.0
-    values: ["../apps/kube-system/coredns/app/values.yaml"]
-    needs: ["cilium"]
-
-  # Ref: https://www.talos.dev/v1.7/introduction/troubleshooting/#talos-complains-about-certificate-errors-on-kubelet-api
-  - name: kubelet-csr-approver
-    namespace: kube-system
-    chart: postfinance/kubelet-csr-approver
-    version: 1.1.0
-    values: ["../apps/kube-system/kubelet-csr-approver/app/values.yaml"]
-    needs: ["cilium", "coredns"]
-    installed: {{ eq .Environment.Name "talos" | toYaml }}
-
-  - name: spegel
-    namespace: kube-system
-    chart: oci://ghcr.io/spegel-org/helm-charts/spegel
-    version: v0.0.22
-    values: ["../apps/kube-system/spegel/app/values.yaml"]
-    needs: ["cilium", "coredns", "kubelet-csr-approver"]
-    installed: {{ eq .Environment.Name "talos" | toYaml }}
-
-  - name: traefik
-    namespace: kube-system
-    chart: oci://ghcr.io/traefik/helm/traefik
-    version: 30.1.0
-    values: ["../apps/kube-system/traefik/app/values.yaml"]

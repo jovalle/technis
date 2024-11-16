@@ -33,7 +33,7 @@ tasks:
         path: Path to the Flux Kustomization resource (required)
         namespace: Namespace the Flux Kustomization exists in (default: flux-system)
     cmd: |
-      flux --context {{.cluster}} build ks $(basename {{.path}}) \
+      flux --context {{.cluster}} build ks {{base .path}} \
           --namespace {{.namespace}} \
           --kustomization-file {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml \
           --path {{.KUBERNETES_DIR}}/apps/{{.path}} \
@@ -46,7 +46,7 @@ tasks:
     vars:
       namespace: '{{.namespace | default "flux-system"}}'
       ks:
-        sh: flux --context {{.cluster}} --namespace {{.namespace}} get kustomizations $(basename {{.path}}) 2>&1
+        sh: flux --context {{.cluster}} --namespace {{.namespace}} get kustomizations {{base .path}} 2>&1
     preconditions:
       - test -f {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml
 
@@ -58,7 +58,7 @@ tasks:
         path: Path to the Flux Kustomization resource (required)
         namespace: Namespace the Flux Kustomization exists in (default: flux-system)
     cmd: |
-      flux --context {{.cluster}} build ks $(basename {{.path}}) \
+      flux --context {{.cluster}} build ks {{base .path}} \
           --namespace {{.namespace}} \
           --kustomization-file {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml \
           --path {{.KUBERNETES_DIR}}/apps/{{.path}} \
@@ -69,5 +69,5 @@ tasks:
     vars:
       namespace: '{{.namespace | default "flux-system"}}'
     preconditions:
-      - flux --context {{.cluster}} --namespace {{.namespace}} get kustomization $(basename {{.path}})
+      - flux --context {{.cluster}} --namespace {{.namespace}} get kustomization {{base .path}}
       - test -f {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml
