@@ -4,25 +4,25 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: rook-ceph-operator
+  namespace: rook-ceph
 spec:
-  interval: 30m
-  timeout: 15m
   chart:
     spec:
-      chart: rook-ceph
-      version: v1.15.1
+      chart: &name rook-ceph
       sourceRef:
         kind: HelmRepository
-        name: rook-ceph
+        name: *name
         namespace: flux-system
+      version: v1.15.1
   install:
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
     remediation:
-      strategy: rollback
       retries: 3
+      strategy: rollback
   values:
     csi:
       cephFSKernelMountOptions: ms_mode=prefer-crc
@@ -32,7 +32,7 @@ spec:
     monitoring:
       enabled: true
     resources:
-      requests:
-        memory: 128Mi # unchangeable
-        cpu: 100m # unchangeable
       limits: {}
+      requests:
+        cpu: 100m # unchangeable
+        memory: 128Mi # unchangeable
