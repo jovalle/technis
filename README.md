@@ -1,10 +1,6 @@
 # Technis
 
-<div align="center">
-
-<img src="https://raw.githubusercontent.com/jovalle/technis/main/docs/src/assets/logo.svg" align="center" width="144px" height="144px"/>
-
-</div>
+![Technis](docs/src/assets/technis.webp)
 
 ## 🌅 Overview
 
