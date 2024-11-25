@@ -1,0 +1,78 @@
+---
+collections:
+  IMDb Top 250:
+    template: { chart: top, name: imdb }
+  My Watchlist:
+    imdb_watchlist:
+      - limit: 100
+        sort_by: rating.asc
+        user_id: ur65830902
+    sync_mode: sync
+  TMDb Trending:
+    template: { name: charts, website: TMDb }
+    tmdb_trending_weekly: 100
+  Tautulli Most Popular Movies:
+    collection_order: custom
+    sync_mode: sync
+    tautulli_watched:
+      list_days: 180
+      list_minimum: 1
+      list_size: 10
+  Trakt Popular:
+    collection_order: custom
+    radarr_add_missing: false
+    radarr_monitor: false
+    radarr_search: false
+    sort_title: Traktpopular
+    summary: The most popular movies for all time.
+    sync_mode: sync
+    trakt_popular: 200
+  Trakt Trending:
+    template: { name: charts, website: Trakt }
+    trakt_chart:
+      chart: trending
+      limit: 100
+  Unwatched:
+    template: { library_type: <<library_type>>, name: unwatched }
+overlays:
+  IMDb-Top-250:
+    overlay:
+      name: IMDb-Top-250
+    imdb_chart: top_movies
+templates:
+  charts:
+    schedule: weekly(monday)
+    smart_label:
+      all:
+        label: <<smart_label>>
+      sort_by: release.desc
+    sort_title: ++++<<collection_name>>
+    summary: Collection of <<library_type>>s trending this week on <<website>>,
+      updated every Monday.
+  imdb:
+    imdb_chart: <<chart>>_<<library_type>>s
+    smart_label:
+      all:
+        label: <<smart_label>>
+      sort_by: audience_rating.desc
+    sort_title: ++++<<collection_name>>
+    summary: The top 250 best <<library_type>>s of all time based on IMDb user ratings.
+  unwatched:
+    collection_filtering: user
+    conditionals:
+      description:
+        conditions:
+          - library_type: show
+            value: " or have unplayed episodes"
+        default: ""
+      episodes:
+        conditions:
+          - library_type: show
+            value: "_episodes"
+        default: ""
+    smart_filter:
+      all:
+        unplayed<<episodes>>: true
+      sort_by: release.desc
+    sort_title: +++++<<collection_name>>
+    summary: "Collection of <<library_type>>s that haven't been watched<<description>>."
