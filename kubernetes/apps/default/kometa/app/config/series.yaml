@@ -1,0 +1,19 @@
+---
+collections:
+  Most Popular:
+    imdb_search:
+      limit: 10
+      type: tv_series, tv_mini_series
+    smart_label: originally_available.desc
+    sonarr_add_missing: true
+    sonarr_monitor: pilot
+    sonarr_search: true
+    summary: The 10 most popular shows across the internet
+    sync_mode: sync
+  Tautulli Most Popular:
+    collection_order: custom
+    summary: The 10 most popular shows from Plex users
+    sync_mode: sync
+    tautulli_popular:
+      list_days: 180
+      list_size: 10
