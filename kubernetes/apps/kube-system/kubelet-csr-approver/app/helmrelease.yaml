@@ -3,30 +3,30 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: kubelet-csr-approver
+  name: &app kubelet-csr-approver
 spec:
-  interval: 30m
   chart:
     spec:
-      chart: kubelet-csr-approver
-      version: 1.1.0
+      chart: *app
       sourceRef:
         kind: HelmRepository
         name: postfinance
         namespace: flux-system
+      version: 1.1.0
   install:
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
     remediation:
-      strategy: rollback
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: kubelet-csr-approver-helm-values
+      strategy: rollback
   values:
     metrics:
       enable: true
       serviceMonitor:
         enabled: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: kubelet-csr-approver-helm-values

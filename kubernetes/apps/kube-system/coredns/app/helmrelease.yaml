@@ -3,25 +3,25 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: coredns
+  name: &app coredns
 spec:
-  interval: 30m
   chart:
     spec:
-      chart: coredns
-      version: 1.29.0
+      chart: *app
       sourceRef:
         kind: HelmRepository
-        name: coredns
+        name: *app
         namespace: flux-system
+      version: 1.29.0
   install:
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
     remediation:
-      strategy: rollback
       retries: 3
+      strategy: rollback
   valuesFrom:
     - kind: ConfigMap
       name: coredns-helm-values
