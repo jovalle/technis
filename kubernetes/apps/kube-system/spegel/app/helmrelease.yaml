@@ -3,28 +3,28 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: spegel
+  name: &app spegel
 spec:
-  interval: 30m
   chart:
     spec:
-      chart: spegel
-      version: v0.0.22
+      chart: *app
       sourceRef:
         kind: HelmRepository
-        name: spegel
+        name: *app
         namespace: flux-system
+      version: v0.0.22
   install:
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
     remediation:
-      strategy: rollback
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: spegel-helm-values
+      strategy: rollback
   values:
     serviceMonitor:
       enabled: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: spegel-helm-values

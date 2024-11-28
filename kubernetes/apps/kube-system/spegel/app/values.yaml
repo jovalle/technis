@@ -1,7 +1,7 @@
 ---
-spegel:
-  containerdSock: /run/containerd/containerd.sock
-  containerdRegistryConfigPath: /etc/cri/conf.d/hosts
 service:
   registry:
     hostPort: 29999
+spegel:
+  containerdRegistryConfigPath: /etc/cri/conf.d/hosts
+  containerdSock: /run/containerd/containerd.sock
