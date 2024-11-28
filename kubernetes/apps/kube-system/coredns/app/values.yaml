@@ -1,41 +1,4 @@
 ---
-fullnameOverride: coredns
-replicaCount: 1
-k8sAppLabelOverride: kube-dns
-serviceAccount:
-  create: true
-service:
-  clusterIP: 10.96.0.10
-  name: kube-dns
-servers:
-  - zones:
-      - zone: .
-        scheme: dns://
-        use_tcp: true
-    port: 53
-    plugins:
-      - name: errors
-      - name: health
-        configBlock: |-
-          lameduck 5s
-      - name: ready
-      - name: log
-        configBlock: |-
-          class error
-      - name: prometheus
-        parameters: 0.0.0.0:9153
-      - name: kubernetes
-        parameters: cluster.local in-addr.arpa ip6.arpa
-        configBlock: |-
-          pods insecure
-          fallthrough in-addr.arpa ip6.arpa
-      - name: forward
-        parameters: . /etc/resolv.conf
-      - name: cache
-        parameters: 30
-      - name: loop
-      - name: reload
-      - name: loadbalance
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
@@ -43,16 +6,53 @@ affinity:
         - matchExpressions:
             - key: node-role.kubernetes.io/control-plane
               operator: Exists
+fullnameOverride: coredns
+k8sAppLabelOverride: kube-dns
+replicaCount: 1
+servers:
+  - plugins:
+      - name: errors
+      - configBlock: |-
+          lameduck 5s
+        name: health
+      - name: ready
+      - configBlock: |-
+          class error
+        name: log
+      - name: prometheus
+        parameters: 0.0.0.0:9153
+      - configBlock: |-
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+        name: kubernetes
+        parameters: cluster.local in-addr.arpa ip6.arpa
+      - name: forward
+        parameters: . /etc/resolv.conf
+      - name: cache
+        parameters: 30
+      - name: loop
+      - name: reload
+      - name: loadbalance
+    port: 53
+    zones:
+      - scheme: dns://
+        use_tcp: true
+        zone: .
+service:
+  clusterIP: 10.96.0.10
+  name: kube-dns
+serviceAccount:
+  create: true
 tolerations:
   - key: CriticalAddonsOnly
     operator: Exists
-  - key: node-role.kubernetes.io/control-plane
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/control-plane
     operator: Exists
-    effect: NoSchedule
 topologySpreadConstraints:
-  - maxSkew: 1
-    topologyKey: kubernetes.io/hostname
-    whenUnsatisfiable: DoNotSchedule
-    labelSelector:
+  - labelSelector:
       matchLabels:
         app.kubernetes.io/instance: coredns
+    maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule

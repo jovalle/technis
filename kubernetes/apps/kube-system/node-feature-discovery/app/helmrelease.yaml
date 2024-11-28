@@ -3,24 +3,24 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: node-feature-discovery
+  name: &app node-feature-discovery
 spec:
   chart:
     spec:
-      chart: node-feature-discovery
+      chart: *app
       sourceRef:
         kind: HelmRepository
-        name: node-feature-discovery
+        name: *app
         namespace: flux-system
       version: 0.16.4
   install:
-    crds: CreateReplace
+    crds: &crds CreateReplace
     remediation:
       retries: 3
   interval: 30m
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
+    crds: *crds
     remediation:
       retries: 3
       strategy: rollback

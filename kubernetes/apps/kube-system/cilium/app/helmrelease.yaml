@@ -3,32 +3,37 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: cilium
+  name: &app cilium
 spec:
-  interval: 30m
   chart:
     spec:
-      chart: cilium
-      version: 1.16.1
+      chart: *app
       sourceRef:
         kind: HelmRepository
-        name: cilium
+        name: *app
         namespace: flux-system
+      version: 1.16.1
   install:
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
     remediation:
-      strategy: rollback
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: cilium-helm-values
+      strategy: rollback
   values:
+    dashboards:
+      annotations:
+        grafana_folder: &name Cilium
+      enabled: true
     hubble:
       enabled: true
       metrics:
+        dashboards:
+          annotations:
+            grafana_folder: *name
+          enabled: true
         enabled:
           - dns:query
           - drop
@@ -39,40 +44,36 @@ spec:
           - http
         serviceMonitor:
           enabled: true
-        dashboards:
-          enabled: true
-          annotations:
-            grafana_folder: Cilium
       relay:
         enabled: true
-        rollOutPods: true
         prometheus:
           serviceMonitor:
             enabled: true
+        rollOutPods: true
       ui:
         enabled: true
-        rollOutPods: true
         ingress:
           annotations:
             external-dns.alpha.kubernetes.io/target: internal.techn.is
-          enabled: true
           className: internal
-          hosts: ["hubble.techn.is"]
+          enabled: true
+          hosts:
+            - hubble.techn.is
+        rollOutPods: true
     operator:
+      dashboards:
+        annotations:
+          grafana_folder: *name
+        enabled: true
       prometheus:
         enabled: true
         serviceMonitor:
           enabled: true
-      dashboards:
-        enabled: true
-        annotations:
-          grafana_folder: Cilium
     prometheus:
       enabled: true
       serviceMonitor:
         enabled: true
         trustCRDsExist: true
-    dashboards:
-      enabled: true
-      annotations:
-        grafana_folder: Cilium
+  valuesFrom:
+    - kind: ConfigMap
+      name: cilium-helm-values

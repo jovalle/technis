@@ -1,11 +1,12 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/traefik/traefik-helm-chart/refs/heads/master/traefik/values.schema.json
 affinity:
   podAntiAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       - labelSelector:
           matchLabels:
-            app.kubernetes.io/name: traefik
             app.kubernetes.io/instance: traefik-kube-system
+            app.kubernetes.io/name: traefik
         topologyKey: kubernetes.io/hostname
 deployment:
   replicas: 3
@@ -16,11 +17,12 @@ ingressRoute:
     annotations:
       external-dns.alpha.kubernetes.io/target: internal.techn.is
     enabled: true
+    entryPoints:
+      - websecure
     matchRule: Host(`traefik.techn.is`)
-    entryPoints: ["websecure"]
     services:
-      - name: api@internal
-        kind: TraefikService
+      - kind: TraefikService
+        name: api@internal
 ports:
   web:
     redirectTo:
@@ -28,4 +30,5 @@ ports:
 service:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: internal.techn.is
-    io.cilium/lb-ipam-ips: 192.168.31.254
+  spec:
+    loadBalancerIP: 192.168.31.254

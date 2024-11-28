@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app spegel
+  name: &app csi-driver-smb
 spec:
   chart:
     spec:
@@ -12,7 +12,7 @@ spec:
         kind: HelmRepository
         name: *app
         namespace: flux-system
-      version: v0.0.22
+      version: v1.16.0
   install:
     remediation:
       retries: 3
@@ -22,9 +22,3 @@ spec:
     remediation:
       retries: 3
       strategy: rollback
-  values:
-    serviceMonitor:
-      enabled: true
-  valuesFrom:
-    - kind: ConfigMap
-      name: spegel-helm-values
