@@ -5,17 +5,17 @@ metadata:
     name: letsencrypt-production
 spec:
     acme:
-        server: https://acme-v02.api.letsencrypt.org/directory
         email: ENC[AES256_GCM,data:rklmoQ6VXCLM/w==,iv:TcjOVeGAZJ7REbtfTUb6iuyLx+838mEZ1FgGiBkBe6M=,tag:bzxp84p/EBDI370miEHplA==,type:str]
         privateKeySecretRef:
             name: letsencrypt-production
+        server: https://acme-v02.api.letsencrypt.org/directory
         solvers:
             - dns01:
                 cloudflare:
-                    email: ENC[AES256_GCM,data:00AJARu/BzDXqg==,iv:7wqjhw88ddOgLvU1VByKLvqwnbnshkghRPKNnq19/SU=,tag:rRcxN7IgwD7kVL7Tlo6TYw==,type:str]
                     apiTokenSecretRef:
-                        name: cloudflare
                         key: CLOUDFLARE_API_TOKEN
+                        name: cloudflare
+                    email: ENC[AES256_GCM,data:00AJARu/BzDXqg==,iv:7wqjhw88ddOgLvU1VByKLvqwnbnshkghRPKNnq19/SU=,tag:rRcxN7IgwD7kVL7Tlo6TYw==,type:str]
               selector:
                 dnsZones:
                     - techn.is
@@ -34,11 +34,11 @@ sops:
             RFlIclZmeXo5cTlvSFAzbTdIVDBuMXMKqkwXFrg1FLjYatQ1p49nP4hPAU6g4CJB
             EQYWRtCQRnyQFIa/RJQsrCartD3WbA041ALSKjt51c0X7NKmPG4VWw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-24T04:04:27Z"
-    mac: ENC[AES256_GCM,data:aYYPpSSCQsXR1TSSYlb06RJDvt8cAbRPk5l6xvzSQpmCn0E8iiZWR7l9admHcICuvcHZLGAb1Mnmrorp6Ufg2+yTgzGCLg6b0RBPCzhzBGTY7UMIOcdB1wxmLoyKyXPFN6Qrfym6pS1n+dotfU4KmK7HTFQ6O2VHa/K6mJklWCg=,iv:K5J0vgELXg3dAT1VnvgUMuhDdA9LlVRKw7hlf7TxXQM=,tag:gdWHbG4k8/aX6kvV2SUrcw==,type:str]
+    lastmodified: "2024-10-29T18:39:22Z"
+    mac: ENC[AES256_GCM,data:2T2lo7oLQFalRIE7d/mbI+zhegug1oLMzGJB/igrrY/BtdHugfzh5JVMk3RaPRLWu+tzoEHRJIoxYzpK7+3U+hNIim7/abrnVgr69+SlmkFtVwlx+4CiCikXjhtoelXkbrP1J3iB+A2QE0HSMlC53XLYB7MfuIZaixeukV7OwNw=,iv:+CFeTgOMz7G59vhg/vsxeP86ZuPjUHDrmhoDjDHEyWA=,tag:Xr9nH5cKxGpTW9RQS9PrLg==,type:str]
     pgp: []
     encrypted_regex: ^(data|email|stringData)$
-    version: 3.9.0
+    version: 3.9.1
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/cert-manager.io/clusterissuer_v1.json
 apiVersion: cert-manager.io/v1
@@ -47,17 +47,17 @@ metadata:
     name: letsencrypt-staging
 spec:
     acme:
-        server: https://acme-staging-v02.api.letsencrypt.org/directory
         email: ENC[AES256_GCM,data:rklmoQ6VXCLM/w==,iv:TcjOVeGAZJ7REbtfTUb6iuyLx+838mEZ1FgGiBkBe6M=,tag:bzxp84p/EBDI370miEHplA==,type:str]
         privateKeySecretRef:
             name: letsencrypt-staging
+        server: https://acme-staging-v02.api.letsencrypt.org/directory
         solvers:
             - dns01:
                 cloudflare:
-                    email: ENC[AES256_GCM,data:00AJARu/BzDXqg==,iv:7wqjhw88ddOgLvU1VByKLvqwnbnshkghRPKNnq19/SU=,tag:rRcxN7IgwD7kVL7Tlo6TYw==,type:str]
                     apiKeySecretRef:
-                        name: cloudflare
                         key: CLOUDFLARE_API_TOKEN
+                        name: cloudflare
+                    email: ENC[AES256_GCM,data:00AJARu/BzDXqg==,iv:7wqjhw88ddOgLvU1VByKLvqwnbnshkghRPKNnq19/SU=,tag:rRcxN7IgwD7kVL7Tlo6TYw==,type:str]
               selector:
                 dnsZones:
                     - techn.is
@@ -76,8 +76,8 @@ sops:
             RFlIclZmeXo5cTlvSFAzbTdIVDBuMXMKqkwXFrg1FLjYatQ1p49nP4hPAU6g4CJB
             EQYWRtCQRnyQFIa/RJQsrCartD3WbA041ALSKjt51c0X7NKmPG4VWw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-08-24T04:04:27Z"
-    mac: ENC[AES256_GCM,data:aYYPpSSCQsXR1TSSYlb06RJDvt8cAbRPk5l6xvzSQpmCn0E8iiZWR7l9admHcICuvcHZLGAb1Mnmrorp6Ufg2+yTgzGCLg6b0RBPCzhzBGTY7UMIOcdB1wxmLoyKyXPFN6Qrfym6pS1n+dotfU4KmK7HTFQ6O2VHa/K6mJklWCg=,iv:K5J0vgELXg3dAT1VnvgUMuhDdA9LlVRKw7hlf7TxXQM=,tag:gdWHbG4k8/aX6kvV2SUrcw==,type:str]
+    lastmodified: "2024-10-29T18:39:22Z"
+    mac: ENC[AES256_GCM,data:2T2lo7oLQFalRIE7d/mbI+zhegug1oLMzGJB/igrrY/BtdHugfzh5JVMk3RaPRLWu+tzoEHRJIoxYzpK7+3U+hNIim7/abrnVgr69+SlmkFtVwlx+4CiCikXjhtoelXkbrP1J3iB+A2QE0HSMlC53XLYB7MfuIZaixeukV7OwNw=,iv:+CFeTgOMz7G59vhg/vsxeP86ZuPjUHDrmhoDjDHEyWA=,tag:Xr9nH5cKxGpTW9RQS9PrLg==,type:str]
     pgp: []
     encrypted_regex: ^(data|email|stringData)$
-    version: 3.9.0
+    version: 3.9.1
