@@ -5,23 +5,23 @@ kind: HelmRelease
 metadata:
   name: cert-manager
 spec:
-  interval: 30m
   chart:
     spec:
       chart: cert-manager
-      version: v1.15.3
       sourceRef:
         kind: HelmRepository
         name: jetstack
         namespace: flux-system
+      version: v1.16.2
   install:
     remediation:
       retries: 3
+  interval: 30m
   upgrade:
     cleanupOnFail: true
     remediation:
-      strategy: rollback
       retries: 3
+      strategy: rollback
   values:
     crds:
       enabled: true
