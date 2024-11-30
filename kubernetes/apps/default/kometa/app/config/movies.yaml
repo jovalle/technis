@@ -20,25 +20,27 @@ collections:
       list_size: 10
   Trakt Popular:
     collection_order: custom
-    radarr_add_missing: false
-    radarr_monitor: false
-    radarr_search: false
-    sort_title: Traktpopular
+    list_minimum: 100
+    radarr_add_missing: true
+    radarr_search: true
     summary: The most popular movies for all time.
     sync_mode: sync
-    trakt_popular: 200
+    trakt_chart:
+      chart: popular
+      limits: 100
   Trakt Trending:
+    collection_order: custom
     template: { name: charts, website: Trakt }
     trakt_chart:
       chart: trending
-      limit: 100
+      limit: 10
   Unwatched:
     template: { library_type: <<library_type>>, name: unwatched }
 overlays:
   IMDb-Top-250:
+    imdb_chart: top_movies
     overlay:
       name: IMDb-Top-250
-    imdb_chart: top_movies
 templates:
   charts:
     schedule: weekly(monday)

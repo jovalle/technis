@@ -53,7 +53,7 @@ spec:
         cronjob:
           concurrencyPolicy: Forbid
           failedJobsHistory: 1
-          schedule: "@hourly"
+          schedule: "@daily"
           successfulJobsHistory: 1
           timeZone: *tz
         type: cronjob
