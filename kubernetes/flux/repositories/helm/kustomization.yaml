@@ -3,8 +3,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - ./bjw-s.yaml
   - ./cilium.yaml
+  - ./cloudflare.yaml
   - ./coredns.yaml
+  - ./csi-driver-nfs.yaml
+  - ./csi-driver-smb.yaml
   - ./external-dns.yaml
   - ./intel.yaml
   - ./jetstack.yaml
