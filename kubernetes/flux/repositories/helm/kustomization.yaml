@@ -10,6 +10,7 @@ resources:
   - ./csi-driver-nfs.yaml
   - ./csi-driver-smb.yaml
   - ./external-dns.yaml
+  - ./ingress-nginx.yaml
   - ./intel.yaml
   - ./jetstack.yaml
   - ./metrics-server.yaml
