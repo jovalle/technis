@@ -4,6 +4,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: &app external-dns-pihole
+  namespace: network
 spec:
   chart:
     spec:
@@ -12,7 +13,7 @@ spec:
         kind: HelmRepository
         name: *name
         namespace: flux-system
-      version: 1.14.5
+      version: 1.15.0
   install:
     crds: &crds CreateReplace
     remediation:
@@ -40,17 +41,15 @@ spec:
             name: *secret
     extraArgs:
       - --ignore-ingress-tls-spec
-      - --ingress-class=internal
     fullnameOverride: *app
     podAnnotations:
       secret.reloader.stakater.com/reload: *secret
-    policy: upsert-only
+    policy: sync
     provider:
       name: pihole
     registry: noop
     serviceMonitor:
       enabled: true
     sources:
-      - crd
       - ingress
       - service
