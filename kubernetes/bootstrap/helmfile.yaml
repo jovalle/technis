@@ -45,7 +45,7 @@ releases:
     name: traefik
     namespace: kube-system
     values: ["../apps/kube-system/traefik/app/values.yaml"]
-    version: 30.1.0
+    version: 33.2.1
 repositories:
   - name: cilium
     url: https://helm.cilium.io
