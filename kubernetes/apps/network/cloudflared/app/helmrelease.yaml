@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -42,8 +42,8 @@ sops:
             aTBWRWE2K0o0M0pqMmVEZXJ4L1prTDgKuMLzz5sx4lA8TpgwL1MxzJQJZ3gV8uda
             OfZGa8hi+uhY6cFhbI7zLLPoWTTx0jAW5CXQxdOeuJUyQJu7kXp8Hg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-11-16T04:16:24Z"
-    mac: ENC[AES256_GCM,data:7LwsxPP2XB8Arid+y1E4xTrEJtYKQiHrZ2FWgm6KtVQlF6V+tFCn6OQCFN4XypFww8GdCiIwrCwpWT9auNucSmUkk1+9p8gqfgTwLFEpReY5pi6bMkMXpY16RJZIZSZQLvO+5iBrLFtcjmg069qcL3CQYbk/Ry1NGrbQBEW9yi4=,iv:xu77oFkwugU1beRbE5VoMQ8LS5S517Dt/bYMuMyUv/4=,tag:h1ByMfA15MJysS5lQky8Ng==,type:str]
+    lastmodified: "2024-12-03T15:43:59Z"
+    mac: ENC[AES256_GCM,data:v/MCk7i2Hpi4OUU0RQHQak4+GqUSnMPlbN5dgKL2B0fQFg3C6exrjFzdfw8icWtNLBxdghKUR3In2TPoOiBA8KB1e5BZP5TDPObaA9RX19OY58yJNaENEj8ULG72TS8VsMk4a0iNt7E6C6BZBHONw2/xz4E/FdrPWPLU13ln0hQ=,iv:KsA9tmRwIPgk+4SCqlKiMJz4NL1aZsavI0YUfWgoeAE=,tag:tVtlEu5YT2DMW9ZF+UZGfA==,type:str]
     pgp: []
     encrypted_regex: ^(tunnel_token)$
     version: 3.9.1
