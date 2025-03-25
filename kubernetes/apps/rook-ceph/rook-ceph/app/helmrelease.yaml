@@ -13,7 +13,7 @@ spec:
         kind: HelmRepository
         name: *name
         namespace: flux-system
-      version: v1.15.1
+      version: v1.16.5
   install:
     remediation:
       retries: 3
