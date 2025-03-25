@@ -8,7 +8,7 @@ affinity:
               operator: Exists
 fullnameOverride: coredns
 k8sAppLabelOverride: kube-dns
-replicaCount: 1
+replicaCount: 3
 servers:
   - plugins:
       - name: errors
@@ -39,7 +39,7 @@ servers:
         use_tcp: true
         zone: .
 service:
-  clusterIP: 10.96.0.10
+  clusterIP: 10.31.128.10
   name: kube-dns
 serviceAccount:
   create: true

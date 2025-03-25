@@ -13,8 +13,6 @@ cgroup:
 cluster:
   id: 1
   name: technis
-containerRuntime:
-  integration: containerd
 enableRuntimeDeviceDetection: true
 endpointRoutes:
   enabled: true
@@ -22,7 +20,7 @@ hubble:
   enabled: false
 ipam:
   mode: kubernetes
-ipv4NativeRoutingCIDR: 10.244.0.0/16
+ipv4NativeRoutingCIDR: 10.31.0.0/17
 k8sServiceHost: 127.0.0.1
 k8sServicePort: 7445
 kubeProxyReplacement: true
