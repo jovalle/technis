@@ -1,0 +1,44 @@
+---
+
+- name: Assert required variables
+  ansible.builtin.assert:
+    that:
+      - domain is defined
+
+- name: Ensure installed packages are up-to-date
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: full
+  tags:
+    - packages
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    pkg:
+      - btop
+      - fio
+      - glances
+      - htop
+      - jq
+      - neovim
+      - net-tools
+      - nvme-cli
+      - s-tui
+  tags:
+    - packages
+
+- name: Set hostname
+  block:
+    - name: Update hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ ansible_default_ipv4.address }}"
+        line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }}.{{ domain }} {{ inventory_hostname }}"
+        create: true
+        mode: '0644'
+    - name: Update via hostname
+      ansible.builtin.command: "hostname {{ inventory_hostname }}"
+      changed_when: false
+    - name: Update via hostnamectl
+      ansible.builtin.command: "hostnamectl set-hostname {{ inventory_hostname }}"
+      changed_when: false

@@ -1,2 +1,13 @@
 ---
-collections: []
+
+collections:
+  - name: ansible.posix
+    version: 1.5.4
+  - name: ansible.utils
+    version: 4.1.0
+  - name: community.general
+    version: 8.6.1
+  - name: community.sops
+    version: 1.6.7
+  - name: kubernetes.core
+    version: 3.1.0
