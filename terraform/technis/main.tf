@@ -1,7 +1,3 @@
-variable "talos_version" {
-  default = "v1.7.6"
-}
-
 locals {
   vms = {
     "k8s1" = { id = 1, node = "ms-01" },
@@ -11,24 +7,9 @@ locals {
 }
 
 resource "proxmox_vm_qemu" "vm" {
-  for_each = local.vms
-  name     = each.key
-  vmid     = "10${each.value.id}"
-  tags     = "k8s"
-
-  onboot      = true
-  target_node = each.value.node
-  hagroup     = "mothership"
-  hastate     = "started"
-
-  cpu     = "host"
-  cores   = 8
-  sockets = 1
-  memory  = 16384
-  scsihw  = "virtio-scsi-single"
-  qemu_os = "other" # kernel newer than 5.x
-  boot    = "order=ide2;scsi0"
-
+  boot     = "order=ide2;scsi0"
+  cores    = 8
+  cpu_type = "host"
   disks {
     ide {
       ide2 {
@@ -49,10 +30,24 @@ resource "proxmox_vm_qemu" "vm" {
       }
     }
   }
-
+  for_each = local.vms
+  memory   = 16384
+  name     = each.key
   network {
+    id      = 0
     bridge  = "vmbr0"
     macaddr = "74:63:68:6e:73:8${each.value.id}"
     model   = "virtio"
   }
+  onboot      = true
+  qemu_os  = "other" # kernel newer than 5.x
+  scsihw   = "virtio-scsi-single"
+  sockets  = 1
+  tags     = "k8s"
+  target_node = each.value.node
+  vmid     = "10${each.value.id}"
+}
+
+variable "talos_version" {
+  default = "v1.9.5"
 }
