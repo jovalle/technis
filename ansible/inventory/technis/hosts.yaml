@@ -1,17 +1,24 @@
 ---
-stars:
-  hosts:
-    stargate:
-      ansible_host: 192.168.31.2
-    starport:
-      ansible_host: 192.168.31.9
+all:
   vars:
-    ansible_user: root
-    net_gateway_ip: 192.168.31.1
-
-truenas:
-  hosts:
-    nexus:
-      ansible_host: 192.168.31.3
+    domain: technis.net
+kubernetes:
+  children:
+    control_plane:
+      hosts:
+        k8s1:
+        k8s2:
+        k8s3:
   vars:
-    ansible_user: root
+    apiserver_endpoint: k8s.techn.is
+    kube_vip_address: 192.168.31.80
+proxmox:
+  hosts:
+    ms-01:
+    ms-02:
+    ms-03:
+virtual:
+  hosts:
+    k8s1:
+    k8s2:
+    k8s3:
