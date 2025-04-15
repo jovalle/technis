@@ -13,7 +13,7 @@ spec:
         kind: HelmRepository
         name: rook-ceph
         namespace: flux-system
-      version: v1.16.5
+      version: v1.16.6
   dependsOn:
     - name: rook-ceph-operator
       namespace: rook-ceph
@@ -32,6 +32,7 @@ spec:
     cephClusterSpec:
       crashCollector:
         disable: true
+      dataDirHostPath: /var/lib/rook
       external:
         enable: true
       healthCheck:
