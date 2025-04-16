@@ -14,7 +14,7 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-    - name: external-dns-pihole
+    - name: external-dns
   interval: 30m
   path: ./kubernetes/apps/network/ingress-nginx/app
   prune: false
