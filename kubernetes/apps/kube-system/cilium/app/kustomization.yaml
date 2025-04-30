@@ -7,6 +7,8 @@ configMapGenerator:
     name: cilium-helm-values
 configurations:
   - kustomizeconfig.yaml
+generatorOptions:
+  disableNameSuffixHash: true
 kind: Kustomization
 resources:
   - ./helmrelease.yaml

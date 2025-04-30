@@ -20,30 +20,31 @@ releases:
     name: cilium
     namespace: kube-system
     values: ["../apps/kube-system/cilium/app/values.yaml"]
-    version: 1.16.1
+    version: 1.17.3
   - chart: coredns/coredns
     name: coredns
     namespace: kube-system
     needs: ["cilium"]
     values: ["../apps/kube-system/coredns/app/values.yaml"]
-    version: 1.31.0
+    version: 1.39.1
   - chart: postfinance/kubelet-csr-approver # Ref: https://www.talos.dev/v1.7/introduction/troubleshooting/#talos-complains-about-certificate-errors-on-kubelet-api
-    installed: { { eq .Environment.Name "talos" | toYaml } }
+    installed: {{ eq .Environment.Name "talos" | toYaml }}
     name: kubelet-csr-approver
     namespace: kube-system
     needs: ["cilium", "coredns"]
     values: ["../apps/kube-system/kubelet-csr-approver/app/values.yaml"]
     version: 1.1.0
   - chart: oci://ghcr.io/spegel-org/helm-charts/spegel
-    installed: { { eq .Environment.Name "talos" | toYaml } }
+    installed: {{ eq .Environment.Name "talos" | toYaml }}
     name: spegel
     namespace: kube-system
     needs: ["cilium", "coredns", "kubelet-csr-approver"]
     values: ["../apps/kube-system/spegel/app/values.yaml"]
-    version: v0.0.22
+    version: 0.1.0
   - chart: oci://ghcr.io/traefik/helm/traefik
     name: traefik
     namespace: kube-system
+    needs: ["cilium", "coredns"]
     values: ["../apps/kube-system/traefik/app/values.yaml"]
     version: 30.1.0
 repositories:
