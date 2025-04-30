@@ -40,7 +40,7 @@ releases:
     namespace: kube-system
     needs: ["cilium", "coredns", "kubelet-csr-approver"]
     values: ["../apps/kube-system/spegel/app/values.yaml"]
-    version: 0.1.0
+    version: 0.2.0
   - chart: oci://ghcr.io/traefik/helm/traefik
     name: traefik
     namespace: kube-system
