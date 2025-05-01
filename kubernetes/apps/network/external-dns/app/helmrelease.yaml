@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app external-dns-pihole
+  name: &app external-dns
   namespace: network
 spec:
   chart:
@@ -13,7 +13,7 @@ spec:
         kind: HelmRepository
         name: *name
         namespace: flux-system
-      version: 1.15.0
+      version: 1.16.1
   install:
     crds: &crds CreateReplace
     remediation:
@@ -29,22 +29,35 @@ spec:
     domainFilters:
       - "techn.is"
     env:
-      - name: EXTERNAL_DNS_PIHOLE_SERVER
+      - name: EXTERNAL_DNS_PIHOLE_API_VERSION
         valueFrom:
           secretKeyRef:
-            key: EXTERNAL_DNS_PIHOLE_SERVER
+            key: EXTERNAL_DNS_PIHOLE_API_VERSION
             name: &secret external-dns-pihole-secret
       - name: EXTERNAL_DNS_PIHOLE_PASSWORD
         valueFrom:
           secretKeyRef:
             key: EXTERNAL_DNS_PIHOLE_PASSWORD
             name: *secret
+      - name: EXTERNAL_DNS_PIHOLE_SERVER
+        valueFrom:
+          secretKeyRef:
+            key: EXTERNAL_DNS_PIHOLE_SERVER
+            name: *secret
+      - name: EXTERNAL_DNS_PIHOLE_TLS_SKIP_VERIFY
+        valueFrom:
+          secretKeyRef:
+            key: EXTERNAL_DNS_PIHOLE_TLS_SKIP_VERIFY
+            name: *secret
     extraArgs:
       - --ignore-ingress-tls-spec
-    fullnameOverride: *app
+    image: # FIXME: v6 implementation commits were not included in latest release (0.16.1)
+      repository: gcr.io/k8s-staging-external-dns/external-dns
+      tag: v20250402-v0.16.1-48-g1efdf416
+    logLevel: debug
     podAnnotations:
       secret.reloader.stakater.com/reload: *secret
-    policy: sync
+    policy: upsert-only
     provider:
       name: pihole
     registry: noop
