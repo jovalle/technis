@@ -20,7 +20,6 @@ parameters:
   pool: core
 provisioner: rook-ceph.rbd.csi.ceph.com
 reclaimPolicy: Delete
-
 ---
 allowVolumeExpansion: true
 apiVersion: storage.k8s.io/v1

@@ -31,10 +31,20 @@ spec:
       enableLiveness: true
       serviceMonitor:
         enabled: true
+    dashboard:
+      enabled: true
     monitoring:
       enabled: true
+    operatorNamespace: rook-ceph
     resources:
       limits: {}
       requests:
-        cpu: 100m # unchangeable
-        memory: 128Mi # unchangeable
+        cpu: 100m
+        memory: 128Mi
+    toolbox:
+      enabled: true
+      resources:
+        limits: {}
+        requests:
+          cpu: 100m
+          memory: 128Mi
