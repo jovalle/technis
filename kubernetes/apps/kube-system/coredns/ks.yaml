@@ -15,7 +15,7 @@ spec:
   retryInterval: 1m
   sourceRef:
     kind: GitRepository
-    name: technis
+    name: flux-system
   targetNamespace: kube-system
   timeout: 5m
   wait: false

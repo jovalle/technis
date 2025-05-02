@@ -11,4 +11,5 @@ generatorOptions:
   disableNameSuffixHash: true
 kind: Kustomization
 resources:
+  - ./helmrepository.yaml
   - ./helmrelease.yaml
