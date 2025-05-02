@@ -1,73 +1,33 @@
 ---
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
-version: "3"
 
 tasks:
-
   bootstrap:
-    desc: Bootstrap Flux into a Kubernetes cluster
-    summary: |
-      Args:
-        cluster: Cluster to run command against (required)
-    prompt: Bootstrap Flux into the '{{.cluster}}' cluster ... continue?
     cmds:
-      # Install Flux
-      - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/bootstrap/flux --force-conflicts
-      # Install secrets
-      - sops --decrypt {{.KUBERNETES_DIR}}/bootstrap/flux/age-key.secret.sops.yaml | kubectl --context {{.cluster}} apply --server-side --force-conflicts --filename -
-      # Install Flux Kustomization resources
-      - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/flux/config --force-conflicts
-    requires:
-      vars: ["cluster"]
+      - flux check --pre
+      - flux bootstrap github --owner=jovalle --repository=technis --branch=main
+        --path="./kubernetes/apps" --personal --version={{.FLUX_VERSION}}
+      - sops --decrypt
+        {{.KUBERNETES_DIR}}/bootstrap/flux/age-key.secret.sops.yaml | kubectl
+        --context {{.cluster}} apply --server-side --force-conflicts --filename
+        -
+    desc: Bootstrap Flux into a Kubernetes cluster
     preconditions:
+      - command -v flux
       - command -v sops
       - test -f {{.ROOT_DIR}}/age.agekey
       - test -f {{.KUBERNETES_DIR}}/bootstrap/flux/age-key.secret.sops.yaml
-      - sops --decrypt {{.KUBERNETES_DIR}}/bootstrap/flux/age-key.secret.sops.yaml
-
-  apply:
-    desc: Apply a Flux Kustomization resource for a cluster
+      - sops --decrypt
+        {{.KUBERNETES_DIR}}/bootstrap/flux/age-key.secret.sops.yaml
+    prompt: Bootstrap Flux into the '{{.cluster}}' cluster ... continue?
+    requires:
+      vars: ["cluster"]
     summary: |
       Args:
         cluster: Cluster to run command against (required)
-        path: Path to the Flux Kustomization resource (required)
-        namespace: Namespace the Flux Kustomization exists in (default: flux-system)
-    cmd: |
-      flux --context {{.cluster}} build ks {{base .path}} \
-          --namespace {{.namespace}} \
-          --kustomization-file {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml \
-          --path {{.KUBERNETES_DIR}}/apps/{{.path}} \
-          {{- if contains "not found" .ks }}--dry-run \{{ end }}
-      | \
-      kubectl --context {{.cluster}} apply --server-side \
-          --field-manager=kustomize-controller -f -
-    requires:
-      vars: ["cluster", "path"]
-    vars:
-      namespace: '{{.namespace | default "flux-system"}}'
-      ks:
-        sh: flux --context {{.cluster}} --namespace {{.namespace}} get kustomizations {{base .path}} 2>&1
-    preconditions:
-      - test -f {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml
 
-  delete:
-    desc: Attempt to delete a Flux Kustomization resource for a cluster
-    summary: |
-      Args:
-        cluster: Cluster to run command against (required)
-        path: Path to the Flux Kustomization resource (required)
-        namespace: Namespace the Flux Kustomization exists in (default: flux-system)
-    cmd: |
-      flux --context {{.cluster}} build ks {{base .path}} \
-          --namespace {{.namespace}} \
-          --kustomization-file {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml \
-          --path {{.KUBERNETES_DIR}}/apps/{{.path}} \
-      | \
-      kubectl --context {{.cluster}} delete -f -
-    requires:
-      vars: ["cluster", "path"]
-    vars:
-      namespace: '{{.namespace | default "flux-system"}}'
-    preconditions:
-      - flux --context {{.cluster}} --namespace {{.namespace}} get kustomization {{base .path}}
-      - test -f {{.KUBERNETES_DIR}}/apps/{{.path}}/ks.yaml
+vars:
+  # renovate: datasource=docker registryUrls=["https://ghcr.io"] depName=ghcr.io/fluxcd/flux-manifests versioning=semver
+  FLUX_VERSION: v2.5.1
+
+version: "3"
