@@ -24,6 +24,10 @@ spec:
       retries: 3
       strategy: rollback
   values:
+    global:
+      rbac:
+        aggregateClusterRole: true
+        create: true
     crds:
       enabled: true
     dns01RecursiveNameservers: https://1.1.1.1:443/dns-query,https://1.0.0.1:443/dns-query
