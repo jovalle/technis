@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &name ingress-nginx
+  namespace: network
+spec:
+  chart:
+    spec:
+      chart: *name
+      sourceRef:
+        kind: HelmRepository
+        name: *name
+        namespace: network
+      version: 4.11.3
+  install:
+    remediation:
+      retries: 3
+  interval: 30m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    controller:
+      admissionWebhooks:
+        enabled: true
+        patch:
+          enabled: true
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: controller
+                    app.kubernetes.io/instance: ingress-nginx
+                    app.kubernetes.io/name: ingress-nginx
+                topologyKey: kubernetes.io/hostname
+      extraArgs:
+        default-ssl-certificate: "cert-manager/techn.is-tls"
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      replicaCount: 3
+      service:
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: nginx.techn.is
+        loadBalancerIP: 192.168.31.212
