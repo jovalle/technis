@@ -9,4 +9,5 @@ configurations:
   - kustomizeconfig.yaml
 kind: Kustomization
 resources:
+  - ./helmrepository.yaml
   - ./helmrelease.yaml
