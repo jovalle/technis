@@ -13,7 +13,7 @@ spec:
         kind: HelmRepository
         name: postfinance
         namespace: kube-system
-      version: 1.1.0
+      version: 1.2.7
   install:
     remediation:
       retries: 3

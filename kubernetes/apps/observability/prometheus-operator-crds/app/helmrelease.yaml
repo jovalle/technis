@@ -3,17 +3,16 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app coredns
-  namespace: kube-system
+  name: &app prometheus-operator-crds
 spec:
   chart:
     spec:
       chart: *app
       sourceRef:
         kind: HelmRepository
-        name: *app
-        namespace: kube-system
-      version: 1.39.1
+        name: prometheus-community
+        namespace: observability
+      version: 20.0.0
   install:
     remediation:
       retries: 3
@@ -22,7 +21,3 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-      strategy: rollback
-  valuesFrom:
-    - kind: ConfigMap
-      name: coredns-helm-values
