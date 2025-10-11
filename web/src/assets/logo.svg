@@ -1,0 +1,14 @@
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+ <!-- Logo with transparent background -->
+ <defs>
+  <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+   <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.9"/>
+  </filter>
+ </defs>
+ <g>
+  <title>Layer 1</title>
+  <g transform="translate(0 0) scale(1.25 1.25)" fill="#ffffff" id="svg_2" stroke-width="0" filter="url(#shadow)">
+   <path fill="#ffffff" transform="translate(0 0) scale(1.25 1.25)" d="m18.84364,18.17974l0,11.87l-11.87,0l0,-11.87l11.87,0m2.1,-2.1l-16.07,0l0,16.06l16.07,0l0,-16.06zm17.11,2.1l0,11.87l-11.86,0l0,-11.87l11.86,0m2.1,-2.1l-16.03,0l0,16.06l16,0l0,-16.06l0.03,0zm17.12,2.1l0,11.87l-11.87,0l0,-11.87l11.87,0m2.1,-2.1l-16.07,0l0,16.06l16.07,0l0,-16.06zm-21.32,21.31l0,11.87l-11.86,0l0,-11.87l11.86,0m2.1,-2.1l-16.03,0l0,16.07l16,0l0,-16.06l0.03,-0.01z" id="svg_4"/>
+  </g>
+ </g>
+</svg>

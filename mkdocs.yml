@@ -1,0 +1,64 @@
+docs_dir: docs
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jovalle/technis
+extra_css:
+  - styles/mkdocs.css
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg ""
+      emoji_index: !!python/name:material.extensions.emoji.twemoji ""
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+nav:
+  - Home: index.md
+  - Services:
+      - Plex: plex.md
+site_author: jovalle
+site_description: Living Reference of the Technis Homelab
+site_dir: web/public/docs
+site_name: Technis
+site_url: https://docs.techn.is
+theme:
+  favicon: assets/logo.svg
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  font:
+    code: Roboto Mono
+    text: Roboto
+  logo: assets/logo.svg
+  name: material
+  palette:
+    - accent: blue
+      primary: black
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - accent: blue
+      primary: indigo
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+use_directory_urls: true

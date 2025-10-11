@@ -1,0 +1,25 @@
+{
+  "author": "jovalle",
+  "dependencies": {
+    "mkdocs": "^0.0.1"
+  },
+  "description": "Technis landing page",
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "homelab",
+    "infrastructure"
+  ],
+  "license": "MIT",
+  "name": "technis-web",
+  "scripts": {
+    "build": "npm run clean && npm run copy",
+    "clean": "rm -rf public/www && mkdir -p public/www",
+    "copy": "cp -r src/*.html public/www/ && cp -r src/styles public/www/ && cp -r src/scripts public/www/ && cp -r src/assets public/www/",
+    "dev": "npm run build && npm run watch & npm run serve",
+    "serve": "python3 -m http.server 8000 --directory public/www",
+    "watch": "nodemon --watch src --ext html,css,js,svg -x 'npm run build'"
+  },
+  "version": "1.0.0"
+}
