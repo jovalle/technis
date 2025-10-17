@@ -26,7 +26,7 @@ releases:
     namespace: kube-system
     needs: ["cilium"]
     values: ["../apps/kube-system/coredns/app/values.yaml"]
-    version: 1.39.1
+    version: 1.45.0
   - chart: postfinance/kubelet-csr-approver # Ref: https://www.talos.dev/v1.7/introduction/troubleshooting/#talos-complains-about-certificate-errors-on-kubelet-api
     installed: {{ eq .Environment.Name "talos" | toYaml }}
     name: kubelet-csr-approver
