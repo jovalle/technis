@@ -1,0 +1,21 @@
+{
+  "name": "technis",
+  "version": "1.0.0",
+  "description": "Homelab managed by code",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7"
+  },
+  "keywords": [
+    "homelab",
+    "kubernetes",
+    "flux",
+    "talos"
+  ],
+  "license": "MIT"
+}

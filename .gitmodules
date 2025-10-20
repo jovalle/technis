@@ -1,0 +1,6 @@
+[submodule "docs"]
+	path = docs
+	url = https://github.com/jovalle/docs.techn.is
+[submodule "web"]
+	path = web
+	url = https://github.com/jovalle/techn.is

@@ -1,3 +1,4 @@
+__pycache__/
 .decrypted*
 .DS_Store
 .env
@@ -9,6 +10,8 @@
 .terraform.lock.hcl
 .vagrant
 .venv/
+.venv/
+.vscode/
 .vscode/settings.json
 *.agekey
 *.ignore
@@ -29,5 +32,7 @@ kubeconfig
 kubernetes/bootstrap/talos/controlplane.yaml
 kubernetes/bootstrap/talos/secrets.yaml
 kubernetes/bootstrap/talos/worker.yaml
+node_modules/
+public/
 talosconfig
 Thumbs.db
