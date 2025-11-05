@@ -1,38 +1,43 @@
-__pycache__/
-.decrypted*
+# Generic
 .DS_Store
-.env
-.envrc
-.private/
-.sync-*
-.task/
-.terraform
-.terraform.lock.hcl
-.vagrant
-.venv/
-.venv/
-.vscode/
-.vscode/settings.json
-*.agekey
-*.ignore
-*.key
 *.log
-*.pem
-*.pub
-*.tfvars
-*copy*
-*lock.json
-*tfstate*
-ansible/files/experimental
-ansible/roles/monitoring/files/kube-prometheus/manifests
-ansible/roles/monitoring/files/kube-prometheus/vendor
-config.xml
-key.json
-kubeconfig
-kubernetes/bootstrap/talos/controlplane.yaml
-kubernetes/bootstrap/talos/secrets.yaml
-kubernetes/bootstrap/talos/worker.yaml
+*.tmp
+*.retry
+
+# IDE
+* copy*
+*copy
+.idea/
+
+# Python
+.venv/
+venv/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Node
 node_modules/
-public/
+.npm/
+.eslintcache
+*.tsbuildinfo
+
+# Task
+.task/
+
+# Sensitive files
+*.agekey
+*.enc
+*.key
+*.kubeconfig
+*.sops.*
+*[cC][lL][aA][uU][dD][eE]*
+*[gG][eE][mM][iI][nN][iI]*
+.vault*
+kubeconfig
 talosconfig
-Thumbs.db
+
+# Archive
+archive/

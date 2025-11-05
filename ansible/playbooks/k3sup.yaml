@@ -1,3 +1,0 @@
-- hosts: cluster
-  roles:
-    - k3s/up

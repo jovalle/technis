@@ -1,4 +1,0 @@
-- name: deploy metallb
-  include_tasks: metallb.yaml
-  when:
-    - metallb_mode != "disabled"

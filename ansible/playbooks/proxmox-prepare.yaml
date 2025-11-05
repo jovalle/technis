@@ -1,0 +1,92 @@
+---
+- name: Prepare Proxmox nodes
+  gather_facts: true
+  hosts: proxmox
+  roles:
+    - role: package
+    - role: common
+    - role: kernel
+    - role: fail2ban
+    - role: monitoring
+    - role: keepalived
+      vars:
+        keepalived_priority: >-
+          {% if inventory_hostname == groups["proxmox"][0] %}101{% else %}100{%
+          endif %}
+        keepalived_state: >-
+          {% if inventory_hostname == groups["proxmox"][0] %}MASTER{% else
+          %}BACKUP{% endif %}
+  tasks:
+    - name: Add useful aliases to .bashrc
+      ansible.builtin.blockinfile:
+        block: |
+          # Editor
+          export EDITOR=vim
+          set -o vi
+
+          # Aliases
+          alias ll='ls -alh'
+          alias k='kubectl'
+          alias pct='pct list'
+          alias qm='qm list'
+          alias pvesh='pvesh get /nodes'
+
+          # Proxmox shortcuts
+          alias pve-status='pvecm status'
+          alias pve-nodes='pvecm nodes'
+          alias pve-vms='qm list'
+          alias pve-containers='pct list'
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Useful aliases"
+        path: /root/.bashrc
+
+    - name: Gather final system facts
+      ansible.builtin.setup:
+
+    - name: Display final system status
+      ansible.builtin.debug:
+        msg: |
+          ═══════════════════════════════════════════════════════════════
+          Node Preparation Complete: {{ inventory_hostname }}
+          ═══════════════════════════════════════════════════════════════
+
+          System Information:
+            Hostname: {{ ansible_hostname }}
+            IP Address: {{ ansible_host }}
+            OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+            Kernel: {{ ansible_kernel }}
+            CPU: {{ ansible_processor_vcpus }} cores
+            Memory: {{ (ansible_memtotal_mb / 1024) | round(1) }} GB
+            Swap: {{ (ansible_swaptotal_mb / 1024) | round(1) }} GB
+
+          Configuration Applied:
+            ✓ Packages upgraded
+            ✓ Timezone set to {{ timezone }}
+            ✓ Kernel parameters optimized for hypervisor
+            ✓ Fail2ban configured
+            ✓ Monitoring tools enabled
+            ✓ Keepalived VIP configured
+            ✓ Shell customizations applied
+
+          Keepalived Configuration:
+            Role: {{ keepalived_state }}
+            Priority: {{ keepalived_priority }}
+            Interface: {{ keepalived_interface }}
+            Virtual IP: {{ proxmox_vip }}
+
+          Proxmox Web UI Access:
+            Node Direct: https://{{ ansible_host }}:8006
+            Cluster VIP: https://{{ proxmox_vip }}:8006
+
+          {% if apt_upgrade.changed %}
+          ⚠ IMPORTANT: Reboot recommended to apply kernel updates
+            Run: ansible-playbook playbooks/reboot.yaml
+          {% endif %}
+  vars:
+    common_packages: []
+    domain: localdomain
+    kernel_parameters: {}
+    lan_network: 127.0.0.1/32
+    locale: en_US.UTF-8
+    proxmox_packages: []
+    ssh_port: 22
+    timezone: UTC

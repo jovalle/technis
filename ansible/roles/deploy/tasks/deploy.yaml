@@ -1,3 +1,0 @@
-- name: deploy {{ target_role }}
-  import_role:
-    name: "{{ target_role }}"

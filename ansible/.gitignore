@@ -1,0 +1,9 @@
+# Ansible retry files
+*.retry
+
+# Ansible facts cache
+/tmp/ansible_facts/
+
+# Ansible generated files
+.ansible/
+.lock

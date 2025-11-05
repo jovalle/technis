@@ -1,7 +1,14 @@
+---
+# .ansible-lint.yml
+
+exclude_paths:
+  - .cache/
+  - roles/external/
+  - playbooks/deprecated/
+  - inventory/
+  - ../docs/
+  - docs/
+profile: production
 skip_list:
-  - latest[git]
-warn_list:
-  - command-instead-of-shell
-  - deprecated-command-syntax
+  - no-same-owner
   - experimental
-  - no-changed-when

@@ -1,0 +1,40 @@
+# Syncthing ignore patterns
+# https://docs.syncthing.net/users/ignoring.html
+
+# Git
+.git
+
+# Python
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+
+# Node
+**/node_modules
+**/.npm
+.eslintcache
+
+# Build artifacts
+**/dist
+**/build
+**/*.tsbuildinfo
+
+# Task
+.task
+
+# Logs
+**/*.log
+
+# Temporary files
+**/*.tmp
+**/*.retry
+**/.DS_Store
+
+# Archive
+archive
+
+# Submodules (managed separately)
+docs
+web

@@ -1,34 +1,18 @@
-- name: install kube-prometheus stack
-  import_role:
-    name: monitoring/kube-prometheus
-  tags:
-    - kube-prometheus
+---
+- name: Ensure monitoring tools are installed
+  ansible.builtin.apt:
+    name:
+      - smartmontools
+      - lm-sensors
+    state: present
 
-- name: install loki via helm
-  import_role:
-    name: helm
-  vars:
-    helm_repo_name: grafana
-    helm_repo_url: https://grafana.github.io/helm-charts
-    helm_chart_name: loki
-    helm_chart: grafana/loki
-    helm_chart_namespace: monitoring
-    helm_chart_values: |
-      loki:
-        auth_enabled: false
-        commonConfig:
-          replication_factor: 1
-        storage:
-          type: 'filesystem'
-      singleBinary:
-        replicas: 1
+- name: Detect available sensors
+  ansible.builtin.command: sensors-detect --auto
+  changed_when: false
+  failed_when: false
 
-- name: deploy local manifests
-  import_role:
-    name: kubectl
-  vars:
-    payload_type: fileglob
-    source_role: monitoring
-    target_fileglob: "{{ playbook_dir }}/../files/monitoring/*"
-  tags:
-    - extra
+- name: Enable and start smartd
+  ansible.builtin.service:
+    name: smartd
+    enabled: true
+    state: started

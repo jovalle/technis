@@ -1,0 +1,32 @@
+---
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: full
+    autoclean: true
+    autoremove: true
+  register: package_apt_upgrade
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+  when: common_packages | length > 0
+
+- name: Install Proxmox-specific packages
+  ansible.builtin.apt:
+    name: "{{ proxmox_packages }}"
+    state: present
+  when: proxmox_packages | length > 0
+
+- name: Display upgrade summary
+  ansible.builtin.debug:
+    msg: |
+      Packages upgraded: {{ package_apt_upgrade.changed }}
+      {% if package_apt_upgrade.changed %}
+      Reboot recommended after completion
+      {% endif %}

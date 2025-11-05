@@ -1,5 +1,5 @@
 ---
-- name: Restart keepalived
+- name: Restart fail2ban
   ansible.builtin.service:
-    name: keepalived
+    name: fail2ban
     state: restarted

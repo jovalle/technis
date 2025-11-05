@@ -1,30 +1,45 @@
-vrrp_instance VI_1 {
-    state  {{ 'MASTER' if hostvars[groups['control_plane'][0]] else 'BACKUP' }}
-    interface {{ keepalived_interface }}
-    virtual_router_id 1
-    priority {{ '150' if hostvars[groups['control_plane'][0]] else '100' }}
-    advert_int 1
-    authentication {
-        auth_type PASS
-        auth_pass kubernetes
-    }
-    virtual_ipaddress {
-        {{ keepalived_vip }}
-    }
+global_defs {
+    router_id {{ ansible_hostname }}
+    vrrp_skip_check_adv_addr
+    vrrp_garp_interval 0
+    vrrp_gna_interval 0
 }
-{% if keepalived_ingress_vip is defined %}
-vrrp_instance VI_2 {
-    state  {{ 'MASTER' if hostvars[groups['control_plane'][0]] else 'BACKUP' }}
-    interface {{ keepalived_interface }}
-    virtual_router_id 2
-    priority {{ '200' if hostvars[groups['control_plane'][0]] else '150' }}
-    advert_int 1
-    authentication {
-        auth_type PASS
-        auth_pass ingress
-    }
-    virtual_ipaddress {
-        {{ keepalived_ingress_vip }}
-    }
+
+vrrp_script check_pveproxy {
+    script "/usr/bin/systemctl is-active pveproxy"
+    interval 2
+    weight 10
+    fall 2
+    rise 2
 }
+
+vrrp_instance VI_PROXMOX {
+    state {{ keepalived_state }}
+    interface {{ keepalived_interface }}
+    virtual_router_id {{ keepalived_virtual_router_id }}
+    priority {{ keepalived_priority }}
+    advert_int 1
+
+    # Use unicast for better reliability in switched networks
+    unicast_src_ip {{ ansible_host }}
+    unicast_peer {
+{% for host in groups['proxmox'] %}
+{% if host != inventory_hostname %}
+        {{ hostvars[host]['ansible_host'] }}
 {% endif %}
+{% endfor %}
+    }
+
+    authentication {
+        auth_type PASS
+        auth_pass {{ keepalived_auth_pass | default('technis_pve_vip') }}
+    }
+
+    virtual_ipaddress {
+        {{ proxmox_vip }}/{{ proxmox_ring0_network | ansible.utils.ipaddr('prefix') }}
+    }
+
+    track_script {
+        check_pveproxy
+    }
+}

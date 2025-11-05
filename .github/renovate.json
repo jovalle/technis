@@ -1,9 +1,102 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMajorReleases"
   ],
-  "managers": [
-    "flux"
+  "flux": {
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"]
+  },
+  "helm-values": {
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"]
+  },
+  "kubernetes": {
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"]
+  },
+  "regexManagers": [
+    {
+      "description": "Update Makefile binary versions",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+.+version: (?<currentValue>\\S+)",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+.+/(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)/",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+.+_(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)_"
+      ]
+    },
+    {
+      "description": "Update container images in YAML files",
+      "fileMatch": ["\\.ya?ml$"],
+      "matchStrings": [
+        "image:\\s+['\"]?(?<depName>[^:]+):(?<currentValue>[^'\"\\s]+)['\"]?"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group Flux updates",
+      "matchDatasources": ["helm"],
+      "matchPackageNames": ["fluxcd/**"],
+      "groupName": "flux",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "flux"
+    },
+    {
+      "description": "Group Kubernetes tool updates",
+      "matchDatasources": ["github-releases", "github-tags"],
+      "matchPackageNames": [
+        "kubernetes/kubernetes",
+        "helm/helm",
+        "fluxcd/flux2",
+        "siderolabs/talos"
+      ],
+      "groupName": "kubernetes-tools",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "k8s"
+    },
+    {
+      "description": "Group Terraform updates",
+      "matchDatasources": ["terraform-provider", "terraform-module"],
+      "groupName": "terraform",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "terraform"
+    },
+    {
+      "description": "Group Ansible updates",
+      "matchManagers": ["ansible-galaxy"],
+      "groupName": "ansible",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "ansible"
+    },
+    {
+      "description": "Automerge patch updates",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Automerge minor updates for dev dependencies",
+      "matchUpdateTypes": ["minor"],
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "assignees": ["@jovalle"]
+  },
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 5,
+  "timezone": "America/New_York",
+  "schedule": [
+    "after 10pm every weekday",
+    "before 5am every weekday",
+    "every weekend"
   ]
 }

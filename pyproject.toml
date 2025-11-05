@@ -1,0 +1,84 @@
+[project]
+authors = [ { name = "Technis Project", email = "maintainers@technis.io" } ]
+description = "A collection of tools and configurations"
+name = "technis"
+requires-python = ">=3.8"
+version = "0.1.0"
+
+[tool.ruff]
+indent-width = 4
+line-length = 88
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+extend-ignore = [
+  "E501", # Line too long (handled by formatter)
+]
+select = [
+  "E", # pycodestyle errors
+  "W", # pycodestyle warnings
+  "F", # pyflakes
+  "I", # isort
+  "C", # flake8-comprehensions
+  "B", # flake8-bugbear
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = [ "ALL" ]
+unfixable = [  ]
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+  ".bzr",
+  ".direnv",
+  ".eggs",
+  ".git",
+  ".hg",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".pytype",
+  ".ruff_cache",
+  ".svn",
+  ".tox",
+  ".venv",
+  "__pypackages__",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "node_modules",
+  "venv",
+]
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Enable auto-detection of hanging and visual indent.
+line-ending = "auto"
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore import violations in __init__.py files.
+"__init__.py" = [ "E402", "F401" ]
+
+[tool.pytest.ini_options]
+# Pytest configuration
+addopts = [
+  "--verbose",
+  "--strict-markers",
+  "--tb=short",
+  "--color=yes",
+]
+python_classes = [ "Test*" ]
+python_files = [ "test_*.py" ]
+python_functions = [ "test_*" ]
+testpaths = [ "scripts/tests" ]
+# Minimum Python version for tests
+minversion = "7.0"

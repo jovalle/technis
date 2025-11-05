@@ -1,0 +1,122 @@
+---
+- name: Bootstrap Proxmox nodes with SSH keys
+  gather_facts: false
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+  hosts: proxmox
+  tasks:
+    - name: Check for existing SSH key
+      ansible.builtin.stat:
+        path: ~/.ssh/id_ed25519.pub
+      become: false
+      delegate_to: localhost
+      register: local_ssh_key
+
+    - name: Display SSH key status
+      ansible.builtin.debug:
+        msg: >-
+          {{ "Using existing SSH key" if local_ssh_key.stat.exists else "No SSH
+          key found - will generate one" }}
+
+    - name: Generate SSH key on control node if missing
+      ansible.builtin.command:
+        cmd: ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N '' -C 'ansible-technis'
+        creates: ~/.ssh/id_ed25519
+      become: false
+      delegate_to: localhost
+      when: not local_ssh_key.stat.exists
+
+    - name: Read SSH public key
+      ansible.builtin.slurp:
+        src: ~/.ssh/id_ed25519.pub
+      become: false
+      delegate_to: localhost
+      register: ssh_public_key
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Display node information
+      ansible.builtin.debug:
+        msg: |
+          Bootstrapping {{ inventory_hostname }}
+          IP: {{ ansible_host }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+
+    - name: Ensure .ssh directory exists
+      ansible.builtin.file:
+        mode: "0700"
+        path: ~/.ssh
+        state: directory
+
+    - name: Add Ansible SSH public key to authorized_keys
+      ansible.posix.authorized_key:
+        comment: ansible-technis
+        key: "{{ ssh_public_key.content | b64decode }}"
+        state: present
+        user: root
+
+    - name: Fetch GitHub public keys
+      ansible.builtin.uri:
+        return_content: true
+        url: https://github.com/jovalle.keys
+      become: false
+      delegate_to: localhost
+      register: github_keys
+
+    - name: Add GitHub public keys to authorized_keys
+      ansible.posix.authorized_key:
+        comment: github-jovalle
+        key: "{{ github_keys.content }}"
+        state: present
+        user: root
+
+    - name: Configure SSH security
+      when: disable_password_auth_after | bool
+      block:
+        - name: Disable password authentication
+          ansible.builtin.lineinfile:
+            line: PasswordAuthentication no
+            path: /etc/ssh/sshd_config
+            regexp: ^#?PasswordAuthentication
+          notify: restart sshd
+
+        - name: Ensure PubkeyAuthentication is enabled
+          ansible.builtin.lineinfile:
+            line: PubkeyAuthentication yes
+            path: /etc/ssh/sshd_config
+            regexp: ^#?PubkeyAuthentication
+          notify: restart sshd
+
+    - name: Wait for nodes to be reachable
+      ansible.builtin.wait_for_connection:
+        timeout: 30
+
+    - name: Test SSH key authentication
+      ansible.builtin.ping:
+
+    - name: Display success message
+      ansible.builtin.debug:
+        msg: |
+          ✓ SSH key authentication configured successfully!
+          ✓ Ansible key (id_ed25519) added
+          ✓ GitHub keys (github.com/jovalle) added
+          ✓ You can now run playbooks without --ask-pass
+          {% if disable_password_auth_after | bool %}
+          ✓ Password authentication disabled
+          {% else %}
+          ⚠ Password authentication still enabled
+             (run with disable_password_auth_after=yes to disable)
+          {% endif %}
+
+          Next steps:
+            ansible-playbook playbooks/proxmox-prepare.yaml
+  vars_prompt:
+    - name: disable_password_auth_after
+      default: "false"
+      private: false
+      prompt: Disable password authentication after SSH key setup? (true/false)

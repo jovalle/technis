@@ -1,0 +1,17 @@
+---
+allow_password_auth: false
+common_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - dnsutils
+  - fail2ban
+  - git
+  - htop
+  - jq
+  - net-tools
+  - vim
+  - wget
+locale: en_US.UTF-8
+ssh_port: 22
+timezone: America/New_York

@@ -1,0 +1,14 @@
+---
+- name: Reboot all nodes
+  become: true
+  gather_facts: false
+  hosts: all
+  tasks:
+    - name: Reboot the machine
+      ansible.builtin.reboot:
+        connect_timeout: 5
+        msg: Reboot initiated by Ansible
+        post_reboot_delay: 30
+        pre_reboot_delay: 0
+        reboot_timeout: 300
+        test_command: whoami

@@ -1,5 +1,0 @@
-nfs_provisioner_namespace: nastradamus
-nfs_provisioner_name: techn.is/nas
-nfs_provisioner_image: jovalle/nfs-subdir-external-provisioner
-nfs_server: nexus.techn.is
-nfs_path: /nas

@@ -1,21 +1,44 @@
 {
   "name": "technis",
   "version": "1.0.0",
-  "description": "Homelab managed by code",
-  "private": true,
+  "description": "Technis infrastructure and homelab management project",
+  "main": "index.js",
   "scripts": {
-    "prepare": "husky"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
-    "husky": "^9.1.7"
+    "audit:check": "npm audit",
+    "audit:fix": "npm audit fix",
+    "fmt": "prettier --write \"**/*.{js,ts,jsx,tsx,md,html,css,scss,yaml,yml}\"",
+    "fmt:json": "prettier --write \"**/*.json\"",
+    "fmt:toml": "taplo format",
+    "install:web": "cd web && npm install",
+    "lint-all": "npm run lint:json && npm run lint:toml",
+    "lint:json": "prettier --check \"**/*.json\"",
+    "lint:toml": "taplo check",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "web": "cd web && npm run dev",
+    "web:build": "cd web && npm run build",
+    "web:commit": "cd web && npm run commit",
+    "web:serve": "cd web && npm run serve"
   },
   "keywords": [
     "homelab",
-    "kubernetes",
-    "flux",
-    "talos"
+    "infrastructure",
+    "ansible",
+    "terraform"
   ],
-  "license": "MIT"
+  "author": "jovalle",
+  "license": "MIT",
+  "devDependencies": {
+    "@taplo/cli": "^0.7.0",
+    "fixjson": "^1.0.5",
+    "prettier": "^3.3.3"
+  },
+  "workspaces": [
+    "web"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "volta": {
+    "node": "20.18.1"
+  }
 }

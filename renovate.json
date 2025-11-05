@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["pip_requirements", "npm", "pep621", "github-actions"],
+  "ignorePaths": ["**/kubernetes/**", "**/charts/**"],
+  "packageRules": [
+    {
+      "matchManagers": ["pip_requirements"],
+      "matchFileNames": ["requirements.txt"],
+      "groupName": "python requirements dependencies",
+      "labels": ["python", "dependencies"]
+    },
+    {
+      "matchManagers": ["pep621"],
+      "matchFileNames": ["pyproject.toml"],
+      "groupName": "python pyproject dependencies",
+      "labels": ["python", "dependencies"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "javascript dependencies",
+      "labels": ["javascript", "dependencies"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions dependencies",
+      "labels": ["github-actions", "dependencies"]
+    },
+    {
+      "automerge": true,
+      "automergeType": "pr",
+      "matchCurrentVersion": "!/^0/",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "groupName": "dev dependencies",
+      "groupSlug": "dev-dependencies-patch",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "schedule": ["before 6am on Monday"]
+    }
+  ],
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "timezone": "America/New_York",
+  "schedule": ["before 6am on Monday"]
+}

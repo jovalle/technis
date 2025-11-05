@@ -1,0 +1,48 @@
+---
+comments-indentation: false
+extends: default
+ignore: "/archive/\n/docs/\n/web/node_modules/\n/.direnv/\n/.venv/\n/venv/\nhelm/*/templates/\nkubernetes/*/templates/\n**/kustomization.yaml\n**/*vault*\n"
+rules:
+  braces:
+    max-spaces-inside: 1
+    min-spaces-inside: 0
+  brackets:
+    max-spaces-inside: 1
+    min-spaces-inside: 0
+  colons:
+    max-spaces-after: 1
+    max-spaces-before: 0
+  comments:
+    min-spaces-from-content: 1
+    require-starting-space: true
+  document-end: disable
+  document-start:
+    present: true
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: true
+  hyphens:
+    max-spaces-after: 1
+  indentation:
+    check-multi-line-strings: false
+    indent-sequences: consistent
+    spaces: 2
+  key-ordering: disable
+  line-length:
+    level: warning
+    max: 160
+  new-line-at-end-of-file: enable
+  new-lines:
+    type: unix
+  octal-values:
+    forbid-explicit-octal: true
+    forbid-implicit-octal: true
+  quoted-strings:
+    quote-type: double
+    required: only-when-needed
+  trailing-spaces: disable
+  truthy:
+    allowed-values:
+      - "true"
+      - "false"
+    check-keys: true

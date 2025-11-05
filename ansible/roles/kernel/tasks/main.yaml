@@ -1,0 +1,22 @@
+---
+- name: Verify swap is enabled (critical for Proxmox)
+  ansible.builtin.command: swapon --show
+  changed_when: false
+  failed_when: false
+  register: kernel_swap_status
+
+- name: Display swap status
+  ansible.builtin.debug:
+    msg: |
+      Swap status: {{ "Enabled ✓" if kernel_swap_status.stdout != "" else "Disabled ✗ (BAD for Proxmox!)" }}
+      {{ kernel_swap_status.stdout }}
+
+- name: Configure kernel parameters for Proxmox
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  loop: "{{ kernel_parameters | dict2items }}"
+  when: kernel_parameters | length > 0

@@ -1,0 +1,20 @@
+# Hidden files and directories
+.*
+
+# Python
+.venv
+**/__pycache__
+**/*.pyc
+
+# Node
+**/node_modules
+**/.npm
+
+# Build artifacts
+**/dist
+**/build
+
+# Archive and submodules
+archive
+docs
+web

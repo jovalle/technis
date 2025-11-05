@@ -1,0 +1,26 @@
+# Taplo configuration for TOML formatting
+
+# Formatting options
+[formatting]
+align_comments = false
+align_entries = false
+array_auto_collapse = false
+array_auto_expand = true
+array_trailing_comma = true
+compact_arrays = false
+compact_entries = false
+compact_inline_tables = false
+indent_entries = false
+indent_tables = false
+reorder_arrays = false
+reorder_keys = true
+trailing_newline = true
+
+# Rules for specific files
+[[rule]]
+include = [ "pyproject.toml" ]
+keys = [ "tool.ruff" ]
+
+[rule.formatting]
+indent_tables = false
+reorder_keys = true
