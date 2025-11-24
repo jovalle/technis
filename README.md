@@ -6,15 +6,15 @@
 
 [![Home Internet](https://img.shields.io/endpoint?url=https://status.technis.io/api/v1/endpoints/egress_cloudflare/health/badge.shields&style=for-the-badge&logo=ubiquiti&logoColor=white&label=Home%20Internet)](http://status.technis.io/endpoints/egress_cloudflare) [![Status Page](https://img.shields.io/endpoint?url=https://status.technis.io/api/v1/endpoints/external_status/health/badge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.technis.io)
 
-![Avaiability](https://status.technis.io/api/v1/endpoints/external_status/uptimes/24h/badge.svg) ![Node Uptime](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=node_uptime&style=flat&label=uptime) ![CPU Usage](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=node_cpu_usage&style=flat&label=cpu) ![Memory Usage](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=node_memory_usage&style=flat&label=memory) ![Docker Containers](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=docker_containers_running&style=flat&label=containers)
+![Avaiability](https://status.technis.io/api/v1/endpoints/external_status/uptimes/24h/badge.svg) ![Node Uptime](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=cluster_min_uptime&style=flat&label=uptime) ![CPU Usage](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=cluster_cpu_usage&style=flat&label=cpu) ![Memory Usage](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=cluster_memory_usage&style=flat&label=memory) ![Docker Containers](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=docker_containers_running&style=flat&label=containers)
 
 </div>
 
 ## 📖 Overview
 
-This repository serves as the **single source of truth** for my homelab infrastructure, implementing GitOps practices to manage everything from bare metal provisioning to application deployment.
+This repository serves as the **single source of truth** for my homelab infrastructure, following [best practices](#pillars-of-infrastructure) to manage everything from bare metal provisioning to application deployment.
 
-It is a continuous work in progress. Projects such as [stargate](https://github.com/jovalle/stargate) and [nexus](https://github.com/jovalle/nexus) are specific bundles to be absorbed into this repo.
+It is a continuous work in progress.
 
 ## 🚀 Services
 
@@ -22,7 +22,18 @@ Technis provides a whole host of self-hosted services, for friends and family, i
 
 - **VPS Hosting** - Virtual private servers for development and testing
 - **On-Demand Video Streaming** - Media streaming and transcoding services
-- **File Storage, Sharing and Backup** - Cloud-like remote storage via TrueNAS, Nextcloud, and Syncthing
+- **Personal Cloud Storage** – High-performance, privacy-first file sharing and automated backups
+
+## 💪🏼 Pillars of Infrastructure
+
+1. Infrastructure as Code
+2. GitOps
+3. Security by Design
+4. Observability and Monitoring
+5. Backup and Recovery
+6. Automation First
+7. Documentation and Runbooks
+8. Change Management Discipline
 
 ## 📁 Project Structure
 
