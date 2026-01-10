@@ -1,6 +1,7 @@
 # Generic
 .DS_Store
 *.log
+*.log.*
 *.tmp
 *.retry
 
@@ -30,6 +31,7 @@ node_modules/
 # Sensitive files
 *.agekey
 *.enc
+.env
 *.key
 *.kubeconfig
 *.sops.*
@@ -41,3 +43,9 @@ talosconfig
 
 # Archive
 archive/
+
+# Temporary files
+tmp/
+
+# DO NOT COMMIT
+kubernetes/

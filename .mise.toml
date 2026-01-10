@@ -1,0 +1,42 @@
+[env]
+KUBECONFIG = "{{config_root}}/kubeconfig"
+TALOSCONFIG = "{{config_root}}/talosconfig"
+SOPS_AGE_KEY_FILE = "{{config_root}}/age.agekey"
+
+[tools]
+# Core platform toolchain
+python = "3.14.3"
+"aqua:astral-sh/uv" = "0.11.3"
+"aqua:siderolabs/talos" = "v1.12.3"
+"aqua:kubernetes/kubectl" = "1.35.0"
+"aqua:fluxcd/flux2" = "2.5.1"
+"aqua:helmfile/helmfile" = "0.171.0"
+"aqua:helm/helm" = "3.17.1"
+"aqua:casey/just" = "1.40.0"
+"aqua:getsops/sops" = "3.9.4"
+"aqua:FiloSottile/age" = "1.2.1"
+"aqua:budimanjojo/talhelper" = "3.1.4"
+"aqua:yannh/kubeconform" = "0.6.7"
+"aqua:charmbracelet/gum" = "0.15.2"
+"aqua:google/yamlfmt" = "0.16.0"
+"aqua:evilmartians/lefthook" = "1.11.13"
+"aqua:mikefarah/yq" = "4.45.1"
+"aqua:kubernetes-sigs/kustomize" = "5.6.0"
+
+# Kubernetes operations
+"aqua:derailed/k9s" = "latest"
+"aqua:ahmetb/kubectx" = "latest"
+"aqua:sunny0826/kubecm" = "latest"
+"aqua:kubecolor/kubecolor" = "latest"
+"aqua:kubernetes-sigs/krew" = "latest"
+"aqua:johanhaleby/kubetail" = "latest"
+"github:kubescape/kubescape" = "latest"
+
+[tasks.install-python-tools]
+description = "Install Python-based CLI tools with uv"
+run = """
+set -euo pipefail
+for tool in ansible-core ansible-lint yamllint flux-local; do
+  uv tool install --upgrade "$tool"
+done
+"""

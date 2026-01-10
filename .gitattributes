@@ -1,4 +1,4 @@
 * text=auto eol=lf
 *.yaml.j2 linguist-language=YAML
-compose.yaml linguist-language=YAML
-docker-compose.yaml linguist-language=YAML
+*.sops.yaml linguist-language=YAML
+*.sops.yml linguist-language=YAML

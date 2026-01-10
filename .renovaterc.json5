@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMajorReleases",
+    "local>.renovate/autoMerge",
+    "local>.renovate/customManagers",
+    "local>.renovate/groups",
+    "local>.renovate/labels",
+    "local>.renovate/semanticCommits",
+  ],
+  "flux": {
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"],
+  },
+  "helm-values": {
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"],
+  },
+  "kubernetes": {
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"],
+  },
+  "ignorePaths": ["archive/**", "**/resources/**"],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+  },
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 5,
+  "timezone": "America/New_York",
+  "schedule": [
+    "after 10pm every weekday",
+    "before 5am every weekday",
+    "every weekend",
+  ],
+}

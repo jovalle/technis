@@ -1,8 +1,8 @@
 ---
-comments-indentation: false
 extends: default
 ignore: "/archive/\n/docs/\n/web/node_modules/\n/.direnv/\n/.venv/\n/venv/\nhelm/*/templates/\nkubernetes/*/templates/\n**/kustomization.yaml\n**/*vault*\n"
 rules:
+  comments-indentation: false
   braces:
     max-spaces-inside: 1
     min-spaces-inside: 0
@@ -16,8 +16,7 @@ rules:
     min-spaces-from-content: 1
     require-starting-space: true
   document-end: disable
-  document-start:
-    present: true
+  document-start: disable
   empty-values:
     forbid-in-block-mappings: false
     forbid-in-flow-mappings: true
@@ -37,9 +36,7 @@ rules:
   octal-values:
     forbid-explicit-octal: true
     forbid-implicit-octal: true
-  quoted-strings:
-    quote-type: double
-    required: only-when-needed
+  quoted-strings: disable
   trailing-spaces: disable
   truthy:
     allowed-values:

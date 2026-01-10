@@ -1,0 +1,25 @@
+[pre-commit]
+
+[pre-commit.commands.yamlfmt]
+glob = "*.{yaml,yml}"
+exclude = "*.sops.*"
+run = "yamlfmt {staged_files}"
+stage_fixed = true
+
+[pre-commit.commands.justfmt]
+glob = "*.just|.justfile"
+run = "just --fmt --unstable"
+stage_fixed = true
+
+[pre-commit.commands.sops-check]
+glob = "*.sops.{yaml,yml}"
+run = """
+for f in {staged_files}; do
+  if grep -q '^sops:' "$f" && grep -q 'encrypted_regex\|lastmodified\|mac:' "$f"; then
+    continue
+  else
+    echo "ERROR: $f appears to contain unencrypted secrets"
+    exit 1
+  fi
+done
+"""

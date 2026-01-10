@@ -4,6 +4,8 @@ ci:
   autofix_prs: true
   autoupdate_commit_msg: "chore(pre-commit): autoupdate hook versions"
   autoupdate_schedule: weekly
+default_language_version:
+  python: python3.14
 repos:
   - hooks:
       - args:
@@ -20,7 +22,8 @@ repos:
         id: check-added-large-files
       - id: check-merge-conflict
       - id: check-case-conflict
-      - id: check-executables-have-shebangs
+      - exclude: ^LICENSE$
+        id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
       - id: mixed-line-ending
       - exclude: ^(\.sops\.yaml|.*\.sops\..*|age\.agekey)$
@@ -62,9 +65,15 @@ repos:
       - args:
           - --config-file=ansible/.ansible-lint
           - --fix=none
-        exclude: ^ansible/(tmp/|files/|archive/)
+        entry: >-
+          bash -lc 'if [ "$#" -eq 0 ]; then exit 0; fi;
+          ANSIBLE_VAULT_PASSWORD_FILE=.gitignore ansible-lint "$@"' --
+        exclude: ^ansible/(tmp/|files/|archive/|inventory/|\.ansible-lint$)
         files: ^ansible/
         id: ansible-lint
+        language_version: python3.14
+        always_run: false
+        pass_filenames: true
     repo: https://github.com/ansible/ansible-lint
     rev: v25.9.2
   - hooks:
@@ -99,6 +108,7 @@ repos:
         types_or:
           - json
           - markdown
+          - yaml
     repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
   - hooks:

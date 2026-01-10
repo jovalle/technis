@@ -1,4 +1,4 @@
-.PHONY: check default fmt fmt-all fmt-js fmt-json fmt-make fmt-py fmt-toml help init install-tflint lint lint-json lint-md lint-terraform lint-toml pre-commit setup test venv web-build web-commit web-deps web-dev
+.PHONY: check default fmt fmt-all fmt-compose fmt-js fmt-json fmt-make fmt-py fmt-toml fmt-yaml help init install-tflint lint lint-json lint-md lint-terraform lint-toml pre-commit setup test venv web-build web-commit web-deps web-dev
 
 DEPS := \
 	age \
@@ -76,11 +76,19 @@ check:
 default: check
 
 # Format files to personal code style
-fmt: fmt-all fmt-js fmt-json fmt-make fmt-py fmt-toml
+fmt: fmt-compose fmt-all fmt-yaml fmt-js fmt-json fmt-make fmt-py fmt-toml
+
+fmt-compose:
+	@echo "Formatting compose manifests with tctl..."
+	@PYTHONPATH=src .venv/bin/python -m tctl fmt
 
 fmt-all:
 	@echo "Formatting JavaScript, Markdown, HTML, CSS, YAML files with Prettier..."
 	npm run fmt
+
+fmt-yaml:
+	@echo "Formatting YAML files with Prettier..."
+	npm run fmt:yaml
 
 ## Format JSON files specifically
 fmt-json:

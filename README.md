@@ -12,59 +12,6 @@
 
 ## 📖 Overview
 
-This repository serves as the **single source of truth** for my homelab infrastructure, following [best practices](#pillars-of-infrastructure) to manage everything from bare metal provisioning to application deployment.
+This repository serves as the **single source of truth** for my homelab infrastructure to manage everything from baremetal provisioning to application deployment.
 
-It is a continuous work in progress.
-
-## 🚀 Services
-
-Technis provides a whole host of self-hosted services, for friends and family, including:
-
-- **VPS Hosting** - Virtual private servers for development and testing
-- **On-Demand Video Streaming** - Media streaming and transcoding services
-- **Personal Cloud Storage** – High-performance, privacy-first file sharing and automated backups
-
-## 💪🏼 Pillars of Infrastructure
-
-1. Infrastructure as Code
-2. GitOps
-3. Security by Design
-4. Observability and Monitoring
-5. Backup and Recovery
-6. Automation First
-7. Documentation and Runbooks
-8. Change Management Discipline
-
-## 📁 Project Structure
-
-```sh
-technis/
-├── .github/     # Git assets
-├── .taskfiles/  # Scripts
-├── ansible/     # Automated playbooks
-├── archive/     # Legacy code
-├── docs/        # Documentation site (submodule)
-├── docker/      # Local container services
-├── kubernetes/  # Distributed container services
-│   ├── apps/    # Deployments
-│   │   ├── kube-system     # Namespace
-│   │   │   ├── traefik     # Component
-│   │   │   │   ├── app/    # Helm resources
-│   │   │   │   └── config/ # Additional resources
-│   ├── bootstrap/ # Assemble cluster
-│   │   ├── flux/  # Provision FluxCD
-│   │   └── talos/ # Provision Talos cluster
-├── terraform/
-└── web/         # Web frontend (submodule)
-```
-
-## 🤝 Kudos
-
-- [awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted)
-- [bjw-s/helm-charts](https://github.com/bjw-s/helm-charts)
-- [dmacvicar/terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
-- [gandazgul/k8s-infrastructure](https://github.com/gandazgul/k8s-infrastructure)
-- [kelseyhightower/kubernetes-the-hard-way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
-- [kinvolk-archives/kubernetes-the-hard-way-vagrant](https://github.com/kinvolk-archives/kubernetes-the-hard-way-vagrant)
-- [onedr0p/home-ops](https://github.com/onedr0p/home-ops)
-- [techno-tim/launchpad](https://github.com/techno-tim/launchpad)
+Death, taxes, and making improvements.
