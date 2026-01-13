@@ -1,0 +1,76 @@
+services:
+  traefik:
+    cap_add:
+      - DAC_OVERRIDE
+    command:
+      - --accesslog.format=json
+      - --accesslog=true
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=admin@techn.is
+      - --certificatesresolvers.letsencrypt.acme.storage=/etc/letsencrypt/acme.json
+      - --entrypoints.golinks.address=:8091
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.forwardedHeaders.trustedIPs=172.52.0.0/16,fdd0:0:0:5::/64
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.asDefault=true
+      - --entrypoints.websecure.forwardedHeaders.trustedIPs=172.52.0.0/16,fdd0:0:0:5::/64
+      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+      - --entrypoints.websecure.http.tls.domains[0].main=techn.is
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.techn.is,*.nexus.techn.is
+      - --entrypoints.websecure.http.tls=true
+      - --log.level=INFO
+      - --ping=true
+      - --providers.docker.defaultRule=Host(`{{ with index .Labels "com.docker.compose.service" }}{{ normalize . }}{{ else }}{{ normalize $.Name }}{{ end }}.nexus.techn.is`)
+      - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
+      - --providers.docker.exposedbydefault=true
+      - --providers.docker=true
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --serverstransport.insecureskipverify=true
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN=${TRAEFIK_CLOUDFLARE_DNS_API_TOKEN:?TRAEFIK_CLOUDFLARE_DNS_API_TOKEN is required}
+      - CLOUDFLARE_EMAIL=${TRAEFIK_CLOUDFLARE_EMAIL:?TRAEFIK_CLOUDFLARE_EMAIL is required}
+      - DOMAIN=${TRAEFIK_DOMAIN:?TRAEFIK_DOMAIN is required}
+      - TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL=${TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL:?TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL is required}
+    extra_hosts:
+      - host.docker.internal=host-gateway
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - traefik
+        - healthcheck
+        - --ping
+      timeout: 10s
+    labels:
+      - traefik.enable=false
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+      - 8091:8091
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/dynamic:/etc/traefik/dynamic:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/certs:/etc/traefik/certs:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/letsencrypt:/etc/letsencrypt

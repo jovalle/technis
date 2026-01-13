@@ -1,0 +1,28 @@
+services:
+  beszel-agent:
+    cap_drop:
+      - ALL
+    container_name: beszel-agent
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    environment:
+      - HUB_URL=${BESZEL_HUB_URL:?BESZEL_HUB_URL is required}
+      - KEY=${BESZEL_KEY:?BESZEL_KEY is required}
+      - LISTEN=${BESZEL_LISTEN:?BESZEL_LISTEN is required}
+      - TOKEN=${BESZEL_TOKEN:?BESZEL_TOKEN is required}
+    healthcheck:
+      test:
+        - NONE
+    image: henrygd/beszel-agent:latest
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /:/extra-filesystems/rootfs:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel-agent:/var/lib/beszel-agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro

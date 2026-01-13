@@ -1,0 +1,41 @@
+services:
+  beszel-agent:
+    cap_add:
+      - CAP_PERFMON
+    cap_drop:
+      - ALL
+    container_name: beszel-agent
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    devices:
+      - permissions: rwm
+        source: /dev/dri/card0
+        target: /dev/dri/card0
+    environment:
+      - HUB_URL=${BESZEL_AGENT_HUB_URL:?BESZEL_AGENT_HUB_URL is required}
+      - KEY=${BESZEL_AGENT_KEY:?BESZEL_AGENT_KEY is required}
+      - LISTEN=${BESZEL_AGENT_LISTEN:?BESZEL_AGENT_LISTEN is required}
+      - TOKEN=${BESZEL_AGENT_TOKEN:?BESZEL_AGENT_TOKEN is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: beszel-agent
+    image: henrygd/beszel-agent-intel:latest
+    network_mode: host
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel-agent:/var/lib/beszel-agent

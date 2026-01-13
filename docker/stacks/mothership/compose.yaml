@@ -1,0 +1,34 @@
+include:
+  - path: ../../services/authelia/compose.yaml
+  - path: ../../services/beszel-agent/compose.yaml
+  - path:
+      - ../../services/blocky/compose.yaml
+      - services/blocky/compose.yaml
+  - path: ../../services/crowdsec/compose.yaml
+  - path:
+      - ../../services/docker-socket-proxy/compose.yaml
+      - services/docker-socket-proxy/compose.yaml
+  - path: ../../services/gatus/compose.yaml
+  - path:
+      - ../../services/newt/compose.yaml
+      - services/newt/compose.yaml
+  - path: ../../services/pangolin/compose.yaml
+  - path: ../../services/tailscale/compose.yaml
+  - path:
+      - ../../services/traefik/compose.yaml
+      - services/traefik/compose.yaml
+  - path:
+      - ../../services/whoami/compose.yaml
+      - services/whoami/compose.yaml
+name: mothership
+networks:
+  external:
+    driver: bridge
+    enable_ipv6: true
+    name: external
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.52.0.0/16
+    name: internal

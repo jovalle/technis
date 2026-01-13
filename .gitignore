@@ -40,11 +40,13 @@ node_modules/
 .vault*
 kubeconfig
 talosconfig
+*_history
 
 # Archive
 archive/
 
 # Temporary files
+.cache/
 tmp/
 
 # DO NOT COMMIT

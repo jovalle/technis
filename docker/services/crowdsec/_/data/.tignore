@@ -1,0 +1,9 @@
+# Restrict crowdsec/data sync to selected config files.
+*
+
+# Keep sync probe visible so this mount remains eligible for sync.
+!.tctl-sync-probe
+
+!acquis.yaml
+!appsec-config.yaml
+!config.yaml.local

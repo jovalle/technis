@@ -1,0 +1,30 @@
+services:
+  docker-socket-proxy:
+    container_name: docker-socket-proxy
+    environment:
+      - CONTAINERS=${DOCKER_SOCKET_PROXY_CONTAINERS:?DOCKER_SOCKET_PROXY_CONTAINERS is required}
+      - IMAGES=${DOCKER_SOCKET_PROXY_IMAGES:?DOCKER_SOCKET_PROXY_IMAGES is required}
+      - INFO=${DOCKER_SOCKET_PROXY_INFO:?DOCKER_SOCKET_PROXY_INFO is required}
+      - NETWORKS=${DOCKER_SOCKET_PROXY_NETWORKS:?DOCKER_SOCKET_PROXY_NETWORKS is required}
+      - POST=${DOCKER_SOCKET_PROXY_POST:?DOCKER_SOCKET_PROXY_POST is required}
+      - SERVICES=${DOCKER_SOCKET_PROXY_SERVICES:?DOCKER_SOCKET_PROXY_SERVICES is required}
+      - TASKS=${DOCKER_SOCKET_PROXY_TASKS:?DOCKER_SOCKET_PROXY_TASKS is required}
+      - VERSION=${DOCKER_SOCKET_PROXY_VERSION:?DOCKER_SOCKET_PROXY_VERSION is required}
+      - VOLUMES=${DOCKER_SOCKET_PROXY_VOLUMES:?DOCKER_SOCKET_PROXY_VOLUMES is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:2375/_ping || exit 1
+      timeout: 10s
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

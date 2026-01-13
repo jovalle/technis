@@ -1,0 +1,38 @@
+services:
+  docker-socket-proxy:
+    cap_add:
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - EVENTS=${DOCKER_SOCKET_PROXY_EVENTS:?DOCKER_SOCKET_PROXY_EVENTS is required}
+      - EXEC=${DOCKER_SOCKET_PROXY_EXEC:?DOCKER_SOCKET_PROXY_EXEC is required}
+      - LOG_LEVEL=${DOCKER_SOCKET_PROXY_LOG_LEVEL:?DOCKER_SOCKET_PROXY_LOG_LEVEL is required}
+      - PING=${DOCKER_SOCKET_PROXY_PING:?DOCKER_SOCKET_PROXY_PING is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:2375/_ping || exit 1
+      timeout: 10s
+    labels:
+      - traefik.enable=false
+    networks:
+      - internal
+    ports:
+      - 100.100.1.1:2375:2375
+    restart: unless-stopped

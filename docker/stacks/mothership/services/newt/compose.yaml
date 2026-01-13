@@ -1,0 +1,5 @@
+services:
+  newt:
+    networks:
+      - external
+      - internal

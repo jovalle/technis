@@ -1,0 +1,15 @@
+services:
+  blocky:
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    networks:
+      - external
+      - internal
+    ports:
+      - 4000:4000
+      - ${TRAEFIK_EXTERNAL_IP:?TRAEFIK_EXTERNAL_IP is required}:53:53
+      - ${TRAEFIK_EXTERNAL_IP:?TRAEFIK_EXTERNAL_IP is required}:53:53/udp
+      - 100.100.1.1:53:53
+      - 100.100.1.1:53:53/udp

@@ -1,0 +1,335 @@
+http:
+  middlewares:
+    auth:
+      forwardAuth:
+        address: "https://auth.techn.is/api/authz/forward-auth"
+        authResponseHeaders:
+          - Remote-Email
+          - Remote-Groups
+          - Remote-Name
+          - Remote-User
+        trustForwardHeader: true
+    basic-auth:
+      forwardAuth:
+        address: "https://auth.techn.is/api/authz/forward-auth?authelia_url=https://auth.techn.is"
+        authResponseHeaders:
+          - Remote-Email
+          - Remote-Groups
+          - Remote-Name
+          - Remote-User
+        trustForwardHeader: true
+    cloudflarewarp:
+      plugin:
+        cloudflarewarp:
+          disableDefault: false
+    crowdsec:
+      plugin:
+        crowdsec:
+          clientTrustedIPs:
+            - 10.0.0.0/8
+            - 100.64.0.0/10
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+          crowdsecAppsecEnabled: false
+          crowdsecAppsecFailureBlock: true
+          crowdsecAppsecHost: crowdsec:7422
+          crowdsecAppsecUnreachableBlock: false
+          crowdsecLapiHost: crowdsec:8080
+          crowdsecLapiKey: '{{ env "CROWDSEC_BOUNCER_KEY" }}'
+          crowdsecLapiScheme: http
+          crowdsecMode: stream
+          defaultDecisionSeconds: 60
+          enabled: true
+          forwardedHeadersCustomName: CF-Connecting-IP
+          forwardedHeadersTrustedIPs:
+            - 103.21.244.0/22
+            - 103.22.200.0/22
+            - 103.31.4.0/22
+            - 104.16.0.0/13
+            - 104.24.0.0/14
+            - 108.162.192.0/18
+            - 131.0.72.0/22
+            - 141.101.64.0/18
+            - 162.158.0.0/15
+            - 172.64.0.0/13
+            - 173.245.48.0/20
+            - 188.114.96.0/20
+            - 190.93.240.0/20
+            - 197.234.240.0/22
+            - 198.41.128.0/17
+            - 2400:cb00::/32
+            - 2405:8100::/32
+            - 2405:b500::/32
+            - 2606:4700::/32
+            - 2803:f800::/32
+            - 2a06:98c0::/29
+            - 2c0f:f248::/32
+          httpTimeoutSeconds: 10
+          logLevel: INFO
+          updateIntervalSeconds: 15
+    direct:
+      chain:
+        middlewares:
+          - direct-ratelimit
+    direct-auth:
+      chain:
+        middlewares:
+          - direct-ratelimit
+          - auth
+    direct-ratelimit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1m
+    go-to-canonical:
+      redirectRegex:
+        permanent: true
+        regex: "^https?://go(?::[0-9]+)?(.*)"
+        replacement: "https://go.techn.is$1"
+    external:
+      chain:
+        middlewares:
+          - ratelimit
+          - inflight
+          - geoblock
+          - auth
+    external-basic:
+      chain:
+        middlewares:
+          - ratelimit
+          - inflight
+          - geoblock
+          - basic-auth
+    external-bypass:
+      chain:
+        middlewares:
+          - ratelimit
+          - inflight
+          - geoblock
+    external-ips:
+      ipAllowList:
+        ipStrategy:
+          depth: 0
+        sourceRange:
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+          - 100.64.0.0/10
+          - 10.0.0.0/8
+          - 127.0.0.1/32
+          - "::1/128"
+          - '{{ env "EXTERNAL_IP" }}/32'
+          - 103.21.244.0/22
+          - 103.22.200.0/22
+          - 103.31.4.0/22
+          - 104.16.0.0/13
+          - 104.24.0.0/14
+          - 108.162.192.0/18
+          - 131.0.72.0/22
+          - 141.101.64.0/18
+          - 162.158.0.0/15
+          - 172.64.0.0/13
+          - 173.245.48.0/20
+          - 188.114.96.0/20
+          - 190.93.240.0/20
+          - 197.234.240.0/22
+          - 198.41.128.0/17
+          - 2400:cb00::/32
+          - 2405:8100::/32
+          - 2405:b500::/32
+          - 2606:4700::/32
+          - 2803:f800::/32
+          - 2a06:98c0::/29
+          - 2c0f:f248::/32
+    geoblock:
+      plugin:
+        geoblock:
+          allowLocalRequests: true
+          allowUnknownCountries: false
+          allowedIPAddresses:
+            - 10.0.0.0/8
+            - 100.64.0.0/10
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - '{{ env "EXTERNAL_IP" }}/32'
+          api: https://get.geojs.io/v1/ip/country/{ip}
+          apiTimeoutMs: 1000
+          blackListMode: false
+          cacheSize: 100
+          countries:
+            - US
+          forceMonthlyUpdate: true
+          ipGeolocationHttpHeaderField: CF-IPCountry
+          logAllowedRequests: false
+          logApiRequests: false
+          logLocalRequests: false
+          silentStartUp: false
+          unknownCountryApiResponse: nil
+    global-ratelimit:
+      rateLimit:
+        average: 300
+        burst: 600
+        period: 1m
+        sourceCriterion:
+          requestHeaderName: CF-Connecting-IP
+    global-security:
+      chain:
+        middlewares:
+          - real-ip
+          - crowdsec
+          - headers
+    headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        customFrameOptionsValue: SAMEORIGIN
+        customResponseHeaders:
+          X-Download-Options: noopen
+          X-Permitted-Cross-Domain-Policies: none
+          X-Robots-Tag: noindex, nofollow
+          server: ""
+        frameDeny: true
+        permissionsPolicy: camera=(), microphone=(), geolocation=(), payment=()
+        referrerPolicy: strict-origin-when-cross-origin
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+    inflight:
+      inFlightReq:
+        amount: 100
+    internal:
+      chain:
+        middlewares:
+          - internal-ips
+          - headers
+    internal-ips:
+      ipAllowList:
+        ipStrategy:
+          depth: 0
+        sourceRange:
+          - 100.64.0.0/10
+          - fd7a:115c:a1e0::/48
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+          - 127.0.0.1/32
+          - "::1/128"
+    pangolin-direct:
+      chain:
+        middlewares:
+          - headers
+    pangolin-to-proxy:
+      redirectRegex:
+        permanent: true
+        regex: "^https?://pangolin\\.techn\\.is(.*)"
+        replacement: "https://proxy.techn.is$1"
+    ratelimit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1m
+        sourceCriterion:
+          requestHeaderName: CF-Connecting-IP
+    real-ip:
+      plugin:
+        real-ip:
+          excludednets:
+            - 127.0.0.0/8
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+  routers:
+    api-router:
+      entryPoints:
+        - websecure
+      middlewares:
+        - pangolin-direct@file
+      rule: "Host(`proxy.techn.is`) && PathPrefix(`/api/v1`)"
+      service: api-service
+      tls:
+        certResolver: letsencrypt
+    go-router-redirect:
+      entryPoints:
+        - websecure
+      middlewares:
+        - go-to-canonical@file
+      rule: "Host(`go`)"
+      service: next-service
+      tls: {}
+    go-router-redirect-http:
+      entryPoints:
+        - web
+      middlewares:
+        - go-to-canonical@file
+      rule: "Host(`go`)"
+      service: next-service
+    main-app-router-redirect:
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      rule: "Host(`proxy.techn.is`)"
+      service: next-service
+    next-router:
+      entryPoints:
+        - websecure
+      middlewares:
+        - pangolin-direct@file
+      rule: "Host(`proxy.techn.is`) && !PathPrefix(`/api/v1`)"
+      service: next-service
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "techn.is"
+            sans:
+              - "*.techn.is"
+    pangolin-router-redirect:
+      entryPoints:
+        - websecure
+      middlewares:
+        - pangolin-to-proxy@file
+      rule: "Host(`pangolin.techn.is`)"
+      service: next-service
+      tls:
+        certResolver: letsencrypt
+    pangolin-router-redirect-http:
+      entryPoints:
+        - web
+      middlewares:
+        - pangolin-to-proxy@file
+      rule: "Host(`pangolin.techn.is`)"
+      service: next-service
+    traefik-internal-dashboard:
+      entryPoints:
+        - websecure
+      middlewares:
+        - internal@file
+      rule: "Host(`traefik.mothership.techn.is`)"
+      service: api@internal
+      tls:
+        certResolver: letsencrypt
+    ws-router:
+      entryPoints:
+        - websecure
+      middlewares:
+        - pangolin-direct@file
+      rule: "Host(`proxy.techn.is`)"
+      service: api-service
+      tls:
+        certResolver: letsencrypt
+  services:
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3000"
+    next-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3002"
+tcp:
+  serversTransports:
+    pp-transport-v1:
+      proxyProtocol:
+        version: 1
+    pp-transport-v2:
+      proxyProtocol:
+        version: 2

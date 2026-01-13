@@ -1,0 +1,14 @@
+include:
+  - path: ../../services/beszel/compose.yaml
+  - path: ../../services/beszel-agent/compose.yaml
+  - path:
+      - ../../services/blocky/compose.yaml
+      - services/blocky/compose.yaml
+  - path: ../../services/docker-socket-proxy/compose.yaml
+  - path: ../../services/newt/compose.yaml
+  - path: ../../services/tailscale/compose.yaml
+  - path:
+      - ../../services/traefik/compose.yaml
+      - services/traefik/compose.yaml
+  - path: ../../services/whoami/compose.yaml
+name: nexus

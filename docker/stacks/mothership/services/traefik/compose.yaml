@@ -1,0 +1,53 @@
+services:
+  traefik:
+    depends_on:
+      crowdsec:
+        condition: service_healthy
+        required: true
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+      gerbil:
+        condition: service_started
+        required: true
+      tailscale:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    environment:
+      - ACME_EMAIL=${TRAEFIK_ACME_EMAIL:?TRAEFIK_ACME_EMAIL is required}
+      - CF_DNS_API_TOKEN=${TRAEFIK_CF_DNS_API_TOKEN:?TRAEFIK_CF_DNS_API_TOKEN is required}
+      - CROWDSEC_BOUNCER_KEY=${TRAEFIK_CROWDSEC_BOUNCER_KEY:?TRAEFIK_CROWDSEC_BOUNCER_KEY is required}
+      - DOMAIN=${TRAEFIK_DOMAIN:?TRAEFIK_DOMAIN is required}
+      - EXTERNAL_IP=${TRAEFIK_EXTERNAL_IP:?TRAEFIK_EXTERNAL_IP is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - traefik
+        - healthcheck
+        - --ping
+      timeout: 10s
+    networks:
+      - external
+      - internal
+    ports:
+      - 80:80
+      - 443:443
+      - 100.100.1.1:8080:8080
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/pangolin/letsencrypt:/letsencrypt
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/pangolin/traefik/dynamic:/etc/traefik/pangolin-dynamic:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/pangolin/traefik/logs:/var/log/traefik-pangolin
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/certs:/etc/traefik/certs
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/data/dynamic:/etc/traefik/dynamic:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/logs:/var/log/traefik
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/data/traefik.yaml:/etc/traefik/traefik.yaml:ro

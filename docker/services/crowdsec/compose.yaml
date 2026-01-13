@@ -1,0 +1,104 @@
+services:
+  crowdsec:
+    cap_add:
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    container_name: crowdsec
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 192M
+    environment:
+      - BOUNCER_KEY_TRAEFIK=${CROWDSEC_BOUNCER_KEY_TRAEFIK:?CROWDSEC_BOUNCER_KEY_TRAEFIK is required}
+      - COLLECTIONS=${CROWDSEC_COLLECTIONS:?CROWDSEC_COLLECTIONS is required}
+      - CROWDSEC_FULL_REFRESH_INTERVAL=${CROWDSEC_FULL_REFRESH_INTERVAL:?CROWDSEC_FULL_REFRESH_INTERVAL is required}
+      - CROWDSEC_IDLE_REFRESH_INTERVAL=${CROWDSEC_IDLE_REFRESH_INTERVAL:?CROWDSEC_IDLE_REFRESH_INTERVAL is required}
+      - CROWDSEC_IDLE_THRESHOLD=${CROWDSEC_IDLE_THRESHOLD:?CROWDSEC_IDLE_THRESHOLD is required}
+      - CROWDSEC_PASSWORD=${CROWDSEC_PASSWORD:?CROWDSEC_PASSWORD is required}
+      - CROWDSEC_REFRESH_INTERVAL=${CROWDSEC_REFRESH_INTERVAL:?CROWDSEC_REFRESH_INTERVAL is required}
+      - CROWDSEC_URL=${CROWDSEC_URL:?CROWDSEC_URL is required}
+      - CROWDSEC_USER=${CROWDSEC_USER:?CROWDSEC_USER is required}
+      - DISABLE_ONLINE_API=${CROWDSEC_DISABLE_ONLINE_API:?CROWDSEC_DISABLE_ONLINE_API is required}
+      - TZ=${TZ:-America/New_York}
+      - USE_APPSEC=${CROWDSEC_USE_APPSEC:?CROWDSEC_USE_APPSEC is required}
+    healthcheck:
+      interval: 10s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - cscli
+        - lapi
+        - status
+      timeout: 5s
+    hostname: crowdsec
+    image: crowdsecurity/crowdsec:latest
+    networks:
+      - internal
+    ports:
+      - 127.0.0.1:6060:6060
+      - 127.0.0.1:7422:7422
+      - 127.0.0.1:8080:8080
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/crowdsec/data/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/crowdsec/db:/var/lib/crowdsec/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/crowdsec/data:/etc/crowdsec
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/logs:/var/log/traefik:ro
+      - /var/log/syslog:/var/log/syslog:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+
+  crowdsec-web-ui:
+    cap_drop:
+      - ALL
+    container_name: crowdsec-web-ui
+    depends_on:
+      crowdsec:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    environment:
+      - BOUNCER_KEY_TRAEFIK=${CROWDSEC_BOUNCER_KEY_TRAEFIK:?CROWDSEC_BOUNCER_KEY_TRAEFIK is required}
+      - COLLECTIONS=${CROWDSEC_COLLECTIONS:?CROWDSEC_COLLECTIONS is required}
+      - CROWDSEC_FULL_REFRESH_INTERVAL=${CROWDSEC_FULL_REFRESH_INTERVAL:?CROWDSEC_FULL_REFRESH_INTERVAL is required}
+      - CROWDSEC_IDLE_REFRESH_INTERVAL=${CROWDSEC_IDLE_REFRESH_INTERVAL:?CROWDSEC_IDLE_REFRESH_INTERVAL is required}
+      - CROWDSEC_IDLE_THRESHOLD=${CROWDSEC_IDLE_THRESHOLD:?CROWDSEC_IDLE_THRESHOLD is required}
+      - CROWDSEC_PASSWORD=${CROWDSEC_PASSWORD:?CROWDSEC_PASSWORD is required}
+      - CROWDSEC_REFRESH_INTERVAL=${CROWDSEC_REFRESH_INTERVAL:?CROWDSEC_REFRESH_INTERVAL is required}
+      - CROWDSEC_URL=${CROWDSEC_URL:?CROWDSEC_URL is required}
+      - CROWDSEC_USER=${CROWDSEC_USER:?CROWDSEC_USER is required}
+      - DISABLE_ONLINE_API=${CROWDSEC_DISABLE_ONLINE_API:?CROWDSEC_DISABLE_ONLINE_API is required}
+      - TZ=${TZ:-America/New_York}
+      - USE_APPSEC=${CROWDSEC_USE_APPSEC:?CROWDSEC_USE_APPSEC is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - node -e "const h=require('http');h.get('http://127.0.0.1:3000',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
+      timeout: 10s
+    image: ghcr.io/theduffman85/crowdsec-web-ui:latest
+    labels:
+      - traefik.http.routers.crowdsec-web-ui.middlewares=internal@file
+      - traefik.http.routers.crowdsec-web-ui.rule=Host(`crowdsec.mothership.techn.is`)
+      - traefik.http.services.crowdsec-web-ui.loadbalancer.server.port=3000
+    networks:
+      - internal
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/crowdsec-web-ui/config:/app/config
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/crowdsec-web-ui/data:/app/data

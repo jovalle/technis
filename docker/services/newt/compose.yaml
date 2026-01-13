@@ -1,0 +1,41 @@
+services:
+  newt:
+    container_name: newt
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - DOCKER_SOCKET=${NEWT_DOCKER_SOCKET:?NEWT_DOCKER_SOCKET is required}
+      - NEWT_ID=${NEWT_ID:?NEWT_ID is required}
+      - NEWT_SECRET=${NEWT_SECRET:?NEWT_SECRET is required}
+      - PANGOLIN_ENDPOINT=${NEWT_PANGOLIN_ENDPOINT:?NEWT_PANGOLIN_ENDPOINT is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - pgrep -x newt || exit 1
+      timeout: 10s
+    hostname: newt
+    image: fosrl/newt:latest
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

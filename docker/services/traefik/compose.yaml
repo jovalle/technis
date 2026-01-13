@@ -1,0 +1,12 @@
+services:
+  traefik:
+    cap_add:
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    container_name: traefik
+    hostname: traefik
+    image: traefik:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true

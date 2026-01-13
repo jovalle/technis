@@ -1,0 +1,40 @@
+services:
+  gatus:
+    cap_add:
+      - NET_RAW
+    cap_drop:
+      - ALL
+    container_name: gatus
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    dns:
+      - 100.100.1.1
+      - 100.100.1.2
+    healthcheck:
+      test:
+        - NONE
+    image: twinproduction/gatus:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gatus.middlewares=external-bypass@file
+      - traefik.http.routers.gatus.rule=Host(`status.techn.is`)
+      - traefik.http.services.gatus.loadbalancer.server.port=8080
+    networks:
+      - external
+      - internal
+    ports:
+      - 100.100.1.1:8181:8080
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/config:/config:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/data:/data

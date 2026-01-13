@@ -1,0 +1,111 @@
+services:
+  gerbil:
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    command:
+      - --reachableAt=http://gerbil:3004
+      - --generateAndSaveKeyTo=/var/config/key
+      - --remoteConfig=http://pangolin:3001/api/v1/
+    container_name: gerbil
+    depends_on:
+      pangolin:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 3004 || exit 1
+      timeout: 10s
+    image: fosrl/gerbil:latest
+    networks:
+      - external
+    ports:
+      - 21820:21820/udp
+      - 51820:51820/udp
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gerbil:/var/config
+
+  pangolin:
+    container_name: pangolin
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 256M
+    healthcheck:
+      interval: 10s
+      retries: 15
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:3001/api/v1/
+      timeout: 10s
+    image: fosrl/pangolin:latest
+    networks:
+      - external
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/pangolin:/app/config
+
+  pangolin-router:
+    container_name: pangolin-router
+    depends_on:
+      gerbil:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add -q --no-cache iproute2; G=$$GERBIL_CONTAINER_NAME; S=$$DOCKER_SUBNET
+        while sleep 30; do
+          I=$$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $$G 2>/dev/null | awk '{print $$1}')
+          [ -z "$$I" ] && continue
+          for C in $$(docker exec $$G ip r show dev wg0 2>/dev/null | awk '/^100\./{print $$1}'); do
+            ip r replace $$C via $$I
+            R="-s $$S -d $$C -j MASQUERADE"; D="docker exec $$G iptables -t nat"
+            $$D -C POSTROUTING $$R 2>/dev/null || $$D -A POSTROUTING $$R
+          done
+        done
+    environment:
+      - DOCKER_SUBNET=${PANGOLIN_DOCKER_SUBNET:?PANGOLIN_DOCKER_SUBNET is required}
+      - GERBIL_CONTAINER_NAME=${PANGOLIN_GERBIL_CONTAINER_NAME:?PANGOLIN_GERBIL_CONTAINER_NAME is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 45s
+      test:
+        - CMD-SHELL
+        - command -v docker >/dev/null && docker version >/dev/null 2>&1 || exit 1
+      timeout: 10s
+    image: docker:latest
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

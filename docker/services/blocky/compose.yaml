@@ -1,0 +1,37 @@
+services:
+  blocky:
+    cap_add:
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    container_name: blocky
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - /app/blocky
+        - healthcheck
+      timeout: 10s
+    hostname: blocky
+    image: spx01/blocky:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: "100"
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/blocky/config.yml:/app/config.yml:ro

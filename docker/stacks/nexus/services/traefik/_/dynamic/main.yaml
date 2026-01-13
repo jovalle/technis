@@ -1,0 +1,86 @@
+http:
+  middlewares:
+    auth:
+      forwardAuth:
+        address: "http://100.100.1.1:9091/api/authz/forward-auth?authelia_url=https://auth.nexus.techn.is"
+        authResponseHeaders:
+          - Remote-Email
+          - Remote-Groups
+          - Remote-Name
+          - Remote-User
+        trustForwardHeader: true
+    basic-auth:
+      forwardAuth:
+        address: "http://100.100.1.1:9091/api/authz/forward-auth?authelia_url=https://auth.nexus.techn.is"
+        authResponseHeaders:
+          - Remote-Email
+          - Remote-Groups
+          - Remote-Name
+          - Remote-User
+        trustForwardHeader: true
+    redirect-to-https:
+      redirectScheme:
+        permanent: true
+        scheme: https
+  routers:
+    auth:
+      rule: "Host(`auth.techn.is`)"
+      service: "authelia"
+    console:
+      rule: "Host(`console.nexus.techn.is`)"
+      service: "console"
+    glances:
+      middlewares:
+        - auth
+      rule: "Host(`glances.nexus.techn.is`)"
+      service: "glances"
+    plex:
+      rule: "Host(`plex.nexus.techn.is`)"
+      service: "plex"
+    traefik-dashboard:
+      middlewares:
+        - auth
+      rule: "Host(`traefik.nexus.techn.is`)"
+      service: "api@internal"
+    truenas:
+      rule: "Host(`nexus.techn.is`)"
+      service: "truenas"
+  services:
+    authelia:
+      loadBalancer:
+        servers:
+          - url: "http://100.100.1.1:9091"
+    console:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.33"
+    glances:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:61208"
+    plex:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.2:32400"
+    truenas:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.2:8443"
+tls:
+  options:
+    default:
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      minVersion: VersionTLS12
+      sniStrict: true
+    legacy:
+      minVersion: VersionTLS12
+      sniStrict: false
+    modern:
+      minVersion: VersionTLS13
+      sniStrict: true

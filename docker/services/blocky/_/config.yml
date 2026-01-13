@@ -1,0 +1,76 @@
+blocking:
+  blockType: zeroIP
+  clientGroupsBlock:
+    default:
+      - ads
+  denylists:
+    ads:
+      - https://big.oisd.nl
+      - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
+      - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.medium.txt
+      - https://v.firebog.net/hosts/AdguardDNS.txt
+      - https://v.firebog.net/hosts/Easyprivacy.txt
+      - https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt
+      - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+      - https://adaway.org/hosts.txt
+      - https://urlhaus.abuse.ch/downloads/hostfile/
+  loading:
+    concurrency: 4
+    downloads:
+      attempts: 5
+      cooldown: 2s
+      readHeaderTimeout: 15s
+      readTimeout: 30s
+      timeout: 30s
+      writeTimeout: 30s
+    refreshPeriod: 12h
+    strategy: blocking
+
+bootstrapDns:
+  - upstream: 1.1.1.1
+  - upstream: 8.8.8.8
+
+caching:
+  cacheTimeNegative: 30m
+  maxTime: 30m
+  minTime: 5m
+  prefetchExpires: 2h
+  prefetchThreshold: 5
+  prefetching: true
+
+connectIPVersion: v4
+
+customDNS:
+  customTTL: 1h
+  mapping:
+    "*.mothership.techn.is": 192.168.1.2
+    "*.nexus.techn.is": 192.168.1.2
+    go: 192.168.1.2
+    go.techn.is: 192.168.1.2
+    mothership.techn.is: 192.168.1.2
+    nexus.techn.is: 192.168.1.2
+
+log:
+  format: json
+  level: info
+
+ports:
+  dns: 53
+  http: 4000
+
+prometheus:
+  enable: true
+  path: /metrics
+
+queryLog:
+  type: none
+
+upstreams:
+  groups:
+    default:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 9.9.9.9
+      - 149.112.112.112
+  strategy: parallel_best
+  timeout: 5s

@@ -1,0 +1,25 @@
+services:
+  whoami:
+    cap_drop:
+      - ALL
+    container_name: whoami
+    deploy:
+      resources:
+        limits:
+          cpus: 0.1
+          memory: 32M
+        reservations:
+          cpus: 0.01
+          memory: 8M
+    healthcheck:
+      test:
+        - NONE
+    hostname: whoami
+    image: traefik/whoami:latest
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=8m
+    user: 65534:65534

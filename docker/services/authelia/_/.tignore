@@ -1,0 +1,7 @@
+# Authelia runtime state should never be synced from local workspace.
+# Keep SQLite storage and logs remote-authoritative to avoid write-state corruption.
+db.sqlite3
+db.sqlite3-shm
+db.sqlite3-wal
+authelia.log
+notification.txt

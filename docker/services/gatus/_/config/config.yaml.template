@@ -1,0 +1,204 @@
+---
+alerting:
+  discord:
+    webhook-url: "${DISCORD_WEBHOOK_URL}"
+connectivity:
+  checker:
+    interval: 30s
+    target: 1.1.1.1:53
+endpoint-defaults: &defaults
+  client:
+    timeout: 10s
+  conditions:
+    - "[STATUS] == 200"
+  group: internal
+  interval: 30s
+endpoints:
+  - <<: *defaults
+    conditions:
+      - "[CONNECTED] == true"
+    name: ns1
+    url: "tcp://${INTERNAL_IP}:53"
+  - <<: *defaults
+    conditions:
+      - "[CONNECTED] == true"
+    name: ns2
+    url: "tcp://100.100.1.2:53"
+  - <<: *defaults
+    name: authelia
+    url: "https://auth.${DOMAIN}"
+  - <<: *defaults
+    name: traefik-mothership
+    url: "http://${INTERNAL_IP}/ping"
+  - <<: *defaults
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == OK"
+    name: docker-socket-proxy
+    url: "http://${INTERNAL_IP}:2375/_ping"
+  - <<: *defaults
+    headers: &auth
+      Authorization: "Basic ${GATUS_AUTH_TOKEN}"
+    name: beszel
+    url: "https://beszel.nexus.${DOMAIN}"
+  - <<: *defaults
+    conditions:
+      - "[CONNECTED] == true"
+    group: egress
+    name: cloudflare
+    url: "icmp://1.1.1.1"
+  - <<: *defaults
+    client:
+      ignore-redirect: true
+    conditions:
+      - "[STATUS] == 301"
+    headers:
+      Host: "console.nexus.${DOMAIN}"
+    name: console-nexus
+    url: "http://100.100.1.2"
+  - <<: *defaults
+    headers: *auth
+    name: dozzle
+    url: "https://dozzle.nexus.${DOMAIN}/healthcheck"
+  - <<: *defaults
+    headers: *auth
+    name: excalidraw
+    url: "https://excalidraw.nexus.${DOMAIN}"
+  - <<: *defaults
+    name: flaresolverr
+    url: "https://flaresolverr.nexus.${DOMAIN}/health"
+  - <<: *defaults
+    headers: *auth
+    name: glances
+    url: "https://glances.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: grafana
+    url: "https://grafana.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: kromgo
+    url: "https://kromgo.nexus.${DOMAIN}/query?format=endpoint&metric=cluster_memory_usage&style=flat&label=memory"
+  - <<: *defaults
+    conditions:
+      - "[STATUS] == any(200, 429)"
+    headers: *auth
+    name: nextcloud
+    url: "https://nextcloud.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: pgadmin
+    url: "https://pgadmin.nexus.${DOMAIN}/misc/ping"
+  - <<: *defaults
+    client:
+      insecure: true
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*machineIdentifier*)"
+    name: plex
+    url: https://plex.${DOMAIN}/identity
+  - <<: *defaults
+    headers: *auth
+    name: profilarr
+    url: "https://profilarr.nexus.${DOMAIN}/ping"
+  - <<: *defaults
+    headers: *auth
+    name: prometheus
+    url: "https://prometheus.nexus.${DOMAIN}/-/healthy"
+  - <<: *defaults
+    headers: *auth
+    name: prowlarr
+    url: "https://prowlarr.nexus.${DOMAIN}/ping"
+  - <<: *defaults
+    headers: *auth
+    name: radarr
+    url: "https://radarr.nexus.${DOMAIN}/ping"
+  - <<: *defaults
+    client:
+      ignore-redirect: true
+    conditions:
+      - "[STATUS] == 401"
+    name: sabnzbd
+    url: "https://sabnzbd.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: seerr
+    url: "https://seerr.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: sonarr
+    url: "https://sonarr.nexus.${DOMAIN}/ping"
+  - <<: *defaults
+    headers: *auth
+    name: syncthing
+    url: "https://syncthing.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: tautulli
+    url: "https://tautulli.nexus.${DOMAIN}"
+  - <<: *defaults
+    headers: *auth
+    name: traefik-nexus
+    url: "https://traefik.nexus.${DOMAIN}"
+  - <<: *defaults
+    alerts:
+      - type: discord
+    client: &external-client
+      timeout: 10s
+      dns-resolver: "tcp://1.1.1.1:53"
+    group: external
+    name: requests
+    url: https://requests.${DOMAIN}
+  - <<: *defaults
+    client: *external-client
+    group: external
+    name: stat
+    ui:
+      hide-url: true
+    url: https://stat.${DOMAIN}
+  - <<: *defaults
+    alerts:
+      - type: discord
+    client: *external-client
+    group: external
+    name: status
+    url: https://status.${DOMAIN}
+  - <<: *defaults
+    alerts:
+      - type: discord
+    client: *external-client
+    group: external
+    name: dash
+    url: https://dash.${DOMAIN}
+  - <<: *defaults
+    alerts:
+      - type: discord
+    client:
+      insecure: true
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*machineIdentifier*)"
+    group: external
+    name: plex
+    ui:
+      hide-hostname: true
+      hide-url: true
+    url: https://plex.${DOMAIN}/identity
+  - <<: *defaults
+    alerts:
+      - type: discord
+    client: *external-client
+    group: external
+    name: join
+    url: https://join.${DOMAIN}
+metrics: true
+storage:
+  path: /data/data.db
+  type: sqlite
+ui:
+  header: Technis
+  link: https://${DOMAIN}
+  logo: https://ik.imagekit.io/technis/logo.png
+  title: Status | Technis
+web:
+  port: 8080

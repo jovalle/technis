@@ -1,0 +1,37 @@
+services:
+  tailscale:
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    cap_drop:
+      - ALL
+    container_name: tailscale
+    devices:
+      - permissions: rwm
+        source: /dev/net/tun
+        target: /dev/net/tun
+    environment:
+      - TS_AUTH_ONCE=${TAILSCALE_TS_AUTH_ONCE:-true}
+      - TS_AUTHKEY=${TAILSCALE_TS_AUTHKEY:?TAILSCALE_TS_AUTHKEY is required}
+      - TS_EXTRA_ARGS=${TAILSCALE_TS_EXTRA_ARGS:?TAILSCALE_TS_EXTRA_ARGS is required}
+      - TS_ROUTES=${TAILSCALE_TS_ROUTES:?TAILSCALE_TS_ROUTES is required}
+      - TS_SOCKET=${TAILSCALE_TS_SOCKET:?TAILSCALE_TS_SOCKET is required}
+      - TS_STATE_DIR=${TAILSCALE_TS_STATE_DIR:?TAILSCALE_TS_STATE_DIR is required}
+      - TS_USERSPACE=${TAILSCALE_TS_USERSPACE:?TAILSCALE_TS_USERSPACE is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - tailscale status --json | grep -q 'BackendState.*Running' || exit 1
+      timeout: 10s
+    hostname: ${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}
+    image: tailscale/tailscale:latest
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tailscale/state:/var/lib/tailscale
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tailscale/run:/var/run/tailscale
