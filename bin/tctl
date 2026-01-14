@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# tctl — self-bootstrapping wrapper.
+# Syncs the project environment with uv, then executes the CLI.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VENV="$REPO_ROOT/.venv"
+MARKER="$VENV/.tctl-installed"
+MARKER_META="$VENV/.tctl-installed.meta"
+PYPROJECT="$REPO_ROOT/pyproject.toml"
+LOCKFILE="$REPO_ROOT/uv.lock"
+UV_CACHE_DIR="$REPO_ROOT/tmp/.uv-cache"
+
+find_uv_cmd() {
+  if command -v uv &>/dev/null; then
+    echo "uv"
+    return 0
+  fi
+
+  if command -v mise &>/dev/null && mise which uv >/dev/null 2>&1; then
+    mise which uv
+    return 0
+  fi
+
+  return 1
+}
+
+bootstrap_signature() {
+  local py_info="missing"
+  if [[ -x "$VENV/bin/python" ]]; then
+    py_info="$("$VENV/bin/python" -VV 2>/dev/null | tr '\n' ' ' || echo missing)"
+  fi
+  printf 'python=%s\n' "$py_info"
+}
+
+needs_bootstrap() {
+  if [[ ! -x "$VENV/bin/python" ]]; then
+    return 0
+  fi
+  if [[ ! -f "$MARKER" ]] || [[ ! -f "$MARKER_META" ]]; then
+    return 0
+  fi
+  if [[ "$PYPROJECT" -nt "$MARKER" ]]; then
+    return 0
+  fi
+  if [[ -f "$LOCKFILE" ]] && [[ "$LOCKFILE" -nt "$MARKER" ]]; then
+    return 0
+  fi
+
+  local current_sig
+  local previous_sig
+  current_sig="$(bootstrap_signature)"
+  previous_sig="$(cat "$MARKER_META" 2>/dev/null || true)"
+  if [[ "$current_sig" != "$previous_sig" ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+# ── Bootstrap the project env on first run (or when lock inputs change) ──
+if needs_bootstrap; then
+  if ! UV_CMD="$(find_uv_cmd)"; then
+    cat >&2 <<'EOF'
+uv is required to bootstrap tctl.
+
+Install the repo toolchain with:
+  ./scripts/bootstrap-tools.sh
+
+Or install uv directly and rerun this command.
+EOF
+    exit 1
+  fi
+
+  UV_CACHE_DIR="$UV_CACHE_DIR" "$UV_CMD" sync --directory "$REPO_ROOT" --locked --quiet
+  touch "$MARKER"
+  bootstrap_signature >"$MARKER_META"
+fi
+
+exec env PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" "$VENV/bin/python" -m tctl "$@"

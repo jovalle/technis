@@ -1,8 +1,13 @@
 [project]
 authors = [ { name = "Technis Project", email = "maintainers@technis.io" } ]
 description = "A collection of tools and configurations"
+dependencies = [
+  "click>=8.1.7,<9",
+  "PyYAML>=6.0",
+  "rich>=13.7.1,<14",
+]
 name = "technis"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 version = "0.1.0"
 
 [tool.ruff]
@@ -67,6 +72,11 @@ line-ending = "auto"
 [tool.ruff.lint.per-file-ignores]
 # Ignore import violations in __init__.py files.
 "__init__.py" = [ "E402", "F401" ]
+"src/tctl/check.py" = [ "C901" ]
+"src/tctl/cli.py" = [ "B904", "C901" ]
+"src/tctl/compose.py" = [ "B904", "C901" ]
+"src/tctl/render.py" = [ "C901" ]
+"src/tctl/sync.py" = [ "C901" ]
 
 [tool.pytest.ini_options]
 # Pytest configuration
@@ -79,6 +89,6 @@ addopts = [
 python_classes = [ "Test*" ]
 python_files = [ "test_*.py" ]
 python_functions = [ "test_*" ]
-testpaths = [ "scripts/tests" ]
+testpaths = [ "tests", "scripts/tests" ]
 # Minimum Python version for tests
 minversion = "7.0"
