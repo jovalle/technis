@@ -1,4 +1,0 @@
-[[inputs.exec]]
-   commands = ["/usr/bin/python3 {{ telegraf_plugin.ups.script_path }}/get_ups_data.py --config {{ telegraf_plugin.ups.config }} --name {{ telegraf_plugin.ups.name }}"]
-   timeout = "5s"
-   data_format = "influx"

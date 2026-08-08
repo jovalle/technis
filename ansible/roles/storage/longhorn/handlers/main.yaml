@@ -1,6 +1,0 @@
-- name: restart multipathd
-  systemd:
-    name: multipathd
-    state: restarted
-    daemon_reload: true
-    enabled: true

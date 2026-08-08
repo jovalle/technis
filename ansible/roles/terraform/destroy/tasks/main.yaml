@@ -1,5 +1,0 @@
-- name: eradicate all created resources
-  shell: |
-    pushd {{ ansible_inventory_sources[0] }} && \
-    terraform destroy -auto-approve && \
-    popd

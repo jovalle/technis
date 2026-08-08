@@ -1,3 +1,0 @@
-- name: setup {{ storage_provider }} storage provider
-  import_role:
-    name: storage/{{ storage_provider }}

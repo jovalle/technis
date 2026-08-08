@@ -1,7 +1,0 @@
-- name: disable link local addressing
-  lineinfile:
-    path: /etc/default/avahi-daemon
-    regex: "^AVAHI_DAEMON_DETECT_LOCAL=1$"
-    line: "AVAHI_DAEMON_DETECT_LOCAL=0"
-  notify:
-    - restart avahi-daemon

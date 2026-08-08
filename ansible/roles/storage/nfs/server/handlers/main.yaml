@@ -1,4 +1,0 @@
-- name: restart nfs service
-  systemd:
-    name: nfs-kernel-server
-    state: restarted

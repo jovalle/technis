@@ -1,6 +1,0 @@
-[Unit]
-Description=Check FRR topology
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/rebolt.sh
