@@ -1,3 +1,0 @@
-apiserver_endpoint: 192.168.1.100
-k3s_token: technis
-k3s_version: v1.25.4+k3s1

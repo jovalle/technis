@@ -1,8 +1,0 @@
-- name: get kube-proxy binary
-  get_url:
-    url: https://dl.k8s.io/v1.23.3/bin/linux/{{ 'arm64' if (ansible_architecture | regex_search('arm|aarch')) else 'amd64' }}/kube-proxy
-    dest: /usr/local/bin/kube-proxy
-    mode: 0755
-
-- name: cleanup kube-proxy
-  command: kube-proxy --cleanup
