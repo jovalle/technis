@@ -1,1 +1,0 @@
-cri_plugin: "{{ 'integrated' if k8s_provisioner == 'k3s' else 'containerd.io' }}"

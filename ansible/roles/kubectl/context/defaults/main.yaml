@@ -1,3 +1,0 @@
-cluster: technis
-target_context: kubernetes-admin@{{ cluster }}
-kube_admin_config: "{{ '/etc/rancher/k3s/k3s.yaml' if (k8s_provisioner | default('k3s')) else '/etc/kubernetes/admin.conf' }}"

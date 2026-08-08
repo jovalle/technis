@@ -1,5 +1,0 @@
-- name: create box(es)
-  shell: |
-    pushd {{ ansible_inventory_sources[0] }} && \
-    vagrant up --parallel && \
-    popd

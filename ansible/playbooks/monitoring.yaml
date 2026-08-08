@@ -1,9 +1,0 @@
-- hosts: control_plane
-  ignore_unreachable: true
-  run_once: true
-  tasks:
-    - name: deploy monitoring stack
-      import_role:
-        name: deploy
-      vars:
-        target_role: monitoring
