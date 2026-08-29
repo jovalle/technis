@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title description">
+  <title id="title">techn.is Workspaces</title>
+  <desc id="description">Technis logo and wordmark</desc>
+  <defs>
+    <linearGradient id="technis-gradient" x1="34" y1="103" x2="480" y2="395" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06a8ee"/>
+      <stop offset="1" stop-color="#10d2d0"/>
+    </linearGradient>
+    <mask id="technis-cutouts">
+      <rect width="512" height="512" fill="#000"/>
+      <rect x="34" y="103" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="188" y="103" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="342" y="103" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="188" y="257" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="60" y="129" width="86" height="86" fill="#000"/>
+      <rect x="214" y="129" width="86" height="86" fill="#000"/>
+      <rect x="368" y="129" width="86" height="86" fill="#000"/>
+      <rect x="214" y="283" width="86" height="86" fill="#000"/>
+    </mask>
+  </defs>
+  <g transform="translate(10 -10) scale(0.66)">
+    <rect width="512" height="512" fill="url(#technis-gradient)" mask="url(#technis-cutouts)"/>
+  </g>
+  <line x1="390" y1="42" x2="390" y2="278" stroke="#ffffff" stroke-width="6" opacity="0.9"/>
+  <text x="435" y="190" fill="#ffffff" font-family="Inter, Arial, Helvetica, sans-serif" font-size="156" font-weight="600" letter-spacing="-5">Technis</text>
+  <text x="444" y="258" fill="#ffffff" font-family="Inter, Arial, Helvetica, sans-serif" font-size="42" font-weight="500" letter-spacing="18">WORKSPACES</text>
+</svg>

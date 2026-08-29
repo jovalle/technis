@@ -1,0 +1,19 @@
+services:
+  gluetun:
+    environment:
+      - HTTPPROXY=on
+      - HTTPPROXY_STEALTH=on
+    networks:
+      default: {}
+      coolify: {}
+      kasm_vpn:
+        ipv4_address: 172.30.54.2
+    ports:
+      - 10095:10095
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gluetun/iptables/post-rules.txt:/iptables/post-rules.txt:ro
+
+networks:
+  coolify:
+    external: true
+    name: coolify

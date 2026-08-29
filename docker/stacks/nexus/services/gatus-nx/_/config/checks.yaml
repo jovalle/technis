@@ -1,0 +1,155 @@
+---
+endpoints:
+  - &tcp
+    conditions:
+      - "[CONNECTED] == true"
+    group: 01 · Network & Access
+    interval: 30s
+    name: Local DNS
+    url: tcp://technitium:53
+
+  - <<: *tcp
+    name: Primary DNS
+    url: tcp://100.100.1.2:53
+
+  - <<: *tcp
+    name: Mothership DNS
+    url: tcp://100.100.1.1:53
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 01 · Network & Access
+    interval: 30s
+    name: Traefik
+    url: http://traefik:8080/ping
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 01 · Network & Access
+    interval: 30s
+    name: Authelia
+    url: http://authelia:9091/api/health
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 01 · Network & Access
+    interval: 30s
+    name: Cloudflare Tunnel · Primary
+    url: http://cloudflare:60123/ready
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 01 · Network & Access
+    interval: 30s
+    name: Cloudflare Tunnel · Secondary
+    url: http://cloudflare-2:60123/ready
+
+  - conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == OK"
+    group: 02 · Runtime & Data
+    interval: 30s
+    name: Docker API
+    url: http://docker-socket-proxy:2375/_ping
+
+  - <<: *tcp
+    group: 02 · Runtime & Data
+    name: PostgreSQL
+    url: tcp://postgres:5432
+
+  - <<: *tcp
+    group: 02 · Runtime & Data
+    name: Redis
+    url: tcp://redis:6379
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 02 · Runtime & Data
+    interval: 30s
+    name: Docmost
+    url: http://docmost:3000/api/health
+
+  - <<: *tcp
+    group: 02 · Runtime & Data
+    name: Syncthing
+    url: tcp://syncthing:8384
+
+  - &http
+    conditions:
+      - "[STATUS] == 200"
+    group: 03 · Playback
+    interval: 30s
+    name: Plex
+    url: http://192.168.1.3:32400/identity
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: Bazarr
+    url: http://bazarr:6767/
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: qBittorrent
+    # Probe the published port, not the shared network namespace. A recreated
+    # Gluetun container can otherwise leave qBittorrent healthy but unreachable.
+    url: http://192.168.1.3:10095
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: Sonarr
+    url: http://sonarr:8989/series/ping
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: Radarr
+    url: http://radarr:7878/movies/ping
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: Lidarr
+    url: http://lidarr:8686/songs/ping
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: Prowlarr
+    url: http://prowlarr:9696/indexers/ping
+
+  - <<: *http
+    group: 04 · Acquisition
+    name: SABnzbd
+    url: http://sabnzbd:8080/nzb/api?mode=version
+
+  - <<: *http
+    group: 05 · Curation
+    name: Seerr
+    url: http://seerr:5055/api/v1/status
+
+  - <<: *http
+    group: 05 · Curation
+    name: Watcharr
+    url: http://watcharr:3080/api/auth/available
+
+  - <<: *tcp
+    group: 05 · Curation
+    name: Profilarr
+    url: tcp://profilarr:6868
+
+  - <<: *http
+    group: 05 · Curation
+    name: Wikipedia
+    url: http://kiwix:8080/catalog/v2/entries?count=0
+
+  - <<: *http
+    group: 06 · Observability
+    name: Prometheus
+    url: http://prometheus:9090/-/healthy
+
+  - <<: *http
+    group: 06 · Observability
+    name: Grafana
+    url: http://grafana:3000/api/health
+
+  - <<: *http
+    group: 06 · Observability
+    name: Loki
+    url: http://loki:3100/ready

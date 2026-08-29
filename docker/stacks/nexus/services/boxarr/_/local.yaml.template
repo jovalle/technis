@@ -1,0 +1,28 @@
+boxarr:
+  features:
+    auto_add: true
+    auto_add_options:
+      genre_blacklist: []
+      genre_filter_enabled: false
+      genre_filter_mode: blacklist
+      genre_whitelist: []
+      ignore_rereleases: true
+      limit: 10
+      rating_filter_enabled: false
+      rating_whitelist: []
+    auto_tag_enabled: true
+    auto_tag_text: boxarr
+    quality_upgrade: true
+  scheduler:
+    cron: 0 2 * * 2
+    enabled: true
+  ui:
+    theme: auto
+radarr:
+  api_key: ${RADARR_API_KEY}
+  minimum_availability: released
+  minimum_availability_enabled: true
+  quality_profile_default: 1080p Balanced
+  quality_profile_upgrade: 2160p Quality
+  root_folder: /movies
+  url: http://radarr:7878

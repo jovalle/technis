@@ -1,0 +1,25 @@
+version: 2
+
+global:
+  keywords:
+    - keyword: critical
+  defaults:
+    trigger_cooldown: 3600
+
+containers:
+  rules:
+    - match:
+        include:
+          container_names:
+            - "*"
+        exclude:
+          container_names:
+            - loggifly
+            - "*-exporter"
+
+settings:
+  system_notifications: false
+
+notifications:
+  apprise:
+    url: "${LOGGIFLY_APPRISE_URL}"

@@ -1,0 +1,182 @@
+---
+global:
+  evaluation_interval: 15s
+  scrape_interval: 15s
+  scrape_timeout: 10s
+scrape_configs:
+  - honor_timestamps: true
+    job_name: prometheus
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - prometheus:9090
+  - job_name: node
+    scrape_interval: 5s
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - node-exporter:9100
+      - labels:
+          instance: mothership
+        targets:
+          - mothership:9100
+  - job_name: grafana
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - grafana:3000
+  - job_name: gatus
+    scrape_interval: 30s
+    static_configs:
+      - labels:
+          instance: public
+          layer: external
+        targets:
+          - mothership:8181
+      - labels:
+          instance: mothership
+          layer: infrastructure
+        targets:
+          - mothership:8182
+      - labels:
+          instance: stargate
+          layer: infrastructure
+        targets:
+          - 100.100.1.2:8181
+      - labels:
+          instance: nexus
+          layer: services
+        targets:
+          - gatus-nx:8080
+  - job_name: traefik
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - traefik:8082
+      - labels:
+          instance: mothership
+        targets:
+          - mothership:8082
+  - job_name: cadvisor
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - cadvisor:8080
+      - labels:
+          instance: mothership
+        targets:
+          - mothership:8180
+      - labels:
+          instance: stargate
+        targets:
+          - 100.100.1.2:8180
+  - job_name: plex
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - plex-exporter:9000
+  - job_name: exportarr
+    scrape_interval: 30s
+    static_configs:
+      - labels:
+          app: sonarr
+          instance: nexus
+        targets:
+          - sonarr-exporter:9707
+      - labels:
+          app: radarr
+          instance: nexus
+        targets:
+          - radarr-exporter:9708
+      - labels:
+          app: prowlarr
+          instance: nexus
+        targets:
+          - prowlarr-exporter:9710
+      - labels:
+          app: sabnzbd
+          instance: nexus
+        targets:
+          - sabnzbd-exporter:9711
+  - job_name: qbittorrent
+    scrape_interval: 30s
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - gluetun:8090
+  - job_name: smartctl
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - smartctl-exporter:9633
+  - job_name: intel-gpu
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - intel-gpu-exporter:9090
+  - job_name: unpoller
+    scrape_interval: 30s
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - unpoller:9130
+  - job_name: docker
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - 172.16.1.1:9323
+      - labels:
+          instance: mothership
+        targets:
+          - mothership:9323
+  - job_name: cloudflared
+    static_configs:
+      - labels:
+          account: Technis
+          instance: nexus
+          tunnel: nexus
+        targets:
+          - cloudflare-1:60123
+      - labels:
+          account: Secondary
+          instance: nexus
+          tunnel: nexus
+        targets:
+          - cloudflare-2:60123
+  - job_name: loki
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - loki:3100
+  - job_name: promtail
+    static_configs:
+      - labels:
+          instance: nexus
+        targets:
+          - promtail:9080
+      - labels:
+          instance: mothership
+        targets:
+          - mothership:9080
+  - job_name: crowdsec
+    static_configs:
+      - labels:
+          instance: mothership
+        targets:
+          - mothership:6060

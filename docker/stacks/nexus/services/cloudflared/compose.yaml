@@ -1,0 +1,110 @@
+services:
+  cloudflare:
+    cap_drop:
+      - ALL
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 0.0.0.0:60123
+      - run
+    container_name: cloudflare-1
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN:?CLOUDFLARED_TUNNEL_TOKEN is required}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: nexus
+    image: cloudflare/cloudflared:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65532:65532
+
+  cloudflare-2:
+    cap_drop:
+      - ALL
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 0.0.0.0:60123
+      - run
+    container_name: cloudflare-2
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_2_TUNNEL_TOKEN:?CLOUDFLARE_2_TUNNEL_TOKEN is required}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: nexus
+    image: cloudflare/cloudflared:latest
+    labels:
+      - traefik.enable=false
+    networks:
+      default:
+        ipv4_address: 172.30.53.253
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65532:65532
+
+x-cloudflare-common:
+  cap_drop:
+    - ALL
+  command:
+    - tunnel
+    - --no-autoupdate
+    - --metrics
+    - 0.0.0.0:60123
+    - run
+  deploy:
+    resources:
+      limits:
+        cpus: 0.25
+        memory: 128M
+      reservations:
+        cpus: 0.05
+        memory: 32M
+  healthcheck:
+    interval: 30s
+    retries: 5
+    start_period: 1m0s
+    test:
+      - NONE
+    timeout: 10s
+  image: cloudflare/cloudflared:latest
+  labels:
+    - traefik.enable=false
+  read_only: true
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  user: 65532:65532

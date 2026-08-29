@@ -1,0 +1,61 @@
+{
+  "domain": "${PUTER_ROOT_DOMAIN}",
+  "protocol": "https",
+  "pub_port": 443,
+  "env": "prod",
+  "static_hosting_domain": "site.${PUTER_ROOT_DOMAIN}",
+  "static_hosting_domain_alt": "host.${PUTER_ROOT_DOMAIN}",
+  "private_app_hosting_domain": "app.${PUTER_ROOT_DOMAIN}",
+  "private_app_hosting_domain_alt": "dev.${PUTER_ROOT_DOMAIN}",
+  "jwt_secret": "${PUTER_JWT_SECRET}",
+  "jwt_secret_v2": "${PUTER_JWT_SECRET_V2}",
+  "allow_v1_tokens": true,
+  "url_signature_secret": "${PUTER_URL_SIGNATURE_SECRET}",
+  "database": {
+    "engine": "mysql",
+    "host": "mariadb",
+    "port": 3306,
+    "user": "puter",
+    "password": "${PUTER_MARIADB_PASSWORD}",
+    "database": "puter",
+    "migrationPaths": [
+      "/opt/puter/dist/src/backend/clients/database/migrations/mysql"
+    ]
+  },
+  "redis": {
+    "startupNodes": [
+      {
+        "host": "valkey-cluster",
+        "port": 6379
+      }
+    ],
+    "tls": false
+  },
+  "dynamo": {
+    "endpoint": "http://dynamodb:8000",
+    "bootstrapTables": true,
+    "aws": {
+      "access_key": "local",
+      "secret_key": "local",
+      "region": "us-east-1"
+    }
+  },
+  "s3": {
+    "s3Config": {
+      "endpoint": "http://rustfs:9000",
+      "publicEndpoint": "https://s3.techn.is",
+      "accessKeyId": "${PUTER_S3_ACCESS_KEY}",
+      "secretAccessKey": "${PUTER_S3_SECRET_KEY}",
+      "region": "us-east-1",
+      "forcePathStyle": true
+    }
+  },
+  "s3_bucket": "puter-local",
+  "s3_region": "us-east-1",
+  "providers": {
+    "ollama": {
+      "enabled": false
+    }
+  },
+  "trust_proxy": 1
+}
