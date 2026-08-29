@@ -1,0 +1,35 @@
+# Garage S3-compatible storage configuration
+# Documentation: https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "lmdb"
+consistency_mode = "consistent"
+metadata_auto_snapshot_interval = "6h"
+
+# Single-node deployment uses replication_factor = 1
+replication_factor = 1
+
+# Compression level (0 = disabled, 1 = fast, 9 = best)
+compression_level = 2
+
+# RPC configuration for inter-node communication
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "garage:3901"
+rpc_secret = "${GARAGE_RPC_SECRET}"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = "${GARAGE_S3_ROOT_DOMAIN}"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".${GARAGE_WEB_ROOT_DOMAIN}"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "${GARAGE_ADMIN_TOKEN}"
+metrics_token = "${GARAGE_METRICS_TOKEN}"
+metrics_require_token = true

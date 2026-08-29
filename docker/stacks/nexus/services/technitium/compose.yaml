@@ -1,0 +1,43 @@
+services:
+  technitium:
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    environment:
+      - DNS_SERVER_DOMAIN=nx.dns.techn.is
+      - DNS_SERVER_WEB_SERVICE_REVERSE_PROXY_ADDRESSES=172.16.0.0/12
+    labels:
+      - traefik.docker.network=nexus_default
+      - traefik.http.routers.technitium.middlewares=auth@file
+      - traefik.http.routers.technitium.rule=Host(`ns2.techn.is`) || Host(`technitium.techn.is`)
+      - traefik.http.services.technitium.loadbalancer.server.port=5380
+    networks:
+      - default
+    ports:
+      - host_ip: 192.168.1.3
+        published: "53"
+        target: 53
+      - host_ip: 192.168.1.3
+        protocol: udp
+        published: "53"
+        target: 53
+      - host_ip: 100.100.1.3
+        published: "53"
+        target: 53
+      - host_ip: 100.100.1.3
+        protocol: udp
+        published: "53"
+        target: 53
+      - host_ip: 192.168.1.3
+        published: "5380"
+        target: 5380
+      - host_ip: 192.168.1.3
+        published: "53443"
+        target: 53443
+      - host_ip: 100.100.1.3
+        published: "5380"
+        target: 5380
+      - host_ip: 100.100.1.3
+        published: "53443"
+        target: 53443

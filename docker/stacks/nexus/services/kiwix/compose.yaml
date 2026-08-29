@@ -1,0 +1,42 @@
+services:
+  kiwix-init:
+    volumes:
+      - /mnt/media/wiki/content:/data
+      - /mnt/media/wiki/state:/library
+
+  kiwix-updater:
+    networks:
+      - default
+    volumes:
+      - /mnt/media/wiki/content:/data
+      - /mnt/media/wiki/state:/library
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/kiwix/config/books.txt:/config/books.txt:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/kiwix/config/update.sh:/config/update.sh:ro
+
+  kiwix:
+    labels:
+      - traefik.docker.network=nexus_default
+      - traefik.enable=true
+      - traefik.http.middlewares.kiwix-headers.headers.contenttypenosniff=true
+      - traefik.http.middlewares.kiwix-headers.headers.permissionspolicy=camera=(), microphone=(), geolocation=(), payment=()
+      - traefik.http.middlewares.kiwix-headers.headers.referrerpolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.kiwix-headers.headers.stsincludesubdomains=true
+      - traefik.http.middlewares.kiwix-headers.headers.stspreload=true
+      - traefik.http.middlewares.kiwix-headers.headers.stsseconds=31536000
+      - traefik.http.middlewares.kiwix-lan.ipallowlist.sourcerange=10.0.0.0/8,100.64.0.0/10,127.0.0.1/32,172.30.53.1/32,192.168.0.0/16,::1/128,fd7a:115c:a1e0::/48
+      - traefik.http.routers.kiwix-http.entrypoints=web
+      - traefik.http.routers.kiwix-http.middlewares=kiwix-lan,redirect-to-https@file
+      - traefik.http.routers.kiwix-http.rule=Host(`archive.techn.is`)
+      - traefik.http.routers.kiwix-http.service=kiwix
+      - traefik.http.routers.kiwix.entrypoints=websecure
+      - traefik.http.routers.kiwix.middlewares=kiwix-lan,kiwix-headers
+      - traefik.http.routers.kiwix.rule=Host(`archive.techn.is`)
+      - traefik.http.routers.kiwix.service=kiwix
+      - traefik.http.routers.kiwix.tls.certresolver=letsencrypt
+      - traefik.http.routers.kiwix.tls=true
+      - traefik.http.services.kiwix.loadbalancer.server.port=8080
+    networks:
+      - default
+    volumes:
+      - /mnt/media/wiki/content:/data:ro
+      - /mnt/media/wiki/state:/library:ro

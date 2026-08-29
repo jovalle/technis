@@ -1,0 +1,7 @@
+services:
+  cadvisor:
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+      - --enable_metrics=cpu,memory
+      - --store_container_labels=false

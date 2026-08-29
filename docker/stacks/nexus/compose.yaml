@@ -1,0 +1,218 @@
+include:
+  - path: ../../services/agregarr/compose.yaml
+    env_file: &env
+      - ../../.env
+      - .env
+  - path:
+      - ../../services/authelia/compose.yaml
+      - services/authelia/compose.yaml
+    env_file: *env
+  - path: ../../services/azuracast/compose.yaml
+    env_file: *env
+  - path: ../../services/bazarr/compose.yaml
+    env_file: *env
+  - path: ../../services/beszel/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/beszel-agent/compose.yaml
+      - services/beszel-agent/compose.yaml
+    env_file: *env
+  - path: ../../services/boxarr/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/cadvisor/compose.yaml
+      - services/cadvisor/compose.yaml
+    env_file: *env
+  - path: ../../services/capacitarr/compose.yaml
+    env_file: *env
+  - path: ../../services/cleanuparr/compose.yaml
+    env_file: *env
+  - path: services/cloudflared/compose.yaml
+    env_file: *env
+  - path: ../../services/ddclient/compose.yaml
+    env_file: *env
+  - path: ../../services/dynamodb/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/docker-socket-proxy/compose.yaml
+      - services/docker-socket-proxy/compose.yaml
+      - ../../services/docker-socket-proxy-api/compose.yaml
+    env_file: *env
+  - path: ../../services/docmost/compose.yaml
+    env_file: *env
+  - path: ../../services/dockhand/compose.yaml
+    env_file: *env
+  #   - path: ../../services/docksentry/compose.yaml
+  #   - path: ../../services/dozzle/compose.yaml
+  - path: ../../services/exportarr/compose.yaml
+    env_file: *env
+  - path: ../../services/external-dns/compose.yaml
+    env_file: *env
+  - path: ../../services/flaresolverr/compose.yaml
+    env_file: *env
+  #   - path: ../../services/garage/compose.yaml
+  - path: services/gatus-nx/compose.yaml
+    env_file: *env
+  #   - path: ../../services/glances/compose.yaml
+  - path:
+      - ../../services/gluetun/compose.yaml
+      - services/gluetun/compose.yaml
+    env_file: *env
+  - path: ../../services/goku/compose.yaml
+    env_file: *env
+  - path: ../../services/grafana/compose.yaml
+    env_file: *env
+  - path: ../../services/immich/compose.yaml
+    env_file: *env
+  - path: ../../services/immich-ml/compose.yaml
+    env_file: *env
+  - path: ../../services/intel-gpu-exporter/compose.yaml
+    env_file: *env
+  - path: ../../services/jellyfin/compose.yaml
+    env_file: *env
+  - path: ../../services/journiv/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/kasm/compose.yaml
+      - ../../services/kasm/branding.compose.override.yaml
+    env_file: *env
+  - path:
+      - ../../services/kiwix/compose.yaml
+      - services/kiwix/compose.yaml
+    env_file: *env
+  - path: ../../services/kromgo/compose.yaml
+    env_file: *env
+  - path: ../../services/lidarr/compose.yaml
+    env_file: *env
+  - path: ../../services/linkwarden/compose.yaml
+    env_file: *env
+  #   - path: ../../services/loggifly/compose.yaml
+  - path: ../../services/loki/compose.yaml
+    env_file: *env
+  #   - path: ../../services/lubelog/compose.yaml
+  - path: ../../services/maintainerr/compose.yaml
+    env_file: *env
+  - path: ../../services/maintenant/compose.yaml
+    env_file: *env
+  - path: ../../services/mariadb/compose.yaml
+    env_file: *env
+  - path: ../../services/mealie/compose.yaml
+    env_file: *env
+  - path: ../../services/meilisearch/compose.yaml
+    env_file: *env
+  #   - path: ../../services/music-assistant/compose.yaml
+  #   - path: ../../services/muxarr/compose.yaml
+  - path: ../../services/n8n/compose.yaml
+    env_file: *env
+  - path: ../../services/navidrome/compose.yaml
+    env_file: *env
+  - path: ../../services/newt/compose.yaml
+    env_file: *env
+  - path: ../../services/nextcloud/compose.yaml
+    env_file: *env
+  - path: ../../services/node-exporter/compose.yaml
+    env_file: *env
+  - path: ../../services/norish/compose.yaml
+    env_file: *env
+  - path: ../../services/omni-tools/compose.yaml
+    env_file: *env
+  - path: ../../services/pgadmin/compose.yaml
+    env_file: *env
+  - path: ../../services/plex/compose.yaml
+    env_file: *env
+  - path: ../../services/plex-exporter/compose.yaml
+    env_file: *env
+  - path: ../../services/postgres/compose.yaml
+    env_file: *env
+  - path: ../../services/profilarr/compose.yaml
+    env_file: *env
+  - path: ../../services/prometheus/compose.yaml
+    env_file: *env
+  - path: ../../services/promtail/compose.yaml
+    env_file: *env
+  - path: ../../services/prowlarr/compose.yaml
+    env_file: *env
+  - path: ../../services/puter/compose.yaml
+    env_file: *env
+  - path: ../../services/qbittorrent/compose.yaml
+    env_file: *env
+  - path: ../../services/qbittorrent-exporter/compose.yaml
+    env_file: *env
+  - path: ../../services/rackpad/compose.yaml
+    env_file: *env
+  - path: ../../services/radarr/compose.yaml
+    env_file: *env
+  - path: ../../services/redis/compose.yaml
+    env_file: *env
+  - path: ../../services/rustfs/compose.yaml
+    env_file: *env
+  - path: ../../services/sabnzbd/compose.yaml
+    env_file: *env
+  - path: ../../services/seerr/compose.yaml
+    env_file: *env
+  - path: ../../services/smartctl-exporter/compose.yaml
+    env_file: *env
+  - path: ../../services/sonarr/compose.yaml
+    env_file: *env
+  - path: ../../services/stirling-pdf/compose.yaml
+    env_file: *env
+  - path: ../../services/syncthing/compose.yaml
+    env_file: *env
+  - path: ../../services/tailscale/compose.yaml
+    env_file: *env
+  - path: ../../services/tautulli/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/technitium/compose.yaml
+      - services/technitium/compose.yaml
+    env_file: *env
+  - path: ../../services/tracearr/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/traefik/compose.yaml
+      - services/traefik/compose.yaml
+    env_file: *env
+  - path: ../../services/trala/compose.yaml
+    env_file: *env
+  - path: ../../services/transcoding-gpu-benchmark/compose.yaml
+    env_file: *env
+  - path: ../../services/unpackerr/compose.yaml
+    env_file: *env
+  - path: ../../services/unpoller/compose.yaml
+    env_file: *env
+  - path: ../../services/valkey/compose.yaml
+    env_file: *env
+  - path: ../../services/valkey-cluster/compose.yaml
+    env_file: *env
+  - path: ../../services/watcharr/compose.yaml
+    env_file: *env
+  - path: ../../services/watchtower/compose.yaml
+    env_file: *env
+  #   - path: ../../services/whoami/compose.yaml
+  - path: ../../services/wizarr/compose.yaml
+    env_file: *env
+
+name: nexus
+
+networks:
+  default:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      config:
+        - gateway: 172.30.53.1
+          subnet: 172.30.53.0/24
+    name: nexus_default
+  kasm_vpn:
+    attachable: true
+    driver: bridge
+    enable_ipv6: false
+    internal: true
+    ipam:
+      config:
+        - gateway: 172.30.54.1
+          subnet: 172.30.54.0/24
+    name: z_kasm_vpn
+  coolify:
+    external: true
+    name: coolify

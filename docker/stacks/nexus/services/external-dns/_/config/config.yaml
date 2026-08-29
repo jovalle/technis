@@ -1,0 +1,99 @@
+---
+# Shared external-dns runtime configuration for all three stacks.
+#
+# DNS provider credentials are mounted from a host-side secret file, so they do
+# not live in this synced config. This file owns source discovery and record
+# ownership behavior.
+
+sources:
+  # Source order is also conflict precedence: nexus, stargate, mothership.
+  # Nexus is the designated home for shared services, so it must win when a
+  # route is temporarily present on more than one Traefik instance.
+  - name: nexus
+    type: traefik
+    url: "http://100.100.1.3:8080"
+    target_ip: "192.168.1.3"
+    public_target_ip: "192.168.1.3"
+    verify_tls: false
+    router_filter: ""
+
+  - name: stargate
+    type: traefik
+    url: "http://100.100.1.2:8080"
+    target_ip: "192.168.1.2"
+    public_target_ip: "192.168.1.2"
+    verify_tls: false
+    router_filter: ""
+
+  - name: mothership
+    type: traefik
+    url: "http://100.100.1.1:8080"
+    target_ip: "${EXTERNAL_IP}"
+    public_target_ip: "${EXTERNAL_IP}"
+    verify_tls: false
+    router_filter: ""
+
+settings:
+  sync_mode: watch
+  poll_interval: 60
+  log_level: INFO
+  default_zone: internal
+  takeover_existing_records: true
+
+# This external-dns image removes an excluded record only when it previously
+# managed it. Declare the static zone records here as protected rewrites: they
+# remain out of Traefik discovery while retaining their authoritative answers.
+static_rewrites:
+  "go": "192.168.1.3"
+  "ns1.techn.is": "192.168.1.2"
+  "ns2.techn.is": "192.168.1.3"
+  "ns3.techn.is": "100.100.1.1"
+  "ntfy.techn.is": "192.168.1.2"
+  "azuracast.techn.is": "192.168.1.3"
+  "cloud.techn.is": "192.168.1.2"
+  "photos.techn.is": "192.168.1.2"
+  "search.techn.is": "100.100.1.1"
+  "stat.techn.is": "192.168.1.3"
+  "status.techn.is": "${EXTERNAL_IP}"
+  "whoami.techn.is": "192.168.1.2"
+
+exclude_domains:
+  - "*.sslip.io"
+  # Public names must bypass local Traefik discovery. Keep these exact so
+  # internal subdomains of techn.is continue to be managed dynamically.
+  - "techn.is"
+  - "apps.techn.is"
+  - "azuracast.techn.is"
+  - "docs.techn.is"
+  - "stat.techn.is"
+  - "status.techn.is"
+  - "www.techn.is"
+  - "dns.techn.is"
+  - "*.dns.techn.is"
+  - "ns1.techn.is"
+  - "ns2.techn.is"
+  - "ns3.techn.is"
+  - "mothership.techn.is"
+  - "*.mothership.techn.is"
+  - "ntfy.techn.is"
+  - "nexus.techn.is"
+  - "*.nexus.techn.is"
+  - "stargate.techn.is"
+  - "*.stargate.techn.is"
+  - "sg.techn.is"
+  - "*.sg.techn.is"
+  - "nx.techn.is"
+  - "*.nx.techn.is"
+  - "ms.techn.is"
+  - "*.ms.techn.is"
+  - "auth.techn.is"
+  - "atuin.techn.is"
+  - "cloud.techn.is"
+  - "photos.techn.is"
+  - "photos.ovall.es"
+  - "search.techn.is"
+  - "puter.techn.is"
+  - "*.puter.techn.is"
+  - "rustfs.techn.is"
+  - "s3.techn.is"
+  - "whoami.techn.is"

@@ -1,0 +1,125 @@
+http:
+  middlewares:
+    auth:
+      forwardAuth:
+        address: "http://authelia:9091/api/authz/forward-auth?authelia_url=https://auth.techn.is"
+        authResponseHeaders:
+          - Remote-Email
+          - Remote-Groups
+          - Remote-Name
+          - Remote-User
+        trustForwardHeader: true
+    basic-auth:
+      forwardAuth:
+        address: "http://authelia:9091/api/authz/forward-auth?authelia_url=https://auth.techn.is"
+        authResponseHeaders:
+          - Remote-Email
+          - Remote-Groups
+          - Remote-Name
+          - Remote-User
+        trustForwardHeader: true
+    external-bypass:
+      headers:
+        customRequestHeaders:
+          X-Technis-Access: nexus
+    kasm-internal:
+      ipAllowList:
+        sourceRange:
+          - "100.64.0.0/10"
+          - "192.168.0.0/16"
+          - "127.0.0.1/32"
+    redirect-to-https:
+      redirectScheme:
+        permanent: true
+        scheme: https
+  routers:
+    console:
+      rule: "Host(`console.techn.is`)"
+      service: "console"
+    gateway:
+      rule: "Host(`gateway.techn.is`)"
+      service: "gateway"
+    glances:
+      rule: "Host(`glances.techn.is`)"
+      service: "glances"
+    jellyfin:
+      rule: "Host(`jellyfin.techn.is`)"
+      service: "jellyfin"
+    kasm:
+      entryPoints:
+        - websecure
+      middlewares:
+        - kasm-internal@file
+      rule: "Host(`kasm.techn.is`)"
+      service: "kasm"
+      tls:
+        certResolver: letsencrypt
+    plex:
+      rule: "Host(`plex.techn.is`)"
+      service: "plex"
+    qbittorrent:
+      rule: "Host(`qbittorrent.techn.is`)"
+      service: "qbittorrent"
+    traefik-dashboard:
+      entryPoints:
+        - websecure
+      middlewares:
+        - auth@file
+      rule: "Host(`traefik.nexus.techn.is`)"
+      service: "api@internal"
+      tls:
+        certResolver: letsencrypt
+    truenas:
+      rule: "Host(`truenas.techn.is`) || Host(`nexus.techn.is`)"
+      service: "truenas"
+  services:
+    console:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.33"
+    gateway:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.1"
+    glances:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:61208"
+    jellyfin:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.3:8096"
+    kasm:
+      loadBalancer:
+        servers:
+          - url: "https://172.30.53.1:8444"
+    plex:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.3:32400"
+    qbittorrent:
+      loadBalancer:
+        servers:
+          - url: "http://gluetun:10095"
+    truenas:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.3:8443"
+tls:
+  options:
+    default:
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      minVersion: VersionTLS12
+      sniStrict: true
+    legacy:
+      minVersion: VersionTLS12
+      sniStrict: false
+    modern:
+      minVersion: VersionTLS13
+      sniStrict: true
