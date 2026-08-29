@@ -1,0 +1,183 @@
+---
+alerting:
+  ntfy:
+    click: "https://status.${DOMAIN}"
+    default-alert:
+      enabled: true
+      failure-threshold: 3
+      send-on-resolved: true
+      success-threshold: 2
+    priority: 4
+    token: "${NTFY_GATUS_TOKEN}"
+    topic: alerts
+    url: https://ntfy.techn.is
+
+endpoints:
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == any(200, 403)"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+    group: external
+    interval: 1m
+    name: status
+    ui:
+      hide-url: true
+    url: "https://status.${DOMAIN}"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+    group: external
+    interval: 1m
+    name: website
+    ui:
+      hide-url: true
+    url: "https://www.${DOMAIN}"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+    group: external
+    interval: 1m
+    name: docs
+    ui:
+      hide-url: true
+    url: "https://docs.${DOMAIN}"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+      - "[BODY].status == healthy"
+    group: external
+    interval: 1m
+    name: atuin
+    ui:
+      hide-url: true
+    url: "https://atuin.${DOMAIN}/healthz"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+      - "[BODY].station == Royal Talon Radio"
+    group: external
+    interval: 1m
+    name: azuracast
+    ui:
+      hide-url: true
+    url: "https://zagre.us/stations/royal-talon/now-playing.json"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+      - "[BODY].healthy == true"
+    group: external
+    interval: 1m
+    name: ntfy
+    ui:
+      hide-url: true
+    url: "https://ntfy.${DOMAIN}/v1/health"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+      - "[BODY].status == OK"
+    group: external
+    interval: 1m
+    name: authelia
+    ui:
+      hide-url: true
+    url: "https://auth.${DOMAIN}/api/health"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+      - "[BODY].installed == true"
+      - "[BODY].maintenance == false"
+      - "[BODY].needsDbUpgrade == false"
+    group: external
+    interval: 1m
+    name: nextcloud
+    ui:
+      hide-url: true
+    url: "https://cloud.ovall.es/status.php"
+
+  - client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    alerts:
+      - type: ntfy
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+      - "[BODY].res == pong"
+    group: external
+    interval: 1m
+    name: immich
+    ui:
+      hide-url: true
+    url: "https://photos.ovall.es/api/server/ping"
+
+  - conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 1000"
+    alerts:
+      - type: ntfy
+    group: egress
+    interval: 30s
+    name: cloudflare
+    ui:
+      hide-hostname: true
+      hide-url: true
+    url: icmp://1.1.1.1
+
+  - conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 1000"
+    alerts:
+      - type: ntfy
+    group: egress
+    interval: 30s
+    name: quad9
+    ui:
+      hide-hostname: true
+      hide-url: true
+    url: icmp://9.9.9.9

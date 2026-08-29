@@ -1,0 +1,14 @@
+services:
+  cadvisor:
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+      - --disable_metrics=referenced_memory,tcp,udp,advtcp
+      - --store_container_labels=false
+      - --listen_ip=${INTERNAL_IP:?INTERNAL_IP is required}
+      - --port=8180
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://${INTERNAL_IP:?INTERNAL_IP is required}:8180/healthz || exit 1
+    network_mode: host

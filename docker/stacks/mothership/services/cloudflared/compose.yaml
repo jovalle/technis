@@ -1,0 +1,77 @@
+services:
+  cloudflared-1:
+    cap_drop:
+      - ALL
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 0.0.0.0:60123
+      - run
+    container_name: cloudflared-1
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN:?CLOUDFLARED_TUNNEL_TOKEN is required}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: mothership
+    image: cloudflare/cloudflared:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    networks:
+      - external
+    read_only: true
+    restart: unless-stopped
+    user: 65532:65532
+
+  cloudflared-2:
+    cap_drop:
+      - ALL
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 0.0.0.0:60123
+      - run
+    container_name: cloudflared-2
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_SECONDARY_TUNNEL_TOKEN:?CLOUDFLARE_SECONDARY_TUNNEL_TOKEN is required}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: mothership
+    image: cloudflare/cloudflared:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    networks:
+      - external
+      - secondary-status
+    read_only: true
+    restart: unless-stopped
+    user: 65532:65532

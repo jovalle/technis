@@ -1,0 +1,30 @@
+services:
+  gatus:
+    command:
+      - |
+        export NTFY_GATUS_TOKEN="$$(/bin/busybox cat /run/secrets/ntfy-gatus-token)"
+        exec /gatus
+    entrypoint:
+      - /bin/busybox
+      - sh
+      - -ec
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+    group_add:
+      - 101
+    labels:
+      - traefik.docker.network=external
+      - traefik.enable=true
+      - traefik.http.routers.gatus.middlewares=external-bypass@file
+      - traefik.http.routers.gatus.rule=Host(`status.${DOMAIN:?DOMAIN is required}`)
+      - traefik.http.services.gatus.loadbalancer.server.port=8080
+    networks:
+      - default
+      - external
+      - internal
+    ports:
+      - 100.100.1.1:8181:8080
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/config/checks.yaml:/config/managed/checks.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/ntfy-gatus-token:/run/secrets/ntfy-gatus-token:ro

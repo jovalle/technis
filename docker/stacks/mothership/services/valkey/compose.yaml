@@ -1,0 +1,22 @@
+services:
+  valkey:
+    command:
+      - valkey-server
+      - --save
+      - ""
+      - --loglevel
+      - warning
+      - --stop-writes-on-bgsave-error
+      - "no"
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    networks:
+      - internal
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/searxng/valkey:/data

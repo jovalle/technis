@@ -1,0 +1,5 @@
+# Route Kasm workspace traffic through WireGuard. The forwarding policy stays
+# DROP, and only the dedicated Kasm subnet can traverse the VPN interface.
+iptables -A FORWARD -s 172.30.54.0/24 -o tun0 -j ACCEPT
+iptables -A FORWARD -d 172.30.54.0/24 -i tun0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -t nat -A POSTROUTING -s 172.30.54.0/24 -o tun0 -j MASQUERADE
