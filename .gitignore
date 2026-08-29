@@ -1,33 +1,65 @@
-.decrypted*
+# Generic
 .DS_Store
+*.log
+*.log.*
+*.tmp
+*.retry
+
+# IDE
+* copy*
+*copy
+.idea/
+
+# Node
+node_modules/
+.npm/
+.eslintcache
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local infrastructure state
+.state/
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Sensitive files
 .env
 .envrc
+.decrypted*
 .private/
-.sync-*
-.task/
-.terraform
-.terraform.lock.hcl
-.vagrant
-.venv/
-.vscode/settings.json
 *.agekey
-*.ignore
 *.key
-*.log
 *.pem
-*.pub
 *.tfvars
-*copy*
-*lock.json
-*tfstate*
-ansible/files/experimental
-ansible/roles/monitoring/files/kube-prometheus/manifests
-ansible/roles/monitoring/files/kube-prometheus/vendor
+*.kubeconfig
+*[cC][lL][aA][uU][dD][eE]*
+*[gG][eE][mM][iI][nN][iI]*
 config.xml
 key.json
 kubeconfig
-kubernetes/bootstrap/talos/controlplane.yaml
-kubernetes/bootstrap/talos/secrets.yaml
-kubernetes/bootstrap/talos/worker.yaml
 talosconfig
-Thumbs.db
+*_history
+
+# Archive
+archive/
+
+# Temporary files
+.cache/
+.planning/
+tmp/
+.wrangler/
+
+# Android
+androguard.*
+
+# Device exports that may contain installed application data
+ansible/roles/projectivy/files/
+
+# Exported DNS state: internal topology and WAN addressing
+docker/services/technitium/dns/
