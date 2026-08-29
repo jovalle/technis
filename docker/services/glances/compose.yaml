@@ -1,0 +1,41 @@
+services:
+  glances:
+    cap_add:
+      - SYS_PTRACE
+    cap_drop:
+      - ALL
+    container_name: glances
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - DOCKER_HOST=${GLANCES_DOCKER_HOST:-tcp://docker-socket-proxy:2375}
+      - GLANCES_OPT=${GLANCES_OPT:?GLANCES_OPT is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:61208 || exit 1
+      timeout: 10s
+    hostname: glances
+    image: nicolargo/glances:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - /etc/os-release:/etc/os-release:ro

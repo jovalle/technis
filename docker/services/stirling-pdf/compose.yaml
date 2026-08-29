@@ -1,0 +1,47 @@
+services:
+  stirling-pdf:
+    container_name: stirling-pdf
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - DISABLE_ADDITIONAL_FEATURES=false
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx1g
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - SECURITY_ENABLELOGIN=false
+      - SYSTEM_DEFAULTLOCALE=en-US
+      - SYSTEM_FRONTENDURL=https://pdf.techn.is
+      - SYSTEM_GOOGLEVISIBILITY=false
+      - TZ=${TZ:-America/New_York}
+    expose:
+      - "8080"
+    hostname: stirling-pdf
+    image: stirlingtools/stirling-pdf:latest
+    labels:
+      - gatus.group=home
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.middlewares.stirling-pdf-internal.ipallowlist.sourcerange=100.64.0.0/10,172.30.53.0/24,192.168.0.0/16,127.0.0.1/32
+      - traefik.http.routers.stirling-pdf.middlewares=stirling-pdf-internal
+      - traefik.http.routers.stirling-pdf.rule=Host(`pdf.techn.is`)
+      - traefik.http.routers.stirling-pdf.service=stirling-pdf
+      - traefik.http.services.stirling-pdf.loadbalancer.server.port=8080
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/stirling-pdf/configs:/configs
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/stirling-pdf/custom-files:/customFiles
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/stirling-pdf/logs:/logs
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/stirling-pdf/pipeline:/pipeline
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/stirling-pdf/tessdata:/usr/share/tessdata

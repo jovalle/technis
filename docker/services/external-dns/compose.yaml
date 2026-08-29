@@ -1,0 +1,52 @@
+services:
+  external-dns:
+    cap_drop:
+      - ALL
+    container_name: external-dns
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        export TECHNITIUM_API_TOKEN="$$(cat /run/secrets/technitium-api-token)"
+        exec external-dns
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+      technitium:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - CONFIG_PATH=/config/config.yaml
+      - DNS_PROVIDER=technitium
+      - EXTERNAL_IP=${EXTERNAL_IP:?EXTERNAL_IP is required}
+      - LOG_LEVEL=${EXTERNAL_DNS_LOG_LEVEL:-INFO}
+      - POLL_INTERVAL_SECONDS=${EXTERNAL_DNS_POLL_INTERVAL_SECONDS:-60}
+      - PROXY_PROVIDER=traefik
+      - STATE_PATH=/data/state.json
+      - SYNC_MODE=${EXTERNAL_DNS_SYNC_MODE:-watch}
+      - TECHNITIUM_URL=http://100.100.1.2:5380
+      - TECHNITIUM_ZONES=techn.is,photos.ovall.es,homelab,nexus,mothership,stargate,go
+    hostname: external-dns
+    image: ghcr.io/jovalle/external-dns:latest
+    labels:
+      - traefik.enable=false
+    network_mode: host
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/external-dns/config:/config:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/external-dns:/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/external-dns/technitium-api-token:/run/secrets/technitium-api-token:ro

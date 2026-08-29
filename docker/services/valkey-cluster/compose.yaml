@@ -1,0 +1,51 @@
+services:
+  valkey-cluster:
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        valkey-server \
+          --port 6379 \
+          --cluster-enabled yes \
+          --cluster-config-file /data/nodes.conf \
+          --cluster-node-timeout 5000 \
+          --cluster-require-full-coverage no \
+          --cluster-announce-ip valkey-cluster \
+          --cluster-announce-port 6379 \
+          --cluster-announce-bus-port 16379 \
+          --appendonly yes \
+          --save "60 1" &
+        server_pid=$$!
+        until valkey-cli -p 6379 PING >/dev/null 2>&1; do sleep 0.5; done
+        if ! valkey-cli -p 6379 CLUSTER NODES | grep -q '0-16383'; then
+          valkey-cli -p 6379 CLUSTER ADDSLOTSRANGE 0 16383
+        fi
+        wait "$$server_pid"
+    container_name: valkey-cluster
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    healthcheck:
+      interval: 5s
+      retries: 20
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - valkey-cli -p 6379 cluster info | grep -q cluster_state:ok
+      timeout: 3s
+    hostname: valkey-cluster
+    image: valkey/valkey:8-alpine@sha256:a038175878d66b9d274fbf8be73c0305e93798b83917647f167e18cef3c71eec
+    labels:
+      - gatus.group=data
+      - gatus.priority=P2
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/valkey-cluster:/data

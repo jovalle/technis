@@ -1,0 +1,94 @@
+services:
+  kiwix-init:
+    cap_add:
+      - CHOWN
+    cap_drop:
+      - ALL
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        mkdir -p /data/releases /data/staging /library
+        chown 1001:1001 /data/releases /data/staging /library
+    container_name: kiwix-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  kiwix-updater:
+    cap_drop:
+      - ALL
+    command:
+      - /bin/sh
+      - /config/update.sh
+    container_name: kiwix-updater
+    depends_on:
+      kiwix-init:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      - KIWIX_MIN_FREE_BYTES=${KIWIX_MIN_FREE_BYTES:-107374182400}
+      - KIWIX_RETRY_INTERVAL=${KIWIX_RETRY_INTERVAL:-21600}
+      - KIWIX_UPDATE_INTERVAL=${KIWIX_UPDATE_INTERVAL:-604800}
+    image: ghcr.io/kiwix/kiwix-tools:3.8.2@sha256:e512df25c07bc82a8325c348ac77001ec3bd950c01d677660f7d7ec732645cdc
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    user: 1001:1001
+
+  kiwix:
+    cap_drop:
+      - ALL
+    container_name: kiwix
+    depends_on:
+      kiwix-init:
+        condition: service_completed_successfully
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 4
+          memory: 4G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    entrypoint:
+      - /usr/bin/dumb-init
+      - --
+      - /bin/sh
+      - -ec
+      - |
+        until [ -s /library/library.xml ]; do sleep 30; done
+        exec /usr/local/bin/kiwix-serve --port=8080 --library --monitorLibrary --blockexternal /library/library.xml
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null 'http://127.0.0.1:8080/catalog/v2/entries?count=0' || exit 1
+      timeout: 10s
+    hostname: kiwix
+    image: ghcr.io/kiwix/kiwix-serve:3.8.2@sha256:de4d451d9d9e3e2d37c1a7b5a861698c67cc4c52c364c2a593ba554cddd6ce03
+    labels:
+      - gatus.group=knowledge
+      - gatus.priority=P2
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m

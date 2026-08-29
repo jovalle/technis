@@ -1,0 +1,171 @@
+services:
+  patchmon:
+    cap_drop:
+      - ALL
+    container_name: patchmon
+    depends_on:
+      patchmon-database:
+        condition: service_healthy
+        required: true
+      patchmon-guacd:
+        condition: service_healthy
+        required: true
+      patchmon-redis:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 1536M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - AI_ENCRYPTION_KEY=${PATCHMON_AI_ENCRYPTION_KEY:?PATCHMON_AI_ENCRYPTION_KEY is required}
+      - APP_ENV=production
+      - CORS_ORIGIN=https://${PATCHMON_ROOT_DOMAIN:?PATCHMON_ROOT_DOMAIN is required}
+      - DATABASE_URL=postgresql://patchmon_user:${PATCHMON_POSTGRES_PASSWORD:?PATCHMON_POSTGRES_PASSWORD is required}@patchmon-database:5432/patchmon_db
+      - ENABLE_HSTS=true
+      - GUACD_ADDRESS=patchmon-guacd:4822
+      - JWT_SECRET=${PATCHMON_JWT_SECRET:?PATCHMON_JWT_SECRET is required}
+      - POSTGRES_DB=patchmon_db
+      - POSTGRES_HOST=patchmon-database
+      - POSTGRES_PASSWORD=${PATCHMON_POSTGRES_PASSWORD:?PATCHMON_POSTGRES_PASSWORD is required}
+      - POSTGRES_USER=patchmon_user
+      - REDIS_DB=0
+      - REDIS_HOST=patchmon-redis
+      - REDIS_PASSWORD=${PATCHMON_REDIS_PASSWORD:?PATCHMON_REDIS_PASSWORD is required}
+      - REDIS_PORT=6379
+      - SESSION_SECRET=${PATCHMON_SESSION_SECRET:?PATCHMON_SESSION_SECRET is required}
+      - TRUST_PROXY=true
+      - TZ=${TZ:-America/New_York}
+    hostname: patchmon
+    image: ghcr.io/patchmon/patchmon-server:latest
+    init: true
+    labels:
+      - gatus.group=operations
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.routers.patchmon.rule=Host(`${PATCHMON_ROOT_DOMAIN:?PATCHMON_ROOT_DOMAIN is required}`)
+      - traefik.http.routers.patchmon.service=patchmon
+      - traefik.http.routers.patchmon.tls.certresolver=letsencrypt
+      - traefik.http.routers.patchmon.tls=true
+      - traefik.http.services.patchmon.loadbalancer.server.port=3000
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  patchmon-database:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: patchmon-database
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 768M
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    environment:
+      - POSTGRES_DB=patchmon_db
+      - POSTGRES_PASSWORD=${PATCHMON_POSTGRES_PASSWORD:?PATCHMON_POSTGRES_PASSWORD is required}
+      - POSTGRES_USER=patchmon_user
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 3s
+      retries: 7
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - pg_isready -U patchmon_user -d patchmon_db
+      timeout: 5s
+    hostname: patchmon-database
+    image: postgres:17-alpine
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 128m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/patchmon/postgres:/var/lib/postgresql/data
+
+  patchmon-guacd:
+    cap_drop:
+      - ALL
+    container_name: patchmon-guacd
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    healthcheck:
+      interval: 10s
+      retries: 3
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - nc -z localhost 4822 || exit 1
+      timeout: 5s
+    hostname: patchmon-guacd
+    image: guacamole/guacd:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+
+  patchmon-redis:
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    command:
+      - redis-server
+      - --requirepass
+      - ${PATCHMON_REDIS_PASSWORD:?PATCHMON_REDIS_PASSWORD is required}
+    container_name: patchmon-redis
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - REDISCLI_AUTH=${PATCHMON_REDIS_PASSWORD:?PATCHMON_REDIS_PASSWORD is required}
+    healthcheck:
+      interval: 3s
+      retries: 7
+      start_period: 10s
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 5s
+    hostname: patchmon-redis
+    image: redis:7-alpine
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/patchmon/redis:/data

@@ -1,0 +1,32 @@
+services:
+  smartctl-exporter:
+    container_name: smartctl-exporter
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:9633/metrics || exit 1
+      timeout: 10s
+    hostname: smartctl-exporter
+    image: quay.io/prometheuscommunity/smartctl-exporter:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    privileged: true
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: root
+    volumes:
+      - /dev:/dev:ro

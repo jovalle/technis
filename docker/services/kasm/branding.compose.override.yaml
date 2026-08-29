@@ -1,0 +1,9 @@
+services:
+  proxy:
+    volumes:
+      - /mnt/data/kasm/branding/assets/technis-wordmark.svg:/srv/www/img/logo.svg:ro
+      - /mnt/data/kasm/branding/assets/technis-wordmark.svg:/srv/www/img/headerlogo.svg:ro
+      - /mnt/data/kasm/branding/assets/technis-mark.svg:/srv/www/img/kasm_logo.svg:ro
+      - /mnt/data/kasm/branding/assets/technis-mark.svg:/srv/www/img/minlogo.svg:ro
+      - /mnt/data/kasm/branding/assets/technis-mark.png:/srv/www/img/favicon.png:ro
+      - /mnt/data/kasm/branding/assets/favicon.ico:/srv/www/img/favicon.ico:ro

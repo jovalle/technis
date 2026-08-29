@@ -1,0 +1,41 @@
+services:
+  loki:
+    cap_drop:
+      - ALL
+    command:
+      - -config.file=/etc/loki/loki-config.yaml
+    container_name: loki
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - /usr/bin/loki
+        - --version
+      timeout: 10s
+    hostname: loki
+    image: grafana/loki:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+      - traefik.enable=false
+    ports:
+      - 127.0.0.1:3100:3100/tcp
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/loki:/loki
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/loki/config/loki-config.yaml:/etc/loki/loki-config.yaml:ro

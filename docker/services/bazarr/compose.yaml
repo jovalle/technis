@@ -1,0 +1,46 @@
+services:
+  bazarr:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: bazarr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:6767/ || exit 1
+      timeout: 10s
+    hostname: bazarr
+    image: lscr.io/linuxserver/bazarr:latest
+    labels:
+      - gatus.group=acquisition
+      - gatus.priority=P3
+      - traefik.http.routers.bazarr.middlewares=auth@file
+      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/bazarr:/config
+      - /mnt/media/movies:/movies
+      - /mnt/media/series:/series

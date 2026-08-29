@@ -1,0 +1,66 @@
+services:
+  ntfy:
+    cap_drop:
+      - ALL
+    command:
+      - serve
+    container_name: ntfy
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.05
+          memory: 64M
+    environment:
+      - NTFY_ATTACHMENT_CACHE_DIR=/var/lib/ntfy/attachments
+      - NTFY_ATTACHMENT_EXPIRY_DURATION=24h
+      - NTFY_ATTACHMENT_FILE_SIZE_LIMIT=15M
+      - NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT=1G
+      - NTFY_AUTH_DEFAULT_ACCESS=deny-all
+      - NTFY_AUTH_FILE=/var/lib/ntfy/auth.db
+      - NTFY_AUTH_USERS=${NTFY_AUTH_USERS:?NTFY_AUTH_USERS is required}
+      - NTFY_BASE_URL=https://ntfy.techn.is
+      - NTFY_BEHIND_PROXY=true
+      - NTFY_CACHE_DURATION=7d
+      - NTFY_CACHE_FILE=/var/lib/ntfy/cache.db
+      - NTFY_ENABLE_LOGIN=true
+      - NTFY_ENABLE_SIGNUP=false
+      - NTFY_LISTEN_HTTP=:8080
+      - NTFY_REQUIRE_LOGIN=true
+      - NTFY_UPSTREAM_BASE_URL=https://ntfy.sh
+      - NTFY_WEB_PUSH_EMAIL_ADDRESS=${NTFY_WEB_PUSH_EMAIL_ADDRESS:-admin@techn.is}
+      - NTFY_WEB_PUSH_FILE=/var/lib/ntfy/webpush.db
+      - NTFY_WEB_PUSH_PRIVATE_KEY=${NTFY_WEB_PUSH_PRIVATE_KEY:?NTFY_WEB_PUSH_PRIVATE_KEY is required}
+      - NTFY_WEB_PUSH_PUBLIC_KEY=${NTFY_WEB_PUSH_PUBLIC_KEY:?NTFY_WEB_PUSH_PUBLIC_KEY is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --tries=1 http://127.0.0.1:8080/v1/health -O - | grep -Eq '"healthy"[[:space:]]*:[[:space:]]*true'
+      timeout: 10s
+    hostname: ntfy
+    image: binwiederhier/ntfy:v2.26.3
+    init: true
+    labels:
+      - gatus.group=communications
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.routers.ntfy.rule=Host(`ntfy.techn.is`)
+      - traefik.http.routers.ntfy.tls.certresolver=letsencrypt
+      - traefik.http.routers.ntfy.tls.domains[0].main=ntfy.techn.is
+      - traefik.http.routers.ntfy.tls=true
+      - traefik.http.services.ntfy.loadbalancer.server.port=8080
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/ntfy:/var/lib/ntfy

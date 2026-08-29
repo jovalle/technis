@@ -1,0 +1,55 @@
+services:
+  maintenant:
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: maintenant
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+      - MAINTENANT_ADDR=0.0.0.0:8080
+      - MAINTENANT_BASE_URL=https://${MAINTENANT_ROOT_DOMAIN:?MAINTENANT_ROOT_DOMAIN is required}
+      - MAINTENANT_DB=/data/maintenant.db
+      - MAINTENANT_ORGANISATION_NAME=${MAINTENANT_ORGANISATION_NAME:-Technis}
+      - MAINTENANT_RUNTIME=docker
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 10m0s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:8080/api/v1/health || exit 1
+      timeout: 10s
+    hostname: maintenant
+    image: ghcr.io/kolapsis/maintenant:latest
+    labels:
+      - gatus.group=operations
+      - gatus.priority=P3
+      - traefik.http.routers.maintenant.middlewares=auth@file
+      - traefik.http.services.maintenant.loadbalancer.server.port=8080
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /run:rw,noexec,nosuid,size=8m
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 0:0
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/maintenant:/data
+      - /proc:/host/proc:ro

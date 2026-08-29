@@ -1,0 +1,36 @@
+services:
+  flaresolverr:
+    cap_add:
+      - SYS_ADMIN
+    cap_drop:
+      - ALL
+    container_name: flaresolverr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - CAPTCHA_SOLVER=${FLARESOLVERR_CAPTCHA_SOLVER:?FLARESOLVERR_CAPTCHA_SOLVER is required}
+      - LOG_HTML=${FLARESOLVERR_LOG_HTML:?FLARESOLVERR_LOG_HTML is required}
+      - LOG_LEVEL=${FLARESOLVERR_LOG_LEVEL:?FLARESOLVERR_LOG_LEVEL is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:8191/health || exit 1
+      timeout: 10s
+    hostname: flaresolverr
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    user: flaresolverr

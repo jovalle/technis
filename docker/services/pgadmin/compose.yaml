@@ -1,0 +1,47 @@
+services:
+  pgadmin:
+    container_name: pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    environment:
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=${PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED:?PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED is required}
+      - PGADMIN_CONFIG_SERVER_MODE=${PGADMIN_CONFIG_SERVER_MODE:?PGADMIN_CONFIG_SERVER_MODE is required}
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL:?PGADMIN_DEFAULT_EMAIL is required}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is required}
+      - PGADMIN_LISTEN_PORT=8080
+      - PGADMIN_SERVER_JSON_FILE=/var/lib/pgadmin/servers.json
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:8080/misc/ping || exit 1
+      timeout: 10s
+    hostname: pgadmin
+    image: dpage/pgadmin4:latest
+    labels:
+      - gatus.group=admin
+      - gatus.priority=P3
+      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.techn.is`)
+      - traefik.http.routers.pgadmin.service=pgadmin
+      - traefik.http.services.pgadmin.loadbalancer.server.port=8080
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=5050,gid=5050
+      - /var/lib/pgadmin/sessions:rw,noexec,nosuid,size=64m,uid=5050,gid=5050
+    user: "5050"
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/pgadmin:/var/lib/pgadmin

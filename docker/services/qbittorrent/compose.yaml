@@ -1,0 +1,51 @@
+services:
+  qbittorrent:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - NET_RAW
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: qbittorrent
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.5
+          memory: 256M
+    environment:
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+      - WEBUI_PORT=${QBITTORRENT_WEBUI_PORT:?QBITTORRENT_WEBUI_PORT is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:10095 || exit 1
+      timeout: 10s
+    image: lscr.io/linuxserver/qbittorrent:latest
+    labels:
+      - gatus.group=acquisition
+      - gatus.priority=P3
+      - traefik.enable=false
+    network_mode: service:gluetun
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/qbittorrent:/config
+      - /mnt/media/downloads:/downloads

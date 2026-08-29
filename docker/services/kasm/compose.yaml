@@ -1,0 +1,255 @@
+services:
+  db:
+    container_name: kasm_db
+    labels:
+      - traefik.enable=false
+    image: kasmweb/postgres:${KASM_VERSION:-1.18.1}
+    healthcheck:
+      test: pg_isready --username=kasmapp --dbname=kasm
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - kasm_default_network
+    stop_signal: SIGTERM
+    stop_grace_period: 60s
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/kasm_db_password
+      POSTGRES_USER: kasmapp
+      POSTGRES_DB: kasm
+    volumes:
+      - /mnt/data/kasm/credentials/postgres_password:/run/secrets/kasm_db_password:ro
+      - /mnt/data/kasm/current/conf/database/data.sql:/docker-entrypoint-initdb.d/data.sql
+      - /mnt/data/kasm/config/technis-dockhand-label.sql:/docker-entrypoint-initdb.d/zz-technis-dockhand-label.sql:ro
+      - /mnt/data/kasm/current/conf/database/pg_hba.conf:/var/lib/postgresql/conf/pg_hba.conf
+      - /mnt/data/kasm/current/conf/database/postgresql.conf:/var/lib/postgresql/conf/postgresql.conf
+      - /mnt/data/kasm/current/certs/db_server.crt:/etc/ssl/certs/db_server.crt
+      - /mnt/data/kasm/current/certs/db_server.key:/etc/ssl/certs/db_server.key
+      - /mnt/data/kasm/current/log/postgres/:/var/log/postgres/
+      - /mnt/data/kasm/current/tmp/kasm_db/:/tmp/
+      - kasm_db:/var/lib/postgresql/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+    command: >-
+      postgres -c ssl=on
+      -c ssl_cert_file=/etc/ssl/certs/db_server.crt
+      -c ssl_key_file=/etc/ssl/certs/db_server.key
+      -c config_file=/var/lib/postgresql/conf/postgresql.conf
+      -c hba_file=/var/lib/postgresql/conf/pg_hba.conf
+    restart: unless-stopped
+
+  kasm_api:
+    container_name: kasm_api
+    labels:
+      - traefik.enable=false
+    user: ${KASM_UID:-1001}:${KASM_GID:-1001}
+    image: kasmweb/api:${KASM_VERSION:-1.18.1}
+    read_only: true
+    healthcheck:
+      test: /usr/bin/healthcheck.sh http://localhost:8080/api/__healthcheck "" 5 60
+      timeout: 30s
+      interval: 10s
+      retries: 3
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current:/opt/kasm/current
+      - /mnt/data/kasm/current/healthcheck/kasm_api:/healthcheck
+      - /mnt/data/kasm/current/tmp/api:/tmp
+    depends_on:
+      - db
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+
+  kasm_manager:
+    container_name: kasm_manager
+    labels:
+      - traefik.enable=false
+    user: ${KASM_UID:-1001}:${KASM_GID:-1001}
+    image: kasmweb/manager:${KASM_VERSION:-1.18.1}
+    read_only: true
+    healthcheck:
+      test: /usr/bin/healthcheck.sh http://localhost:8181/__healthcheck "" 5 60
+      timeout: 30s
+      interval: 10s
+      retries: 3
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current:/opt/kasm/current
+      - /mnt/data/kasm/current/healthcheck/kasm_manager:/healthcheck
+      - /mnt/data/kasm/current/tmp/manager:/tmp
+    depends_on:
+      - db
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+
+  kasm_agent:
+    container_name: kasm_agent
+    labels:
+      - traefik.enable=false
+    user: root
+    image: kasmweb/agent:${KASM_VERSION:-1.18.1}
+    read_only: true
+    healthcheck:
+      test: /usr/bin/healthcheck.sh http://localhost:4444/__healthcheck "" 30 90 15
+      timeout: 30s
+      interval: 30s
+      retries: 3
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current:/opt/kasm/current
+      - /mnt/data/kasm/current/healthcheck/kasm_agent:/healthcheck
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/data/kasm/current/conf/nginx:/etc/nginx/conf.d
+    depends_on:
+      - kasm_manager
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+
+  kasm_guac:
+    container_name: kasm_guac
+    labels:
+      - traefik.enable=false
+    user: ${KASM_UID:-1001}:${KASM_GID:-1001}
+    image: kasmweb/kasm-guac:${KASM_VERSION:-1.18.1}
+    read_only: true
+    init: true
+    healthcheck:
+      test: /usr/bin/healthcheck.sh http://localhost:3000/__healthcheck "" 30 90
+      interval: 60s
+      timeout: 30s
+      retries: 3
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current/log:/opt/kasm/current/log
+      - /mnt/data/kasm/current/tmp/guac:/opt/kasm/current/tmp/guac
+      - /mnt/data/kasm/current/conf/app/guac:/opt/kasm/current/conf/app/guac
+      - /mnt/data/kasm/current/tmp/guac:/tmp
+      - /mnt/data/kasm/current/healthcheck/kasm_guac:/healthcheck
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+
+  rdp_gateway:
+    container_name: kasm_rdp_gateway
+    labels:
+      - traefik.enable=false
+    image: kasmweb/rdp-gateway:${KASM_VERSION:-1.18.1}
+    user: ${KASM_UID:-1001}:${KASM_GID:-1001}
+    read_only: true
+    depends_on:
+      - kasm_api
+    ports:
+      - 127.0.0.1:3389:3389
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current/log:/opt/kasm/current/log
+      - /mnt/data/kasm/current/conf/app/rdp_gateway:/usr/local/etc/rdpproxy/conf
+      - /mnt/data/kasm/current/certs/kasm_nginx.key:/usr/local/etc/rdpproxy/rdpproxy.key
+      - /mnt/data/kasm/current/certs/kasm_nginx.crt:/usr/local/etc/rdpproxy/rdpproxy.crt
+      - /mnt/data/kasm/current/tmp/rdpgw/var:/usr/local/etc/rdpproxy/var
+      - /mnt/data/kasm/current/tmp/rdpgw/tmp:/tmp
+      - /mnt/data/kasm/current/healthcheck/rdp_gateway:/healthcheck
+    restart: unless-stopped
+    healthcheck:
+      test: /usr/bin/healthcheck.sh http://localhost:5555/__healthcheck 3389 1 30
+      interval: 60s
+      timeout: 30s
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+
+  kasm_rdp_https_gateway:
+    container_name: kasm_rdp_https_gateway
+    labels:
+      - traefik.enable=false
+    image: kasmweb/rdp-https-gateway:${KASM_VERSION:-1.18.1}
+    user: ${KASM_UID:-1001}:${KASM_GID:-1001}
+    read_only: true
+    depends_on:
+      - rdp_gateway
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current/log:/opt/kasm/current/log
+      - /mnt/data/kasm/current/conf/app/rdp_https_gateway:/opt/rdpgw/conf/
+      - /mnt/data/kasm/current/certs/kasm_nginx.key:/opt/rdpgw/key.pem
+      - /mnt/data/kasm/current/certs/kasm_nginx.crt:/opt/rdpgw/server.pem
+      - /mnt/data/kasm/current/healthcheck/rdp_https_gateway:/healthcheck
+    restart: unless-stopped
+    healthcheck:
+      test: /usr/bin/healthcheck.sh https://localhost:9443/rdp-https-gateway/__healthcheck "" 1 30
+      interval: 60s
+      timeout: 30s
+      start_period: 30s
+
+  proxy:
+    container_name: kasm_proxy
+    labels:
+      - traefik.enable=false
+    image: kasmweb/proxy:${KASM_VERSION:-1.18.1}
+    ports:
+      - 172.30.53.1:8444:443
+    networks:
+      - kasm_default_network
+    volumes:
+      - /mnt/data/kasm/current/conf/nginx:/etc/nginx/conf.d:ro
+      - /mnt/data/kasm/current/certs/kasm_nginx.key:/etc/ssl/private/kasm_nginx.key
+      - /mnt/data/kasm/current/certs/kasm_nginx.crt:/etc/ssl/certs/kasm_nginx.crt
+      - /mnt/data/kasm/current/log/nginx:/var/log/external/nginx/
+      - /mnt/data/kasm/current/log/logrotate:/var/log/external/logrotate/
+    depends_on:
+      - kasm_manager
+      - kasm_api
+      - kasm_agent
+      - kasm_guac
+      - kasm_rdp_https_gateway
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget --no-check-certificate -q -O /dev/null https://127.0.0.1/ || exit 1
+      timeout: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "20"
+
+volumes:
+  kasm_db:
+    external: true
+    name: kasm_db_1.18.1
+
+networks:
+  kasm_default_network:
+    external: true
+    name: kasm_default_network

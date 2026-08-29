@@ -1,0 +1,38 @@
+services:
+  music-assistant:
+    cap_add:
+      - DAC_READ_SEARCH
+      - SYS_ADMIN
+    cap_drop:
+      - ALL
+    container_name: music-assistant
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - LOG_LEVEL=${MUSIC_ASSISTANT_LOG_LEVEL:?MUSIC_ASSISTANT_LOG_LEVEL is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:8095 || exit 1
+      timeout: 10s
+    hostname: music-assistant
+    image: ghcr.io/music-assistant/server:latest
+    labels:
+      - gatus.group=playback
+      - gatus.priority=P2
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/music-assistant:/data
+      - /mnt/media/music:/music:ro

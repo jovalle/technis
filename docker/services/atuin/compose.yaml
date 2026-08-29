@@ -1,0 +1,80 @@
+services:
+  atuin-data-init:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    cap_drop:
+      - ALL
+    command:
+      - chown
+      - -R
+      - 1000:1000
+      - /config
+    container_name: atuin-data-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/atuin/config:/config
+
+  atuin:
+    cap_drop:
+      - ALL
+    command:
+      - start
+    container_name: atuin
+    depends_on:
+      atuin-data-init:
+        condition: service_completed_successfully
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - ATUIN_DB_URI=sqlite:///config/atuin.db
+      - ATUIN_HOST=0.0.0.0
+      - ATUIN_OPEN_REGISTRATION=false
+      - ATUIN_PORT=8888
+      - RUST_LOG=atuin_server=info
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - -o
+        - /dev/null
+        - http://127.0.0.1:8888/healthz
+      timeout: 5s
+    hostname: atuin
+    image: ghcr.io/atuinsh/atuin:18.19.0@sha256:4d0ccca1d151f860b3f469c60df78bf1ab798f15e88dc1912d31d6741653eb99
+    init: true
+    labels:
+      - gatus.group=developer-tools
+      - gatus.priority=P2
+      - traefik.enable=false
+    networks:
+      - external
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/atuin/config:/config

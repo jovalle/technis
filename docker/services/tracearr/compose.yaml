@@ -1,0 +1,46 @@
+services:
+  tracearr:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    container_name: tracearr
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 4096M
+        reservations:
+          cpus: 0.5
+          memory: 1024M
+    environment:
+      - BASE_PATH=/dashboard
+      - CORS_ORIGIN=https://${SECONDARY_DOMAIN:?SECONDARY_DOMAIN is required}
+      - DATABASE_POOL_MAX=20
+      - LOG_LEVEL=${TRACEARR_LOG_LEVEL:?TRACEARR_LOG_LEVEL is required}
+      - PG_MAX_MEMORY=3072MB
+      - TRUST_PROXY=true
+      - TZ=${TZ:-America/New_York}
+    expose:
+      - "3000"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 2m0s
+      test:
+        - CMD-SHELL
+        - curl -sf http://127.0.0.1:3000/health || exit 1
+      timeout: 10s
+    hostname: tracearr
+    image: ghcr.io/connorgallopo/tracearr:supervised
+    labels:
+      - gatus.group=curation
+      - gatus.priority=P3
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tracearr/tracearr:/data/tracearr
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tracearr/postgres:/data/postgres
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tracearr/redis:/data/redis

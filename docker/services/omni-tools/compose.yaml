@@ -1,0 +1,49 @@
+services:
+  omni-tools:
+    cap_add:
+      - CHOWN
+      - NET_BIND_SERVICE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: omni-tools
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1/ || exit 1
+      timeout: 10s
+    hostname: omni-tools
+    image: iib0011/omni-tools:0.6.0
+    init: true
+    labels:
+      - gatus.group=utilities
+      - gatus.priority=P3
+      - traefik.docker.network=nexus_default
+      - traefik.enable=true
+      - traefik.http.middlewares.omni-tools-internal.ipallowlist.sourcerange=10.0.0.0/8,100.64.0.0/10,127.0.0.1/32,172.16.0.0/12,192.168.0.0/16,::1/128,fd7a:115c:a1e0::/48
+      - traefik.http.routers.omni-tools.middlewares=omni-tools-internal
+      - traefik.http.routers.omni-tools.rule=Host(`tools.techn.is`)
+      - traefik.http.routers.omni-tools.service=omni-tools
+      - traefik.http.routers.omni-tools.tls.certresolver=letsencrypt
+      - traefik.http.routers.omni-tools.tls=true
+      - traefik.http.services.omni-tools.loadbalancer.server.port=80
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /run:rw,noexec,nosuid,size=8m
+      - /tmp:rw,noexec,nosuid,size=16m
+      - /var/cache/nginx:rw,noexec,nosuid,size=32m

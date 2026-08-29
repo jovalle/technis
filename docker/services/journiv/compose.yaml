@@ -1,0 +1,288 @@
+services:
+  journiv-data-init:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    cap_drop:
+      - ALL
+    command:
+      - chown
+      - -R
+      - 1000:1000
+      - /data
+    container_name: journiv-data-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/journiv/data:/data
+
+  journiv:
+    container_name: journiv
+    depends_on:
+      journiv-data-init:
+        condition: service_completed_successfully
+        required: true
+      journiv-postgres:
+        condition: service_healthy
+        required: true
+      journiv-valkey:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.25
+          memory: 512M
+    environment: &journiv-environment
+      CELERY_BROKER_URL: redis://journiv-valkey:6379/0
+      CELERY_RESULT_BACKEND: redis://journiv-valkey:6379/0
+      DB_DRIVER: postgres
+      DISABLE_SIGNUP: ${JOURNIV_DISABLE_SIGNUP:-false}
+      DOMAIN_NAME: ${JOURNIV_ROOT_DOMAIN:-journal.techn.is}
+      DOMAIN_SCHEME: https
+      ENABLE_CORS: "false"
+      ENVIRONMENT: production
+      POSTGRES_DB: journiv_prod
+      POSTGRES_HOST: journiv-postgres
+      POSTGRES_PASSWORD: ${JOURNIV_POSTGRES_PASSWORD:?JOURNIV_POSTGRES_PASSWORD is required}
+      POSTGRES_USER: journiv
+      RATE_LIMIT_STORAGE_URI: redis://journiv-valkey:6379/1
+      REDIS_URL: redis://journiv-valkey:6379/0
+      SECRET_KEY: ${JOURNIV_SECRET_KEY:?JOURNIV_SECRET_KEY is required}
+      TZ: ${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      timeout: 10s
+    hostname: journiv
+    image: swalabtech/journiv-app:${JOURNIV_VERSION:-0.1.0-beta.23}
+    labels:
+      - gatus.group=home
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.middlewares.journiv-internal.ipallowlist.sourcerange=100.64.0.0/10,172.30.53.0/24,192.168.0.0/16,127.0.0.1/32
+      - traefik.http.routers.journiv.entrypoints=websecure
+      - traefik.http.routers.journiv.middlewares=journiv-internal@docker
+      - traefik.http.routers.journiv.rule=Host(`${JOURNIV_ROOT_DOMAIN:-journal.techn.is}`)
+      - traefik.http.routers.journiv.service=journiv
+      - traefik.http.routers.journiv.tls.certresolver=letsencrypt
+      - traefik.http.routers.journiv.tls=true
+      - traefik.http.services.journiv.loadbalancer.server.port=8000
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes: &journiv-volumes
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/journiv/data:/data
+
+  journiv-celery-worker:
+    command:
+      - celery
+      - -A
+      - app.core.celery_app
+      - worker
+      - --loglevel=info
+      - --concurrency=${JOURNIV_CELERY_WORKER_CONCURRENCY:-1}
+      - --max-memory-per-child=${JOURNIV_CELERY_WORKER_MAX_MEMORY_PER_CHILD_KB:-300000}
+      - --max-tasks-per-child=${JOURNIV_CELERY_WORKER_MAX_TASKS_PER_CHILD:-200}
+    container_name: journiv-celery-worker
+    depends_on:
+      journiv-data-init:
+        condition: service_completed_successfully
+        required: true
+      journiv-postgres:
+        condition: service_healthy
+        required: true
+      journiv-valkey:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.1
+          memory: 256M
+    environment:
+      <<: *journiv-environment
+      CELERY_WORKER_CONCURRENCY: ${JOURNIV_CELERY_WORKER_CONCURRENCY:-1}
+      CELERY_WORKER_MAX_MEMORY_PER_CHILD_KB: ${JOURNIV_CELERY_WORKER_MAX_MEMORY_PER_CHILD_KB:-300000}
+      CELERY_WORKER_MAX_TASKS_PER_CHILD: ${JOURNIV_CELERY_WORKER_MAX_TASKS_PER_CHILD:-200}
+      SERVICE_ROLE: celery-worker
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 40s
+      timeout: 10s
+    hostname: journiv-celery-worker
+    image: swalabtech/journiv-app:${JOURNIV_VERSION:-0.1.0-beta.23}
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes: *journiv-volumes
+
+  journiv-celery-beat:
+    command:
+      - celery
+      - -A
+      - app.core.celery_app
+      - beat
+      - --loglevel=info
+      - --scheduler
+      - redbeat.RedBeatScheduler
+      - --pidfile=/tmp/celerybeat.pid
+    container_name: journiv-celery-beat
+    depends_on:
+      journiv-data-init:
+        condition: service_completed_successfully
+        required: true
+      journiv-postgres:
+        condition: service_healthy
+        required: true
+      journiv-valkey:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.1
+          memory: 256M
+    environment:
+      <<: *journiv-environment
+      REDBEAT_REDIS_URL: redis://journiv-valkey:6379/2
+      SERVICE_ROLE: celery-beat
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 40s
+      timeout: 10s
+    hostname: journiv-celery-beat
+    image: swalabtech/journiv-app:${JOURNIV_VERSION:-0.1.0-beta.23}
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    volumes: *journiv-volumes
+
+  journiv-postgres:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: journiv-postgres
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.1
+          memory: 256M
+    environment:
+      POSTGRES_DB: journiv_prod
+      POSTGRES_PASSWORD: ${JOURNIV_POSTGRES_PASSWORD:?JOURNIV_POSTGRES_PASSWORD is required}
+      POSTGRES_USER: journiv
+      TZ: ${TZ:-America/New_York}
+    healthcheck:
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - pg_isready -U journiv -d journiv_prod
+      timeout: 5s
+    hostname: journiv-postgres
+    image: postgres:18.1
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/journiv/postgres:/var/lib/postgresql
+
+  journiv-valkey:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: journiv-valkey
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.05
+          memory: 64M
+    healthcheck:
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      test:
+        - CMD
+        - valkey-cli
+        - ping
+      timeout: 5s
+    hostname: journiv-valkey
+    image: valkey/valkey:9.0-alpine
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/journiv/valkey:/data

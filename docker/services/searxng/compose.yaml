@@ -1,0 +1,85 @@
+services:
+  searxng:
+    build:
+      context: ../kasm/_/branding
+      dockerfile_inline: |
+        FROM docker.io/searxng/searxng:latest
+
+        COPY technis-mark.png /tmp/technis-mark.png
+        COPY technis-mark.svg /tmp/technis-mark.svg
+
+        RUN cp /tmp/technis-mark.png /usr/local/searxng/searx/static/themes/simple/img/192.png \
+            && cp /tmp/technis-mark.png /usr/local/searxng/searx/static/themes/simple/img/512.png \
+            && cp /tmp/technis-mark.png /usr/local/searxng/searx/static/themes/simple/img/favicon.png \
+            && cp /tmp/technis-mark.png /usr/local/searxng/searx/static/themes/simple/img/searxng.png \
+            && cp /tmp/technis-mark.svg /usr/local/searxng/searx/static/themes/simple/img/favicon.svg \
+            && cp /tmp/technis-mark.svg /usr/local/searxng/searx/static/themes/simple/img/searxng.svg \
+            && rm -f \
+              /usr/local/searxng/searx/static/themes/simple/img/favicon.svg.br \
+              /usr/local/searxng/searx/static/themes/simple/img/favicon.svg.gz \
+              /usr/local/searxng/searx/static/themes/simple/img/searxng.svg.br \
+              /usr/local/searxng/searx/static/themes/simple/img/searxng.svg.gz
+
+        RUN printf '%s\n' \
+              '.index .title{width:min(17rem,80vw);min-height:10rem;margin:2rem auto 3rem}' \
+              >> /usr/local/searxng/searx/static/themes/simple/sxng-ltr.min.css \
+            && printf '%s\n' \
+              '.index .title{width:min(17rem,80vw);min-height:10rem;margin:2rem auto 3rem}' \
+              >> /usr/local/searxng/searx/static/themes/simple/sxng-rtl.min.css \
+            && rm -f \
+              /usr/local/searxng/searx/static/themes/simple/sxng-ltr.min.css.br \
+              /usr/local/searxng/searx/static/themes/simple/sxng-ltr.min.css.gz \
+              /usr/local/searxng/searx/static/themes/simple/sxng-rtl.min.css.br \
+              /usr/local/searxng/searx/static/themes/simple/sxng-rtl.min.css.gz
+      pull: true
+    cap_drop:
+      - ALL
+    container_name: searxng
+    depends_on:
+      valkey:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 1G
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    environment:
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:?SEARXNG_BASE_URL is required}
+      - SEARXNG_INSTANCE_NAME=${SEARXNG_INSTANCE_NAME:?SEARXNG_INSTANCE_NAME is required}
+      - SEARXNG_SECRET=${SEARXNG_SECRET:?SEARXNG_SECRET is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - >-
+          wget -q -O /dev/null http://127.0.0.1:8080/healthz &&
+          getent hosts github.com >/dev/null 2>&1
+      timeout: 10s
+    image: technis/searxng:latest
+    labels:
+      - dockhand.update=false
+      - gatus.group=search
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.routers.searxng.entrypoints=websecure
+      - traefik.http.routers.searxng.middlewares=internal@file
+      - traefik.http.routers.searxng.rule=Host(`search.${DOMAIN}`)
+      - traefik.http.routers.searxng.tls=true
+      - traefik.http.services.searxng.loadbalancer.server.port=8080
+    networks:
+      - internal
+    pull_policy: build
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/searxng/config/limiter.toml:/etc/searxng/limiter.toml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/searxng/config/settings.yml:/etc/searxng/settings.yml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/searxng/data:/var/cache/searxng

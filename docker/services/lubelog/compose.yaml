@@ -1,0 +1,44 @@
+services:
+  lubelog:
+    cap_drop:
+      - ALL
+    container_name: lubelog
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - EnableAuth=false
+      - LANG=${LUBELOG_LANG:-en_US.UTF-8}
+      - LC_ALL=${LUBELOG_LANG:-en_US.UTF-8}
+      - LUBELOGGER_DOMAIN=https://${LUBELOG_ROOT_DOMAIN:-lubelog.techn.is}
+      - LUBELOGGER_OPEN_REGISTRATION=false
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
+      timeout: 10s
+    hostname: lubelog
+    image: ghcr.io/hargata/lubelogger:latest
+    labels:
+      - gatus.group=home
+      - gatus.priority=P2
+      - traefik.http.routers.lubelog.rule=Host(`${LUBELOG_ROOT_DOMAIN:-lubelog.techn.is}`)
+      - traefik.http.services.lubelog.loadbalancer.server.port=8080
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/lubelog/data:/App/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/lubelog/keys:/root/.aspnet/DataProtection-Keys

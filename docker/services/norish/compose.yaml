@@ -1,0 +1,138 @@
+services:
+  norish-data-init:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    cap_drop:
+      - ALL
+    command:
+      - chown
+      - -R
+      - 1000:1000
+      - /uploads
+    container_name: norish-data-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/norish/uploads:/uploads
+
+  norish:
+    cap_drop:
+      - ALL
+    container_name: norish
+    depends_on:
+      norish-data-init:
+        condition: service_completed_successfully
+        required: true
+      norish-chrome:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.25
+          memory: 512M
+    environment:
+      AUTH_URL: https://${NORISH_ROOT_DOMAIN:-norish.techn.is}
+      CHROME_WS_ENDPOINT: ws://norish-chrome:3000
+      DATABASE_URL: postgres://norish:${NORISH_POSTGRES_PASSWORD:?NORISH_POSTGRES_PASSWORD is required}@postgres:5432/norish
+      ENABLE_REGISTRATION: "false"
+      MASTER_KEY: ${NORISH_MASTER_KEY:?NORISH_MASTER_KEY is required}
+      NEXT_PUBLIC_LOG_LEVEL: info
+      PASSWORD_AUTH_ENABLED: "true"
+      REDIS_URL: redis://redis:6379/1
+      TRUSTED_ORIGINS: https://${NORISH_ROOT_DOMAIN:-norish.techn.is}
+      TZ: ${TZ:-America/New_York}
+      UPLOADS_DIR: /app/uploads
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "require('http').get('http://127.0.0.1:3000/api/v1/health',
+          response => process.exit(response.statusCode === 200 ? 0 : 1))
+          .on('error', () => process.exit(1))"
+      timeout: 15s
+    hostname: norish
+    image: norishapp/norish:${NORISH_VERSION:-latest}
+    labels:
+      - gatus.group=home
+      - gatus.priority=P2
+      - traefik.docker.network=nexus_default
+      - traefik.enable=true
+      - traefik.http.middlewares.norish-internal.ipallowlist.sourcerange=10.0.0.0/8,100.64.0.0/10,127.0.0.1/32,192.168.0.0/16,::1/128,fd7a:115c:a1e0::/48
+      - traefik.http.routers.norish.entrypoints=websecure
+      - traefik.http.routers.norish.middlewares=norish-internal
+      - traefik.http.routers.norish.rule=Host(`${NORISH_ROOT_DOMAIN:-norish.techn.is}`)
+      - traefik.http.routers.norish.service=norish
+      - traefik.http.routers.norish.tls.certresolver=letsencrypt
+      - traefik.http.routers.norish.tls=true
+      - traefik.http.services.norish.loadbalancer.server.port=3000
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/norish/uploads:/app/uploads
+
+  norish-chrome:
+    cap_drop:
+      - ALL
+    command:
+      - --no-sandbox
+      - --disable-gpu
+      - --disable-dev-shm-usage
+      - --disable-features=dbus
+      - --remote-debugging-address=0.0.0.0
+      - --remote-debugging-port=3000
+      - --headless
+    container_name: norish-chrome
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    hostname: norish-chrome
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:3000/json/version || exit 1
+      timeout: 10s
+    image: zenika/alpine-chrome:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256m

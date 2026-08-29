@@ -1,0 +1,57 @@
+services:
+  technitium:
+    cap_add:
+      - NET_BIND_SERVICE
+    container_name: technitium
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 768M
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    environment:
+      - DNS_SERVER_ADMIN_PASSWORD=${TECHNITIUM_ADMIN_PASSWORD:?TECHNITIUM_ADMIN_PASSWORD is required}
+      - DNS_SERVER_ALLOW_TXT_BLOCKING_REPORT=true
+      - DNS_SERVER_BLOCK_LIST_URLS=https://big.oisd.nl,https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro-onlydomains.txt,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.medium-onlydomains.txt,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake-onlydomains.txt,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/popupads-onlydomains.txt,https://urlhaus.abuse.ch/downloads/hostfile/,https://raw.githubusercontent.com/phishdestroy/destroylist/main/rootlist/formats/primary/domains.txt,https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+      - DNS_SERVER_ENABLE_BLOCKING=true
+      - DNS_SERVER_FORWARDER_PROTOCOL=Udp
+      - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
+      - DNS_SERVER_LOG_MAX_LOG_FILE_DAYS=30
+      - DNS_SERVER_LOG_USING_LOCAL_TIME=true
+      - DNS_SERVER_RECURSION=UseSpecifiedNetworkACL
+      - DNS_SERVER_RECURSION_NETWORK_ACL=127.0.0.0/8,10.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16,71.105.213.80/32
+      - DNS_SERVER_WEB_SERVICE_ENABLE_HTTPS=false
+      - DNS_SERVER_WEB_SERVICE_HTTP_PORT=5380
+    # Native clustering uses mutual HTTPS. Technitium's generated certificates
+    # are persisted under /etc/dns/cluster-ca and installed before the server
+    # starts so renamed nodes remain trusted after a container recreation.
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        if compgen -G '/etc/dns/cluster-ca/*.crt' >/dev/null; then
+          install -m 644 /etc/dns/cluster-ca/*.crt /usr/local/share/ca-certificates/
+          update-ca-certificates >/dev/null
+        fi
+        exec /usr/bin/dotnet /opt/technitium/dns/DnsServerApp.dll /etc/dns
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - bash -lc 'echo > /dev/tcp/127.0.0.1/5380' || exit 1
+      timeout: 10s
+    hostname: technitium
+    image: docker.io/technitium/dns-server:latest
+    labels:
+      - gatus.group=transport
+      - gatus.priority=P2
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/technitium/config:/etc/dns
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/technitium/logs:/var/log/technitium/dns

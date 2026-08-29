@@ -1,0 +1,180 @@
+services:
+  immich:
+    cap_drop:
+      - ALL
+    command:
+      - start.sh
+      - immich
+    container_name: immich
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+      redis:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 8
+          memory: 8192M
+        reservations:
+          cpus: 1
+          memory: 1024M
+    environment:
+      - DB_DATABASE_NAME=${IMMICH_DB_DATABASE_NAME:?IMMICH_DB_DATABASE_NAME is required}
+      - DB_HOSTNAME=${IMMICH_DB_HOSTNAME:?IMMICH_DB_HOSTNAME is required}
+      - DB_PASSWORD=${IMMICH_DB_PASSWORD:?IMMICH_DB_PASSWORD is required}
+      - DB_USERNAME=${IMMICH_DB_USERNAME:?IMMICH_DB_USERNAME is required}
+      - IMMICH_MACHINE_LEARNING_URL=${IMMICH_MACHINE_LEARNING_URL:?IMMICH_MACHINE_LEARNING_URL is required}
+      - REDIS_HOSTNAME=${IMMICH_REDIS_HOSTNAME:?IMMICH_REDIS_HOSTNAME is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 2m0s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:2283/api/server/ping || exit 1
+      timeout: 10s
+    hostname: immich
+    image: ghcr.io/immich-app/immich-server:release
+    labels:
+      - gatus.group=cloud
+      - gatus.priority=P2
+      - traefik.http.routers.immich.rule=Host(`photos.ovall.es`)
+      - traefik.http.routers.immich.tls=true
+      - traefik.http.routers.immich.tls.certresolver=letsencrypt
+      - traefik.http.services.immich.loadbalancer.server.port=2283
+    ports:
+      - host_ip: 192.168.1.3
+        published: "2283"
+        target: 2283
+      - host_ip: 100.100.1.3
+        published: "2283"
+        target: 2283
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich:/data
+
+  immich-deduper:
+    container_name: immich-deduper
+    depends_on:
+      immich-deduper-qdrant:
+        condition: service_started
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      - DEDUP_DATA=/app/data
+      - DEDUP_PORT=8086
+      - IMMICH_PATH=/immich
+      - IMMICH_THUMB=/thumbs
+      - OFFLINE=${IMMICH_DEDUPER_OFFLINE:-false}
+      - PSQL_DB=${IMMICH_DB_DATABASE_NAME:?IMMICH_DB_DATABASE_NAME is required}
+      - PSQL_HOST=postgres
+      - PSQL_PASS=${IMMICH_DB_PASSWORD:?IMMICH_DB_PASSWORD is required}
+      - PSQL_PORT=5432
+      - PSQL_USER=${IMMICH_DB_USERNAME:?IMMICH_DB_USERNAME is required}
+      - QDRANT_URL=http://immich-deduper-qdrant:6333
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 2m0s
+      test:
+        - CMD-SHELL
+        - python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8086/")' || exit 1
+      timeout: 10s
+    hostname: immich-deduper
+    image: ${IMMICH_DEDUPER_IMAGE:-razgrizhsu/immich-deduper:latest}
+    labels:
+      - gatus.group=admin
+      - gatus.priority=P3
+      - traefik.http.routers.immich-deduper.middlewares=auth@file
+      - traefik.http.services.immich-deduper.loadbalancer.server.port=8086
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich:/immich:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich/thumbs:/thumbs:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich-deduper:/app/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich-deduper/cache:/root/.cache/torch
+
+  immich-deduper-qdrant:
+    container_name: immich-deduper-qdrant
+    healthcheck:
+      test:
+        - NONE
+    hostname: immich-deduper-qdrant
+    image: qdrant/qdrant:v1.16.3
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich-deduper/qdrant:/qdrant/storage
+
+  immich-power-tools:
+    container_name: immich-power-tools
+    depends_on:
+      immich:
+        condition: service_healthy
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      - AI_API_KEY=${IMMICH_POWER_TOOLS_AI_API_KEY:-}
+      - AI_BASE_URL=${IMMICH_POWER_TOOLS_AI_BASE_URL:-https://api.openai.com/v1}
+      - AI_MODEL=${IMMICH_POWER_TOOLS_AI_MODEL:-gpt-4o-mini}
+      - APP_DB_PATH=/app/data/app.db
+      - DB_DATABASE_NAME=${IMMICH_DB_DATABASE_NAME:?IMMICH_DB_DATABASE_NAME is required}
+      - DB_HOST=postgres
+      - DB_PASSWORD=${IMMICH_DB_PASSWORD:?IMMICH_DB_PASSWORD is required}
+      - DB_PORT=${IMMICH_POWER_TOOLS_DB_PORT:-5432}
+      - DB_USERNAME=${IMMICH_DB_USERNAME:?IMMICH_DB_USERNAME is required}
+      - EXTERNAL_IMMICH_URL=${IMMICH_POWER_TOOLS_EXTERNAL_IMMICH_URL:?IMMICH_POWER_TOOLS_EXTERNAL_IMMICH_URL is required}
+      - IMMICH_API_KEY=${IMMICH_POWER_TOOLS_IMMICH_API_KEY:?IMMICH_POWER_TOOLS_IMMICH_API_KEY is required}
+      - IMMICH_URL=${IMMICH_POWER_TOOLS_IMMICH_URL:-http://immich:2283}
+      - JWT_SECRET=${IMMICH_POWER_TOOLS_JWT_SECRET:?IMMICH_POWER_TOOLS_JWT_SECRET is required}
+      - POWER_TOOLS_ENDPOINT_URL=https://${IMMICH_POWER_TOOLS_ROOT_DOMAIN:?IMMICH_POWER_TOOLS_ROOT_DOMAIN is required}
+      - SECURE_COOKIE=${IMMICH_POWER_TOOLS_SECURE_COOKIE:-true}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 40s
+      test:
+        - CMD
+        - wget
+        - --no-verbose
+        - --tries=1
+        - --spider
+        - http://127.0.0.1:3000/api/health
+      timeout: 10s
+    hostname: immich-power-tools
+    image: ghcr.io/immich-power-tools/immich-power-tools:latest
+    labels:
+      - gatus.group=admin
+      - gatus.priority=P3
+      - traefik.http.routers.immich-power-tools.middlewares=auth@file
+      - traefik.http.services.immich-power-tools.loadbalancer.server.port=3000
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1001:65533
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich-power-tools:/app/data

@@ -1,0 +1,140 @@
+services:
+  prowlarr-exporter:
+    cap_drop:
+      - ALL
+    command:
+      - prowlarr
+    container_name: prowlarr-exporter
+    depends_on:
+      prowlarr:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - API_KEY=${PROWLARR_API_KEY:?PROWLARR_API_KEY is required}
+      - PORT=9710
+      - URL=http://prowlarr:9696/indexers
+    healthcheck:
+      test:
+        - NONE
+    hostname: prowlarr-exporter
+    image: ghcr.io/onedr0p/exportarr:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534
+
+  radarr-exporter:
+    cap_drop:
+      - ALL
+    command:
+      - radarr
+    container_name: radarr-exporter
+    depends_on:
+      radarr:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - API_KEY=${RADARR_API_KEY:?RADARR_API_KEY is required}
+      - PORT=9708
+      - URL=http://radarr:7878/movies
+    healthcheck:
+      test:
+        - NONE
+    hostname: radarr-exporter
+    image: ghcr.io/onedr0p/exportarr:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534
+
+  sabnzbd-exporter:
+    cap_drop:
+      - ALL
+    command:
+      - sabnzbd
+    container_name: sabnzbd-exporter
+    depends_on:
+      sabnzbd:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - API_KEY=${SABNZBD_API_KEY:?SABNZBD_API_KEY is required}
+      - PORT=9711
+      - URL=http://sabnzbd:8080
+    healthcheck:
+      test:
+        - NONE
+    hostname: sabnzbd-exporter
+    image: ghcr.io/onedr0p/exportarr:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534
+
+  sonarr-exporter:
+    cap_drop:
+      - ALL
+    command:
+      - sonarr
+    container_name: sonarr-exporter
+    depends_on:
+      sonarr:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - API_KEY=${UNPACKERR_UN_SONARR_0_API_KEY:?UNPACKERR_UN_SONARR_0_API_KEY is required}
+      - PORT=9707
+      - URL=http://sonarr:8989/series
+    healthcheck:
+      test:
+        - NONE
+    hostname: sonarr-exporter
+    image: ghcr.io/onedr0p/exportarr:latest
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534

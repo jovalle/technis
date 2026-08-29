@@ -1,0 +1,47 @@
+services:
+  muxarr:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: muxarr
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:8183/ >/dev/null || exit 1
+      timeout: 10s
+    hostname: muxarr
+    image: ghcr.io/kirovair/muxarr:latest
+    labels:
+      - gatus.group=curation
+      - gatus.priority=P3
+      - traefik.http.routers.muxarr.middlewares=auth@file
+      - traefik.http.services.muxarr.loadbalancer.server.port=8183
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/muxarr:/data
+      - /mnt/media/movies:/movies
+      - /mnt/media/series:/series

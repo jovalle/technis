@@ -1,0 +1,57 @@
+services:
+  cleanuparr:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: cleanuparr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - BASE_PATH=
+      - PGID=${PGID:-1000}
+      - PORT=11011
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+      - UMASK=022
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:11011/health
+      timeout: 10s
+    hostname: cleanuparr
+    image: ghcr.io/cleanuparr/cleanuparr:latest
+    labels:
+      - gatus.group=curation
+      - gatus.priority=P3
+      - traefik.enable=true
+      - traefik.http.middlewares.cleanuparr-internal.ipallowlist.sourcerange=100.64.0.0/10,172.30.53.0/24,192.168.0.0/16,127.0.0.1/32
+      - traefik.http.routers.cleanuparr.middlewares=cleanuparr-internal
+      - traefik.http.routers.cleanuparr.rule=Host(`cleanuparr.techn.is`)
+      - traefik.http.routers.cleanuparr.service=cleanuparr
+      - traefik.http.routers.cleanuparr.tls.certresolver=letsencrypt
+      - traefik.http.routers.cleanuparr.tls=true
+      - traefik.http.services.cleanuparr.loadbalancer.server.port=11011
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/cleanuparr:/config
+      - /mnt/media/downloads:/downloads
