@@ -1,0 +1,54 @@
+services:
+  syncthing:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: syncthing
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - GOGC=${SYNCTHING_GOGC:?SYNCTHING_GOGC is required}
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:8384/rest/noauth/health || exit 1
+      timeout: 10s
+    hostname: syncthing
+    image: lscr.io/linuxserver/syncthing:latest
+    labels:
+      - gatus.group=data
+      - gatus.priority=P2
+      - traefik.http.services.syncthing.loadbalancer.server.port=8384
+    ports:
+      - 8384:8384
+      - 22000:22000
+      - protocol: udp
+        published: "22000"
+        target: 22000
+      - protocol: udp
+        published: "21027"
+        target: 21027
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/syncthing/config:/config
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/syncthing/data:/data

@@ -1,0 +1,36 @@
+services:
+  beszel:
+    cap_drop:
+      - ALL
+    container_name: beszel
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    healthcheck:
+      interval: 2m0s
+      retries: 3
+      start_period: 10s
+      test:
+        - CMD
+        - /beszel
+        - health
+        - --url
+        - http://127.0.0.1:8090
+      timeout: 10s
+    hostname: beszel
+    image: henrygd/beszel:latest
+    ports:
+      - 8090:8090
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel:/beszel_data

@@ -1,0 +1,49 @@
+services:
+  immich-ml:
+    cap_drop:
+      - ALL
+    container_name: immich-ml
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+      redis:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 4096M
+        reservations:
+          cpus: 0.5
+          memory: 1024M
+    environment:
+      - DB_DATABASE_NAME=${IMMICH_ML_DB_DATABASE_NAME:?IMMICH_ML_DB_DATABASE_NAME is required}
+      - DB_HOSTNAME=${IMMICH_ML_DB_HOSTNAME:?IMMICH_ML_DB_HOSTNAME is required}
+      - DB_PASSWORD=${IMMICH_ML_DB_PASSWORD:?IMMICH_ML_DB_PASSWORD is required}
+      - DB_USERNAME=${IMMICH_ML_DB_USERNAME:?IMMICH_ML_DB_USERNAME is required}
+      - REDIS_HOSTNAME=${IMMICH_ML_REDIS_HOSTNAME:?IMMICH_ML_REDIS_HOSTNAME is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 2m0s
+      test:
+        - CMD-SHELL
+        - python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:3003/ping")' || exit 1
+      timeout: 10s
+    hostname: immich-ml
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    labels:
+      - gatus.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /run:rw,noexec,nosuid,size=8m,uid=1000,gid=1000,mode=755
+      - /tmp:rw,noexec,nosuid,size=512m,uid=1000,gid=1000,mode=1777
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/immich/model-cache:/cache

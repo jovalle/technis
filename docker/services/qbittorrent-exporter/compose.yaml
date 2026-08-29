@@ -1,0 +1,39 @@
+services:
+  qbittorrent-exporter:
+    cap_drop:
+      - ALL
+    container_name: qbittorrent-exporter
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        required: true
+      qbittorrent:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - ENABLE_HIGH_CARDINALITY=false
+      - EXPORTER_PORT=8090
+      - QBITTORRENT_BASE_URL=http://127.0.0.1:10095
+      - QBITTORRENT_PASSWORD=${QBITTORRENT_EXPORTER_PASSWORD:-}
+      - QBITTORRENT_USERNAME=${QBITTORRENT_EXPORTER_USERNAME:-admin}
+    healthcheck:
+      test:
+        - NONE
+    image: ghcr.io/martabal/qbittorrent-exporter:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    network_mode: service:gluetun
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534

@@ -1,0 +1,44 @@
+services:
+  capacitarr:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: capacitarr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - AUTH_HEADER=Remote-User
+      - JWT_SECRET=${CAPACITARR_JWT_SECRET:?CAPACITARR_JWT_SECRET is required}
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - SECURE_COOKIES=${CAPACITARR_SECURE_COOKIES:-true}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:2187/api/v1/health || exit 1
+      timeout: 10s
+    hostname: capacitarr
+    image: ghcr.io/ghent/capacitarr:stable
+    labels:
+      - traefik.http.routers.capacitarr.middlewares=auth@file
+      - traefik.http.services.capacitarr.loadbalancer.server.port=2187
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/capacitarr:/config

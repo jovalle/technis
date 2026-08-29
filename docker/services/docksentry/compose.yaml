@@ -1,0 +1,50 @@
+services:
+  docksentry:
+    cap_drop:
+      - ALL
+    container_name: docksentry
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - AUTO_SELFUPDATE=${DOCKSENTRY_AUTO_SELFUPDATE:-false}
+      - CRON_SCHEDULE=${DOCKSENTRY_CRON_SCHEDULE:-0 18 * * *}
+      - DISCORD_WEBHOOK=${DOCKSENTRY_DISCORD_WEBHOOK:-}
+      - DOCKER_HOST=${DOCKSENTRY_DOCKER_HOST:?DOCKSENTRY_DOCKER_HOST is required}
+      - EXCLUDE_CONTAINERS=${DOCKSENTRY_EXCLUDE_CONTAINERS:-}
+      - LANGUAGE=${DOCKSENTRY_LANGUAGE:-en}
+      - TZ=${DOCKSENTRY_TZ:-${TZ:-America/New_York}}
+      - WEB_PORT=8080
+      - WEB_UI=${DOCKSENTRY_WEB_UI:-true}
+      - WEBHOOK_URL=${DOCKSENTRY_WEBHOOK_URL:-}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - python3 /app/healthcheck.py || exit 1
+      timeout: 10s
+    hostname: docksentry
+    image: amayer1983/docksentry:latest
+    labels:
+      - traefik.http.routers.docksentry.middlewares=auth@file
+      - traefik.http.services.docksentry.loadbalancer.server.port=8080
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /.docker:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=32m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/docksentry:/data

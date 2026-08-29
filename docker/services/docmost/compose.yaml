@@ -1,0 +1,76 @@
+services:
+  docmost:
+    cap_drop:
+      - ALL
+    container_name: docmost
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+      redis:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - APP_SECRET=${DOCMOST_APP_SECRET:?DOCMOST_APP_SECRET is required}
+      - APP_URL=https://${DOCMOST_ROOT_DOMAIN:?DOCMOST_ROOT_DOMAIN is required}
+      - DATABASE_URL=postgresql://docmost:${DOCMOST_POSTGRES_PASSWORD:?DOCMOST_POSTGRES_PASSWORD is required}@postgres:5432/docmost?schema=public
+      - DEBUG_DB=false
+      - DEBUG_MODE=false
+      - DISABLE_TELEMETRY=true
+      - FILE_IMPORT_SIZE_LIMIT=200mb
+      - FILE_UPLOAD_SIZE_LIMIT=50mb
+      - IFRAME_EMBED_ALLOWED=false
+      - JWT_TOKEN_EXPIRES_IN=30d
+      - LOG_HTTP=false
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379/2
+      - STORAGE_DRIVER=local
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      timeout: 10s
+    hostname: docmost
+    image: docmost/docmost:0.95.0@sha256:41c8d777cf23c74e78f94e676aec328b7d7856f48df5e573543dac68d371e37c
+    init: true
+    labels:
+      - gatus.group=home
+      - gatus.priority=P2
+      - traefik.docker.network=nexus_default
+      - traefik.enable=true
+      - traefik.http.middlewares.docmost-internal.ipallowlist.sourcerange=10.0.0.0/8,100.64.0.0/10,127.0.0.1/32,192.168.0.0/16,::1/128,fd7a:115c:a1e0::/48
+      - traefik.http.routers.docmost.entrypoints=websecure
+      - traefik.http.routers.docmost.middlewares=docmost-internal
+      - traefik.http.routers.docmost.rule=Host(`${DOCMOST_ROOT_DOMAIN:?DOCMOST_ROOT_DOMAIN is required}`)
+      - traefik.http.routers.docmost.service=docmost
+      - traefik.http.routers.docmost.tls.certresolver=letsencrypt
+      - traefik.http.routers.docmost.tls=true
+      - traefik.http.services.docmost.loadbalancer.server.port=3000
+    logging:
+      options:
+        max-file: 5
+        max-size: 50m
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/docmost/storage:/app/data/storage

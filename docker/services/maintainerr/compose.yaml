@@ -1,0 +1,40 @@
+services:
+  maintainerr:
+    cap_drop:
+      - ALL
+    container_name: maintainerr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - UI_HOSTNAME=0.0.0.0
+      - UI_PORT=6246
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:6246/ || exit 1
+      timeout: 10s
+    hostname: maintainerr
+    image: ghcr.io/maintainerr/maintainerr:latest
+    labels:
+      - gatus.group=curation
+      - gatus.priority=P3
+      - traefik.http.routers.maintainerr.middlewares=auth@file
+      - traefik.http.services.maintainerr.loadbalancer.server.port=6246
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/maintainerr:/opt/data

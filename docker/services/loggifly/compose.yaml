@@ -1,0 +1,40 @@
+services:
+  loggifly:
+    cap_drop:
+      - ALL
+    container_name: loggifly
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 256M
+        reservations:
+          cpus: 0.05
+          memory: 64M
+    environment:
+      - DOCKER_HOST=${LOGGIFLY_DOCKER_HOST:?LOGGIFLY_DOCKER_HOST is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: loggifly
+    image: ghcr.io/clemcer/loggifly:latest
+    labels:
+      - gatus.group=operations
+      - gatus.priority=P3
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/loggifly:/config

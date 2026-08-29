@@ -1,0 +1,48 @@
+services:
+  watchtower:
+    cap_drop:
+      - ALL
+    container_name: watchtower
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - IMDB_WATCHLISTS=${WATCHTOWER_IMDB_WATCHLISTS:-}
+      - PLEX_CLIENT_ID=${WATCHTOWER_PLEX_CLIENT_ID:?WATCHTOWER_PLEX_CLIENT_ID is required}
+      - PLEX_SERVER_URL=${WATCHTOWER_PLEX_SERVER_URL:?WATCHTOWER_PLEX_SERVER_URL is required}
+      - PLEX_TOKEN=${WATCHTOWER_PLEX_TOKEN:?WATCHTOWER_PLEX_TOKEN is required}
+      - PORT=${WATCHTOWER_PORT:?WATCHTOWER_PORT is required}
+      - SESSION_SECRET=${WATCHTOWER_SESSION_SECRET:?WATCHTOWER_SESSION_SECRET is required}
+      - TMDB_API_KEY=${WATCHTOWER_TMDB_API_KEY:?WATCHTOWER_TMDB_API_KEY is required}
+      - TRAKT_CLIENT_ID=${WATCHTOWER_TRAKT_CLIENT_ID:?WATCHTOWER_TRAKT_CLIENT_ID is required}
+      - TRAKT_CLIENT_SECRET=${WATCHTOWER_TRAKT_CLIENT_SECRET:?WATCHTOWER_TRAKT_CLIENT_SECRET is required}
+      - TRAKT_USERNAME=${WATCHTOWER_TRAKT_USERNAME:?WATCHTOWER_TRAKT_USERNAME is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:9001/ || exit 1
+      timeout: 10s
+    hostname: watchtower
+    image: ghcr.io/jovalle/watchtower:latest
+    labels:
+      - gatus.group=playback
+      - gatus.priority=P2
+    ports:
+      - 9001:9001
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    user: 1001:1001
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/watchtower:/data

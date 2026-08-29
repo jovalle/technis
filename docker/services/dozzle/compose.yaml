@@ -1,0 +1,37 @@
+services:
+  dozzle:
+    cap_drop:
+      - ALL
+    container_name: dozzle
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 128M
+        reservations:
+          cpus: 0.1
+          memory: 32M
+    environment:
+      - DOCKER_HOST=${DOZZLE_DOCKER_HOST:?DOZZLE_DOCKER_HOST is required}
+      - DOZZLE_LEVEL=${DOZZLE_LEVEL:?DOZZLE_LEVEL is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - /dozzle
+        - healthcheck
+      timeout: 10s
+    hostname: dozzle
+    image: amir20/dozzle:latest
+    labels:
+      - traefik.http.routers.dozzle.middlewares=auth@file
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000

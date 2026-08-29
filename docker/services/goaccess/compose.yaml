@@ -1,0 +1,34 @@
+services:
+  goaccess:
+    container_name: goaccess
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    environment:
+      - HTML_REFRESH=${GOACCESS_HTML_REFRESH:?GOACCESS_HTML_REFRESH is required}
+      - KEEP_LAST=${GOACCESS_KEEP_LAST:?GOACCESS_KEEP_LAST is required}
+      - LOG_TYPE=${GOACCESS_LOG_TYPE:?GOACCESS_LOG_TYPE is required}
+      - PROCESSING_THREADS=${GOACCESS_PROCESSING_THREADS:?GOACCESS_PROCESSING_THREADS is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:7880/ || exit 1
+      timeout: 10s
+    image: xavierh/goaccess-for-nginxproxymanager:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+    networks:
+      - external
+      - internal
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/logs:/opt/log:ro

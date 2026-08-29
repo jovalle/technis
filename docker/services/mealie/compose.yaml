@@ -1,0 +1,60 @@
+services:
+  mealie:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: mealie
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - ALLOW_PASSWORD_LOGIN=${MEALIE_ALLOW_PASSWORD_LOGIN:-false}
+      - ALLOW_SIGNUP=${MEALIE_ALLOW_SIGNUP:-false}
+      - BASE_URL=https://${MEALIE_ROOT_DOMAIN:?MEALIE_ROOT_DOMAIN is required}
+      - MAX_WORKERS=${MEALIE_MAX_WORKERS:-1}
+      - OIDC_AUTH_ENABLED=${MEALIE_OIDC_AUTH_ENABLED:-true}
+      - OIDC_AUTO_REDIRECT=${MEALIE_OIDC_AUTO_REDIRECT:-true}
+      - OIDC_CLIENT_ID=${MEALIE_OIDC_CLIENT_ID:?MEALIE_OIDC_CLIENT_ID is required}
+      - OIDC_CLIENT_SECRET=${MEALIE_OIDC_CLIENT_SECRET:?MEALIE_OIDC_CLIENT_SECRET is required}
+      - OIDC_CONFIGURATION_URL=${MEALIE_OIDC_CONFIGURATION_URL:?MEALIE_OIDC_CONFIGURATION_URL is required}
+      - OIDC_PROVIDER_NAME=${MEALIE_OIDC_PROVIDER_NAME:-Google}
+      - OIDC_REQUIRES_EMAIL_VERIFICATION=${MEALIE_OIDC_REQUIRES_EMAIL_VERIFICATION:-true}
+      - OIDC_SCOPES_OVERRIDE=openid profile email
+      - OIDC_SIGNUP_ENABLED=${MEALIE_OIDC_SIGNUP_ENABLED:-true}
+      - OIDC_USER_CLAIM=email
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    expose:
+      - "9000"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/')" || exit 1
+      timeout: 10s
+    hostname: mealie
+    image: ghcr.io/mealie-recipes/mealie:latest
+    labels:
+      - gatus.group=home
+      - gatus.priority=P2
+      - traefik.http.routers.mealie.middlewares=auth@file
+      - traefik.http.services.mealie.loadbalancer.server.port=9000
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/mealie:/app/data

@@ -1,0 +1,70 @@
+services:
+  dynamodb-data-init:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    cap_drop:
+      - ALL
+    command:
+      - chown
+      - -R
+      - 1000:1000
+      - /data
+    container_name: dynamodb-data-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/dynamodb:/data
+
+  dynamodb:
+    command:
+      - -jar
+      - DynamoDBLocal.jar
+      - -sharedDb
+      - -dbPath
+      - /home/dynamodblocal/data
+    container_name: dynamodb
+    depends_on:
+      dynamodb-data-init:
+        condition: service_completed_successfully
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx768m
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - curl -sS -o /dev/null http://127.0.0.1:8000/ || exit 1
+      timeout: 10s
+    hostname: dynamodb
+    image: amazon/dynamodb-local:latest@sha256:ff89bd48ff32cd8d9be5fee8873b65b8854dc408f1afe881be6eb00247bc0dab
+    labels:
+      - gatus.group=data
+      - gatus.priority=P3
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/dynamodb:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal

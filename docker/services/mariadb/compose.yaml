@@ -1,0 +1,36 @@
+services:
+  mariadb:
+    container_name: mariadb
+    deploy:
+      resources:
+        limits:
+          cpus: 4
+          memory: 4G
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - MARIADB_ROOT_HOST=%
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 5s
+      retries: 20
+      start_period: 30s
+      test:
+        - CMD
+        - healthcheck.sh
+        - --connect
+        - --innodb_initialized
+      timeout: 5s
+    hostname: mariadb
+    image: mariadb:11@sha256:d9f7eb2637296652f24b484afd5d246f759f49f5babcadc6a9e344c9acb75fbf
+    labels:
+      - gatus.group=data
+      - gatus.priority=P2
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/mariadb-shared:/var/lib/mysql

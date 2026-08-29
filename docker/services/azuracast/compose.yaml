@@ -1,0 +1,98 @@
+services:
+  azuracast:
+    container_name: azuracast
+    deploy:
+      resources:
+        limits:
+          cpus: 4
+          memory: 8G
+        reservations:
+          cpus: 1
+          memory: 2G
+    environment:
+      - APPLICATION_ENV=production
+      - AUTO_ASSIGN_PORT_MAX=${AZURACAST_STATION_PORT_MAX:-8599}
+      - AUTO_ASSIGN_PORT_MIN=${AZURACAST_STATION_PORT_MIN:-8500}
+      - AZURACAST_SFTP_PORT=${AZURACAST_SFTP_PORT:-2022}
+      - ENABLE_WEB_UPDATER=false
+      - INIT_INSTANCE_NAME=Zagreus
+      - MYSQL_PASSWORD=${AZURACAST_MYSQL_PASSWORD:?AZURACAST_MYSQL_PASSWORD is required}
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      - NGINX_RADIO_PORTS=(8500|8510|8520|8530|8540|8550|8560|8570|8580|8590)
+      - NGINX_TIMEOUT=1800
+      - NGINX_WEBDJ_PORTS=(8505|8515|8525|8535|8545|8555|8565|8575|8585|8595)
+      - PHP_MEMORY_LIMIT=512M
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 10
+      start_period: 5m0s
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1/ >/dev/null || exit 1
+      timeout: 10s
+    hostname: azuracast
+    image: ghcr.io/azuracast/azuracast:stable
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.azuracast.entrypoints=websecure
+      - traefik.http.routers.azuracast.rule=Host(`${AZURACAST_ROOT_DOMAIN:?AZURACAST_ROOT_DOMAIN is required}`)
+      - traefik.http.routers.azuracast.service=azuracast
+      - traefik.http.services.azuracast.loadbalancer.server.port=80
+    logging:
+      options:
+        max-file: 5
+        max-size: 10m
+    ports:
+      - ${AZURACAST_SFTP_PORT:-2022}:${AZURACAST_SFTP_PORT:-2022}
+      - 8500:8500
+      - 8505:8505
+      - 8506:8506
+      - 8510:8510
+      - 8515:8515
+      - 8516:8516
+      - 8520:8520
+      - 8525:8525
+      - 8526:8526
+      - 8530:8530
+      - 8535:8535
+      - 8536:8536
+      - 8540:8540
+      - 8545:8545
+      - 8546:8546
+      - 8550:8550
+      - 8555:8555
+      - 8556:8556
+      - 8560:8560
+      - 8565:8565
+      - 8566:8566
+      - 8570:8570
+      - 8575:8575
+      - 8576:8576
+      - 8580:8580
+      - 8585:8585
+      - 8586:8586
+      - 8590:8590
+      - 8595:8595
+      - 8596:8596
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        hard: 65536
+        soft: 65536
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/acme:/var/azuracast/storage/acme
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/backups:/var/azuracast/backups
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/database:/var/lib/mysql
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/geoip:/var/azuracast/storage/geoip
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/rsas:/var/azuracast/storage/rsas
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/sftpgo:/var/azuracast/storage/sftpgo
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/shoutcast2:/var/azuracast/storage/shoutcast2
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/stations:/var/azuracast/stations
+      - /mnt/media/radio/Royal Talon Radio:/var/azuracast/stations/royaltalon/media
+      - /mnt/media/radio/180g Radio:/var/azuracast/stations/180g/media
+      - "/mnt/media/radio/180g \U0001F1E9\U0001F1F4:/var/azuracast/stations/180ges/media"
+      - "/mnt/media/radio/180g \U0001F1FA\U0001F1F8:/var/azuracast/stations/180gen/media"
+      - /mnt/media/radio/NOW That's What I Call Music! Master Collection:/var/azuracast/stations/now/media/collection
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/stereo-tool:/var/azuracast/storage/stereo_tool
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/azuracast/uploads:/var/azuracast/storage/uploads

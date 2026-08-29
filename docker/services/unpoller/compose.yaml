@@ -1,0 +1,39 @@
+services:
+  unpoller:
+    cap_drop:
+      - ALL
+    container_name: unpoller
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - UP_INFLUXDB_DISABLE=true
+      - UP_POLLER_DEBUG=${UNPOLLER_DEBUG:-false}
+      - UP_PROMETHEUS_HTTP_LISTEN=0.0.0.0:9130
+      - UP_PROMETHEUS_NAMESPACE=unpoller
+      - UP_UNIFI_DEFAULT_PASS=${UNPOLLER_UNIFI_PASSWORD:-${UNPOLLER_UNIFI_PASS:-}}
+      - UP_UNIFI_DEFAULT_SAVE_DPI=${UNPOLLER_UNIFI_SAVE_DPI:-true}
+      - UP_UNIFI_DEFAULT_SAVE_SITES=true
+      - UP_UNIFI_DEFAULT_SITE_0=${UNPOLLER_UNIFI_SITE:-default}
+      - UP_UNIFI_DEFAULT_URL=${UNPOLLER_UNIFI_URL:-https://192.168.1.1}
+      - UP_UNIFI_DEFAULT_USER=${UNPOLLER_UNIFI_USER:-unifipoller}
+      - UP_UNIFI_DEFAULT_VERIFY_SSL=${UNPOLLER_UNIFI_VERIFY_SSL:-false}
+    healthcheck:
+      test:
+        - NONE
+    hostname: unpoller
+    image: ghcr.io/unpoller/unpoller:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534

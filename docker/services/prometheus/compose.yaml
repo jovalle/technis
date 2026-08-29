@@ -1,0 +1,47 @@
+services:
+  prometheus:
+    cap_drop:
+      - ALL
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    container_name: prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    extra_hosts:
+      - host.docker.internal=host-gateway
+      - mothership=${MOTHERSHIP_TAILNET_IP:-100.100.1.1}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:9090/-/healthy || exit 1
+      timeout: 10s
+    hostname: prometheus
+    image: prom/prometheus:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+      - traefik.http.routers.prometheus.middlewares=auth@file
+    ports:
+      - 9090:9090/tcp
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/prometheus/config:/etc/prometheus:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/prometheus/data:/prometheus

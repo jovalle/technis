@@ -1,0 +1,42 @@
+services:
+  meilisearch:
+    cap_drop:
+      - ALL
+    container_name: meilisearch
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 2G
+        reservations:
+          cpus: 0.1
+          memory: 512M
+    environment:
+      - MEILI_ENV=${MEILISEARCH_MEILI_ENV:-production}
+      - MEILI_MASTER_KEY=${MEILISEARCH_MEILI_MASTER_KEY:?MEILISEARCH_MEILI_MASTER_KEY is required}
+      - MEILI_MAX_INDEXING_MEMORY=${MEILISEARCH_MEILI_MAX_INDEXING_MEMORY:-256MiB}
+      - MEILI_MAX_INDEXING_THREADS=${MEILISEARCH_MEILI_MAX_INDEXING_THREADS:-1}
+      - MEILI_NO_ANALYTICS=${MEILISEARCH_MEILI_NO_ANALYTICS:-true}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:7700/health || exit 1
+      timeout: 10s
+    hostname: meilisearch
+    image: getmeili/meilisearch:v1.12.8
+    labels:
+      - gatus.group=data
+      - gatus.priority=P2
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/meilisearch:/meili_data

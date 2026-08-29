@@ -1,0 +1,46 @@
+services:
+  linkwarden:
+    container_name: linkwarden
+    depends_on:
+      meilisearch:
+        condition: service_healthy
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      - DISABLE_NEW_SSO_USERS=${LINKWARDEN_DISABLE_NEW_SSO_USERS:-false}
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILISEARCH_MEILI_MASTER_KEY:?MEILISEARCH_MEILI_MASTER_KEY is required}
+      - NEXT_PUBLIC_AUTHELIA_ENABLED=false
+      - NEXT_PUBLIC_CREDENTIALS_ENABLED=${LINKWARDEN_NEXT_PUBLIC_CREDENTIALS_ENABLED:-true}
+      - NEXT_PUBLIC_DISABLE_REGISTRATION=${LINKWARDEN_NEXT_PUBLIC_DISABLE_REGISTRATION:-true}
+      - NEXTAUTH_SECRET=${LINKWARDEN_NEXTAUTH_SECRET:?LINKWARDEN_NEXTAUTH_SECRET is required}
+      - NEXTAUTH_URL=https://${LINKWARDEN_ROOT_DOMAIN:?LINKWARDEN_ROOT_DOMAIN is required}/api/v1/auth
+      - STORAGE_FOLDER=/var/lib/linkwarden
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test: |
+        node -e "require('http').get('http://127.0.0.1:3000/', function (r) { process.exit(r.statusCode < 500 ? 0 : 1); }).on('error', function () { process.exit(1); });"
+      timeout: 10s
+    hostname: linkwarden
+    image: ghcr.io/linkwarden/linkwarden:latest
+    labels:
+      - gatus.group=cloud
+      - gatus.priority=P2
+      - traefik.http.services.linkwarden.loadbalancer.server.port=3000
+    restart: unless-stopped
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/linkwarden/data:/var/lib/linkwarden

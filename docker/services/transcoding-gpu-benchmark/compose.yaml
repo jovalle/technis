@@ -1,0 +1,49 @@
+services:
+  transcoding-gpu-benchmark:
+    cap_add:
+      - PERFMON
+    cap_drop:
+      - ALL
+    container_name: transcoding-gpu-benchmark
+    devices:
+      - permissions: rwm
+        source: /dev/dri
+        target: /dev/dri
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - WEB_PORT=8088
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 2m0s
+      test:
+        - CMD-SHELL
+        - python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/', timeout=5)" || exit 1
+      timeout: 10s
+    hostname: transcoding-gpu-benchmark
+    image: spaceinvaderone/transcoding-gpu-benchmark:latest
+    labels:
+      - gatus.group=playback
+      - gatus.priority=P3
+      - traefik.enable=true
+      - traefik.http.middlewares.transcoding-gpu-benchmark-internal.ipallowlist.sourcerange=100.64.0.0/10,192.168.0.0/16,127.0.0.1/32
+      - traefik.http.routers.transcoding-gpu-benchmark.middlewares=transcoding-gpu-benchmark-internal
+      - traefik.http.routers.transcoding-gpu-benchmark.rule=Host(`bench.watchtower.techn.is`)
+      - traefik.http.routers.transcoding-gpu-benchmark.service=transcoding-gpu-benchmark
+      - traefik.http.routers.transcoding-gpu-benchmark.tls=true
+      - traefik.http.routers.transcoding-gpu-benchmark.tls.certresolver=letsencrypt
+      - traefik.http.routers.transcoding-gpu-benchmark.tls.domains[0].main=bench.watchtower.techn.is
+      - traefik.http.services.transcoding-gpu-benchmark.loadbalancer.server.port=8088
+    pid: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /ramdisk:rw,nosuid,size=512m
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/transcoding-gpu-benchmark/config:/config
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/transcoding-gpu-benchmark/cache:/cache
+      - /etc/os-release:/os-release:ro
+      - /sys/devices/virtual/powercap:/powercap:ro
+      - /sys/firmware/dmi/tables:/dmi:ro

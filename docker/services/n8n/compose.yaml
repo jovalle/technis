@@ -1,0 +1,63 @@
+services:
+  n8n:
+    cap_drop:
+      - ALL
+    container_name: n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - DB_POSTGRESDB_DATABASE=${N8N_POSTGRES_DATABASE:?N8N_POSTGRES_DATABASE is required}
+      - DB_POSTGRESDB_HOST=${N8N_POSTGRES_HOST:-postgres}
+      - DB_POSTGRESDB_PASSWORD=${N8N_POSTGRES_PASSWORD:?N8N_POSTGRES_PASSWORD is required}
+      - DB_POSTGRESDB_PORT=${N8N_POSTGRES_PORT:-5432}
+      - DB_POSTGRESDB_SCHEMA=${N8N_POSTGRES_SCHEMA:-public}
+      - DB_POSTGRESDB_USER=${N8N_POSTGRES_USER:?N8N_POSTGRES_USER is required}
+      - DB_TYPE=postgresdb
+      - GENERIC_TIMEZONE=${TZ:-America/New_York}
+      - N8N_EDITOR_BASE_URL=https://${N8N_ROOT_DOMAIN:?N8N_ROOT_DOMAIN is required}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY is required}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_HOST=${N8N_ROOT_DOMAIN:?N8N_ROOT_DOMAIN is required}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_PROXY_HOPS=1
+      - N8N_RESTRICT_FILE_ACCESS_TO=/files;/downloads
+      - NODE_ENV=production
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs,path
+      - TZ=${TZ:-America/New_York}
+      - WEBHOOK_URL=https://${N8N_ROOT_DOMAIN:?N8N_ROOT_DOMAIN is required}/
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m30s
+      test:
+        - CMD-SHELL
+        - 'node -e "require(\"http\").get(\"http://127.0.0.1:5678/healthz/readiness\", (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on(\"error\", () => process.exit(1))"'
+      timeout: 10s
+    hostname: n8n
+    image: n8nio/n8n:latest
+    init: true
+    labels:
+      - gatus.group=operations
+      - gatus.priority=P2
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/n8n:/home/node/.n8n
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/n8n/files:/files
+      - /mnt/media/downloads:/downloads

@@ -1,0 +1,47 @@
+services:
+  jellyfin:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: jellyfin
+    deploy:
+      resources:
+        limits:
+          cpus: 4
+          memory: 4096M
+        reservations:
+          cpus: 1
+          memory: 1024M
+    devices:
+      - permissions: rwm
+        source: /dev/dri
+        target: /dev/dri
+    environment:
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_PUBLISHEDSERVERURL:?JELLYFIN_PUBLISHEDSERVERURL is required}
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:8096/health || exit 1
+      timeout: 10s
+    hostname: jellyfin
+    image: jellyfin/jellyfin:latest
+    labels:
+      - gatus.group=playback
+      - gatus.priority=P2
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/jellyfin:/config
+      - /mnt/media:/media:ro
