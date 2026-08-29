@@ -1,0 +1,23 @@
+services:
+  gatus-nx:
+    extends:
+      file: ../../../../services/gatus/compose.yaml
+      service: gatus
+    container_name: gatus-nx
+    labels:
+      - traefik.docker.network=nexus_default
+      - traefik.enable=true
+      - traefik.http.middlewares.gatus-nx-lan.ipallowlist.sourcerange=100.64.0.0/10,172.30.53.0/24,192.168.0.0/16,127.0.0.1/32
+      - traefik.http.routers.gatus-nx.middlewares=gatus-nx-lan
+      - traefik.http.routers.gatus-nx.rule=Host(`nx.status.${DOMAIN:?DOMAIN is required}`)
+      - traefik.http.routers.gatus-nx.service=gatus-nx
+      - traefik.http.routers.gatus-nx.tls.certresolver=letsencrypt
+      - traefik.http.routers.gatus-nx.tls.domains[0].main=nx.status.${DOMAIN:?DOMAIN is required}
+      - traefik.http.routers.gatus-nx.tls=true
+      - traefik.http.services.gatus-nx.loadbalancer.server.port=8080
+    networks:
+      - default
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-nx/data:/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-nx/config/base.yaml:/config/managed/base.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-nx/config/checks.yaml:/config/managed/checks.yaml:ro

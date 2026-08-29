@@ -1,0 +1,160 @@
+aliases:
+  - alias: npm
+    destination: https://www.npmjs.com
+  - alias: wiki
+    destination: https://www.wikipedia.org
+  - alias: x
+    destination: https://x.com
+  - alias: claude
+    destination: https://claude.ai
+  - alias: crates
+    destination: https://crates.io
+  - alias: g
+    destination: https://google.com
+  - alias: k8s
+    destination: https://kubernetes.io
+  - alias: notion
+    destination: https://www.notion.so
+  - alias: gm
+    destination: https://mail.google.com
+  - alias: lob
+    destination: https://lobste.rs
+  - alias: aws
+    destination: https://aws.amazon.com
+  - alias: docss
+    destination: https://docs.google.com/spreadsheets/u/0/
+  - alias: figma
+    destination: https://www.figma.com
+  - alias: maps
+    destination: https://maps.google.com
+  - alias: yc
+    destination: https://www.ycombinator.com
+  - alias: yt
+    destination: https://www.youtube.com
+  - alias: az
+    destination: https://azure.microsoft.com
+  - alias: drive
+    destination: https://drive.google.com
+  - alias: ex
+    destination: https://excalidraw.com
+  - alias: gcp
+    destination: https://cloud.google.com
+  - alias: hn
+    destination: https://news.ycombinator.com
+  - alias: jay
+    destination: https://jayovalle.com
+  - alias: mdn
+    destination: https://developer.mozilla.org
+  - alias: netlify
+    destination: https://www.netlify.com
+  - alias: cal
+    destination: https://calendar.google.com
+  - alias: caniuse
+    destination: https://caniuse.com
+  - alias: cf
+    destination: https://dash.cloudflare.com
+  - alias: gl
+    destination: https://gitlab.com
+  - alias: go
+    destination: https://pkg.go.dev
+  - alias: imdb
+    destination: https://www.imdb.com
+  - alias: ph
+    destination: https://www.producthunt.com
+  - alias: so
+    destination: https://stackoverflow.com
+  - alias: devdocs
+    destination: https://devdocs.io
+  - alias: docker
+    destination: https://hub.docker.com
+  - alias: goodreads
+    destination: https://www.goodreads.com
+  - alias: perplexity
+    destination: https://www.perplexity.ai
+  - alias: spotify
+    destination: https://open.spotify.com
+  - alias: gh
+    destination: https://github.com
+  - alias: github
+    destination: https://github.com
+  - alias: li
+    destination: https://www.linkedin.com
+  - alias: pypi
+    destination: https://pypi.org
+  - alias: r
+    destination: https://www.reddit.com
+  - alias: speed
+    destination: https://www.speedtest.net
+  - alias: status
+    destination: https://downdetector.com
+  - alias: twitch
+    destination: https://www.twitch.tv
+  - alias: vercel
+    destination: https://www.vercel.com
+  - alias: chatgpt
+    destination: https://chatgpt.com
+  - alias: docs
+    destination: https://docs.google.com/document/u/0/
+  - alias: gemini
+    destination: https://gemini.google.com
+  - alias: jpmc
+    destination: https://jpmorganchase.com
+  - alias: r/{rest...}
+    destination: https://www.reddit.com/r/{rest...}
+  - alias: g/{name}
+    destination: https://github.com/jovalle/{name}
+  - alias: gh/{owner}
+    destination: https://github.com/{owner}
+  - alias: gh/{owner}/{name}
+    destination: https://github.com/{owner}/{name}
+  - alias: gs/{query}
+    destination: https://github.com/search?q={query}
+  - alias: gl/{owner}
+    destination: https://gitlab.com/{owner}
+  - alias: so/{query}
+    destination: https://stackoverflow.com/search?q={query}
+  - alias: wiki/{topic}
+    destination: https://en.wikipedia.org/w/index.php?title=Special:Search&fulltext=1&search={topic}
+  - alias: w/{topic}
+    destination: https://en.wikipedia.org/w/index.php?title=Special:Search&fulltext=1&search={topic}
+  - alias: yt/{query}
+    destination: https://www.youtube.com/results?search_query={query}
+  - alias: ddg/{query}
+    destination: https://duckduckgo.com/?q={query}
+  - alias: gg/{query}
+    destination: https://www.google.com/search?q={query}
+  - alias: maps/{query}
+    destination: https://www.google.com/maps/search/{query}
+  - alias: imdb/{query}
+    destination: https://www.imdb.com/find?q={query}
+  - alias: npm/{name}
+    destination: https://www.npmjs.com/package/{name}
+  - alias: pypi/{name}
+    destination: https://pypi.org/project/{name}
+  - alias: crates/{name}
+    destination: https://crates.io/crates/{name}
+  - alias: gopkg/{name}
+    destination: https://pkg.go.dev/{name}
+  - alias: mdn/{query}
+    destination: https://developer.mozilla.org/en-US/search?q={query}
+  - alias: caniuse/{query}
+    destination: https://caniuse.com/?search={query}
+  - alias: u/{user}
+    destination: https://www.reddit.com/user/{user}
+  - alias: rs/{query}
+    destination: https://www.reddit.com/search/?q={query}
+  - alias: t/{user}
+    destination: https://x.com/{user}
+  - alias: "{query}"
+    destination: https://{query}.techn.is
+    enabled: true
+  - alias: "kube/{query}"
+    destination: https://kubesearch.dev/#{query}
+  - alias: "k8s/{query}"
+    destination: https://kubernetes.io/search/?q={query}
+  - alias: myorders
+    destination: https://www.amazon.com/gp/css/order-history
+  - alias: myreturns
+    destination: https://www.amazon.com/your-returns
+  - alias: mydeliveries
+    destination: https://www.amazon.com/your-orders/orders?orderFilter=open

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Technis</title>
+  <desc id="description">Technis logo mark</desc>
+  <defs>
+    <linearGradient id="technis-gradient" x1="34" y1="103" x2="480" y2="395" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06a8ee"/>
+      <stop offset="1" stop-color="#10d2d0"/>
+    </linearGradient>
+    <mask id="technis-cutouts">
+      <rect width="512" height="512" fill="#000"/>
+      <rect x="34" y="103" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="188" y="103" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="342" y="103" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="188" y="257" width="138" height="138" rx="5" fill="#fff"/>
+      <rect x="60" y="129" width="86" height="86" fill="#000"/>
+      <rect x="214" y="129" width="86" height="86" fill="#000"/>
+      <rect x="368" y="129" width="86" height="86" fill="#000"/>
+      <rect x="214" y="283" width="86" height="86" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" fill="url(#technis-gradient)" mask="url(#technis-cutouts)"/>
+</svg>

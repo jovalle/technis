@@ -1,0 +1,200 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kashalls/kromgo/main/config.schema.json
+metrics:
+  # Badge metrics (referenced by README)
+  - name: node_uptime
+    query: round(min((time() - node_boot_time_seconds)) / 86400, 0.1)
+    suffix: " days"
+    colors:
+      - { color: "red", min: 0, max: 0.5 }
+      - { color: "orange", min: 0.6, max: 6 }
+      - { color: "green", min: 7, max: 9999 }
+
+  - name: node_cpu_usage
+    query: round(avg(1 - avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: node_memory_usage
+    query: round(avg(((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes)) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  # Consolidated metrics across all nodes
+  - name: docker_containers_running
+    query: count(container_last_seen{name!=""})
+    suffix: " containers"
+    colors:
+      - { color: "red", min: 0, max: 0 }
+      - { color: "orange", min: 1, max: 9 }
+      - { color: "green", min: 10, max: 9999 }
+
+  - name: cluster_cpu_usage
+    query: round(avg(1 - avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: cluster_memory_usage
+    query: round(avg(((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes)) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: cluster_disk_usage
+    query: round(avg((1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}))) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: cluster_load_1m
+    query: round(avg(node_load1), 0.01)
+    suffix: ""
+    colors:
+      - { color: "green", min: 0, max: 0.7 }
+      - { color: "orange", min: 0.71, max: 1.0 }
+      - { color: "red", min: 1.01, max: 9999 }
+
+  - name: cluster_temperature
+    query: round(avg(node_hwmon_temp_celsius), 0.1)
+    suffix: "°C"
+    colors:
+      - { color: "blue", min: 0, max: 30 }
+      - { color: "green", min: 31, max: 50 }
+      - { color: "orange", min: 51, max: 70 }
+      - { color: "red", min: 71, max: 9999 }
+
+  - name: cluster_min_uptime
+    query: round(min((time() - node_boot_time_seconds)) / 86400, 0.1)
+    suffix: " days"
+    colors:
+      - { color: "red", min: 0, max: 0.5 }
+      - { color: "orange", min: 0.6, max: 6 }
+      - { color: "green", min: 7, max: 9999 }
+
+  # Individual node metrics
+  - name: nexus_containers_running
+    query: count(container_last_seen{instance="nexus",name!=""})
+    suffix: " containers"
+    colors:
+      - { color: "red", min: 0, max: 0 }
+      - { color: "orange", min: 1, max: 4 }
+      - { color: "green", min: 5, max: 9999 }
+
+  - name: nexus_cpu_usage
+    query: round((1 - (avg(irate(node_cpu_seconds_total{instance="nexus",mode="idle"}[5m])))) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: nexus_disk_usage
+    query: round((1 - (node_filesystem_avail_bytes{instance="nexus",mountpoint="/"} / node_filesystem_size_bytes{instance="nexus",mountpoint="/"})) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: nexus_load_1m
+    query: round(node_load1{instance="nexus"}, 0.01)
+    suffix: ""
+    colors:
+      - { color: "green", min: 0, max: 0.7 }
+      - { color: "orange", min: 0.71, max: 1.0 }
+      - { color: "red", min: 1.01, max: 9999 }
+
+  - name: nexus_memory_usage
+    query: round(((node_memory_MemTotal_bytes{instance="nexus"} - node_memory_MemAvailable_bytes{instance="nexus"}) / node_memory_MemTotal_bytes{instance="nexus"}) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: nexus_temperature
+    query: round(avg(node_hwmon_temp_celsius{instance="nexus"}), 0.1)
+    suffix: "°C"
+    colors:
+      - { color: "blue", min: 0, max: 30 }
+      - { color: "green", min: 31, max: 50 }
+      - { color: "orange", min: 51, max: 70 }
+      - { color: "red", min: 71, max: 9999 }
+
+  - name: nexus_uptime
+    query: round((time() - node_boot_time_seconds{instance="nexus"}) / 86400, 0.1)
+    suffix: " days"
+    colors:
+      - { color: "red", min: 0, max: 0.5 }
+      - { color: "orange", min: 0.6, max: 6 }
+      - { color: "green", min: 7, max: 9999 }
+
+  - name: mothership_containers_running
+    query: count(container_last_seen{instance="mothership",name!=""})
+    suffix: " containers"
+    colors:
+      - { color: "red", min: 0, max: 0 }
+      - { color: "orange", min: 1, max: 4 }
+      - { color: "green", min: 5, max: 9999 }
+
+  - name: mothership_cpu_usage
+    query: round((1 - (avg(irate(node_cpu_seconds_total{instance="mothership",mode="idle"}[5m])))) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: mothership_disk_usage
+    query: round((1 - (node_filesystem_avail_bytes{instance="mothership",mountpoint="/"} / node_filesystem_size_bytes{instance="mothership",mountpoint="/"})) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: mothership_load_1m
+    query: round(node_load1{instance="mothership"}, 0.01)
+    suffix: ""
+    colors:
+      - { color: "green", min: 0, max: 0.7 }
+      - { color: "orange", min: 0.71, max: 1.0 }
+      - { color: "red", min: 1.01, max: 9999 }
+
+  - name: mothership_memory_usage
+    query: round(((node_memory_MemTotal_bytes{instance="mothership"} - node_memory_MemAvailable_bytes{instance="mothership"}) / node_memory_MemTotal_bytes{instance="mothership"}) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: "green", min: 0, max: 35 }
+      - { color: "orange", min: 36, max: 75 }
+      - { color: "red", min: 76, max: 9999 }
+
+  - name: mothership_temperature
+    query: round(avg(node_hwmon_temp_celsius{instance="mothership"}), 0.1)
+    suffix: "°C"
+    colors:
+      - { color: "blue", min: 0, max: 30 }
+      - { color: "green", min: 31, max: 50 }
+      - { color: "orange", min: 51, max: 70 }
+      - { color: "red", min: 71, max: 9999 }
+
+  - name: mothership_uptime
+    query: round((time() - node_boot_time_seconds{instance="mothership"}) / 86400, 0.1)
+    suffix: " days"
+    colors:
+      - { color: "red", min: 0, max: 0.5 }
+      - { color: "orange", min: 0.6, max: 6 }
+      - { color: "green", min: 7, max: 9999 }

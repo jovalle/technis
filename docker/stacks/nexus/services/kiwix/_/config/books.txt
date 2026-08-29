@@ -1,0 +1,63 @@
+# Kiwix books served by archive.techn.is, one stable catalog name per line.
+# Names resolve to https://lb.download.kiwix.org/zim/<name>.zim.meta4 and are
+# the authoritative desired state: removing a line retires the book and frees
+# its release files on the next updater pass.
+#
+# Prefer the `maxi` flavor where it exists. Order matters when disk is tight:
+# earlier entries claim space first.
+
+# Core encyclopedia
+wikipedia_es_all_maxi
+wikipedia_en_all_maxi
+
+# Practical reference and preparedness
+zimgit-post-disaster_en
+zimgit-food-preparation_en
+zimgit-medicine_en
+zimgit-water_en
+zimgit-knots_en
+www.ready.gov_en
+www.ready.gov_es
+ifixit_en_all
+ifixit_es_all
+wikipedia_en_medicine_maxi
+wikipedia_es_medicine_maxi
+wikem_en_all_maxi
+medlineplus.gov_es_all
+wikivoyage_en_all_maxi
+wikivoyage_es_all_maxi
+openstreetmap-wiki_en_all_maxi
+energypedia_en_all_maxi
+appropedia_en_all_maxi
+archlinux_en_all_maxi
+gentoo_en_all_maxi
+alpinelinux_en_all_maxi
+phet_mul_all
+based.cooking_en_all
+
+# Sibling wikis
+wikisource_en_all_maxi
+wikisource_es_all_maxi
+wiktionary_en_all_nopic
+wiktionary_es_all
+wikibooks_en_all_maxi
+wikibooks_es_all_maxi
+wikiversity_en_all_maxi
+wikiquote_en_all_maxi
+wikiquote_es_all_maxi
+wikipedia_en-simple_all_maxi
+
+# Stack Exchange
+electronics.stackexchange.com_en_all
+superuser.com_en_all
+askubuntu.com_en_all
+diy.stackexchange.com_en_all
+serverfault.com_en_all
+unix.stackexchange.com_en_all
+gardening.stackexchange.com_en_all
+bicycles.stackexchange.com_en_all
+security.stackexchange.com_en_all
+mechanics.stackexchange.com_en_all
+raspberrypi.stackexchange.com_en_all
+cooking.stackexchange.com_en_all
+outdoors.stackexchange.com_en_all

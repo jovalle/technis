@@ -1,0 +1,117 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "new-york",
+      "properties": {
+        "city": "New York",
+        "server": "us-nyc-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.006, 40.7128]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "toronto",
+      "properties": {
+        "city": "Toronto",
+        "server": "ca-tor-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.3832, 43.6532]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "san-francisco",
+      "properties": {
+        "city": "San Francisco",
+        "server": "speedtest.fremont.linode.com",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.4194, 37.7749]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "london",
+      "properties": {
+        "city": "London",
+        "server": "uk-lon-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.1276, 51.5072]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "amsterdam",
+      "properties": {
+        "city": "Amsterdam",
+        "server": "nl-ams-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [4.9041, 52.3676]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "frankfurt",
+      "properties": {
+        "city": "Frankfurt",
+        "server": "de-fra-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [8.6821, 50.1109]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "singapore",
+      "properties": {
+        "city": "Singapore",
+        "server": "sg-sin-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [103.8198, 1.3521]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "bangalore",
+      "properties": {
+        "city": "Bangalore",
+        "server": "in-blr-as14061.anchors.atlas.ripe.net",
+        "marker-color": "#6b7280",
+        "marker-size": 5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.5946, 12.9716]
+      }
+    }
+  ]
+}
