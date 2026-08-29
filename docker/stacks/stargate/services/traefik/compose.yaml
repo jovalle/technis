@@ -1,0 +1,79 @@
+services:
+  traefik:
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.storage=/etc/letsencrypt/acme.json
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.asDefault=true
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.asDefault=true
+      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+      - --entrypoints.websecure.http.tls=true
+      - --log.level=INFO
+      - --ping=true
+      - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker=true
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN=${TRAEFIK_CLOUDFLARE_DNS_API_TOKEN:?TRAEFIK_CLOUDFLARE_DNS_API_TOKEN is required}
+      - CLOUDFLARE_EMAIL=${TRAEFIK_CLOUDFLARE_EMAIL:?TRAEFIK_CLOUDFLARE_EMAIL is required}
+      - TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL=${TRAEFIK_ACME_EMAIL:?TRAEFIK_ACME_EMAIL is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - traefik
+        - healthcheck
+        - --ping
+      timeout: 10s
+    labels:
+      - traefik.enable=true
+      - "traefik.http.middlewares.technis-series-shortcut.redirectregex.permanent=false"
+      - 'traefik.http.middlewares.technis-series-shortcut.redirectregex.regex=^https://techn\.is/series/?'
+      - "traefik.http.middlewares.technis-series-shortcut.redirectregex.replacement=https://sonarr.techn.is/"
+      - "traefik.http.middlewares.technis-watchtower-shortcut.redirectregex.permanent=false"
+      - 'traefik.http.middlewares.technis-watchtower-shortcut.redirectregex.regex=^https://techn\.is/watchtower/?'
+      - "traefik.http.middlewares.technis-watchtower-shortcut.redirectregex.replacement=https://watchtower.techn.is/"
+      - "traefik.http.routers.technis-series-shortcut.entrypoints=websecure"
+      - "traefik.http.routers.technis-series-shortcut.middlewares=technis-series-shortcut"
+      - "traefik.http.routers.technis-series-shortcut.rule=Host(`techn.is`) && (Path(`/series`) || Path(`/series/`))"
+      - "traefik.http.routers.technis-series-shortcut.service=noop@internal"
+      - "traefik.http.routers.technis-series-shortcut.tls=true"
+      - "traefik.http.routers.technis-series-shortcut.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.technis-watchtower-shortcut.entrypoints=websecure"
+      - "traefik.http.routers.technis-watchtower-shortcut.middlewares=technis-watchtower-shortcut"
+      - "traefik.http.routers.technis-watchtower-shortcut.rule=Host(`techn.is`) && (Path(`/watchtower`) || Path(`/watchtower/`))"
+      - "traefik.http.routers.technis-watchtower-shortcut.service=noop@internal"
+      - "traefik.http.routers.technis-watchtower-shortcut.tls=true"
+      - "traefik.http.routers.technis-watchtower-shortcut.tls.certresolver=letsencrypt"
+    networks:
+      - default
+    ports:
+      - 80:80
+      - 443:443
+      - 100.100.1.2:8080:8080
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/letsencrypt:/etc/letsencrypt

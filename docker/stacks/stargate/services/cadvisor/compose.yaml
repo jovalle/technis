@@ -1,0 +1,4 @@
+services:
+  cadvisor:
+    ports:
+      - 100.100.1.2:8180:8080
