@@ -1,0 +1,46 @@
+---
+metrics: false
+storage:
+  path: /data/data.db
+  type: sqlite
+ui:
+  default-sort-by: group
+  description: Backend service availability
+  header: Service Status
+  title: Service Status
+web:
+  port: 8080
+
+endpoints:
+  - &backend
+    client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+    group: Backend Services
+    headers: &access
+      CF-Access-Client-Id: "${SECONDARY_GATUS_CF_ACCESS_CLIENT_ID}"
+      CF-Access-Client-Secret: "${SECONDARY_GATUS_CF_ACCESS_CLIENT_SECRET}"
+    interval: 1m
+    name: Series
+    ui:
+      hide-hostname: true
+      hide-url: true
+    url: "https://${SECONDARY_DOMAIN}/series/ping"
+
+  - <<: *backend
+    headers: *access
+    name: Movies
+    url: "https://${SECONDARY_DOMAIN}/movies/ping"
+
+  - <<: *backend
+    headers: *access
+    name: Music
+    url: "https://${SECONDARY_DOMAIN}/songs/ping"
+
+  - <<: *backend
+    headers: *access
+    name: Indexers
+    url: "https://${SECONDARY_DOMAIN}/indexers/ping"

@@ -1,0 +1,28 @@
+services:
+  technitium:
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    environment:
+      - DNS_SERVER_DOMAIN=ms.dns.techn.is
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.technitium.middlewares=internal@file
+      - traefik.http.routers.technitium.rule=Host(`ns3.techn.is`)
+      - traefik.http.services.technitium.loadbalancer.server.port=5380
+    networks:
+      - external
+      - internal
+    ports:
+      - published: "53"
+        target: 53
+      - protocol: udp
+        published: "53"
+        target: 53
+      - host_ip: 100.100.1.1
+        published: "5380"
+        target: 5380
+      - host_ip: 100.100.1.1
+        published: "53443"
+        target: 53443

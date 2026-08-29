@@ -1,0 +1,26 @@
+---
+connectivity:
+  checker:
+    interval: 30s
+    target: 1.1.1.1:53
+metrics: true
+storage:
+  path: /data/data.db
+  type: sqlite
+ui:
+  custom-css: |
+    .endpoint-header span[title*="·"],
+    .endpoint-header span[title*="·"] + span {
+      display: none;
+    }
+  default-sort-by: group
+  favicon:
+    default: https://ik.imagekit.io/technis/tr:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+    size16x16: https://ik.imagekit.io/technis/tr:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+    size32x32: https://ik.imagekit.io/technis/tr:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+  header: Technis
+  link: "https://${DOMAIN}"
+  logo: https://ik.imagekit.io/technis/tr:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+  title: Status | Technis
+web:
+  port: 8080

@@ -1,0 +1,14 @@
+services:
+  promtail:
+    command:
+      - -config.file=/etc/promtail/promtail-config.yaml
+      - -server.http-listen-address=${INTERNAL_IP}
+    depends_on:
+      loki:
+        condition: service_healthy
+        required: true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'echo > /dev/tcp/${INTERNAL_IP}/9080' || exit 1
+    network_mode: host

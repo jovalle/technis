@@ -1,0 +1,26 @@
+services:
+  gatus-ms:
+    extends:
+      file: ../../../../services/gatus/compose.yaml
+      service: gatus
+    container_name: gatus-ms
+    labels:
+      - traefik.docker.network=external
+      - traefik.enable=true
+      - traefik.http.routers.gatus-ms.middlewares=gatus-private@file
+      - traefik.http.routers.gatus-ms.rule=Host(`ms.status.${DOMAIN:?DOMAIN is required}`)
+      - traefik.http.routers.gatus-ms.service=gatus-ms
+      - traefik.http.routers.gatus-ms.tls.certresolver=letsencrypt
+      - traefik.http.routers.gatus-ms.tls.domains[0].main=ms.status.${DOMAIN:?DOMAIN is required}
+      - traefik.http.routers.gatus-ms.tls=true
+      - traefik.http.services.gatus-ms.loadbalancer.server.port=8080
+    networks:
+      - default
+      - external
+      - internal
+    ports:
+      - 100.100.1.1:8182:8080
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-ms/data:/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-ms/config/base.yaml:/config/managed/base.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-ms/config/checks.yaml:/config/managed/checks.yaml:ro

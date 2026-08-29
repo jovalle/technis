@@ -1,0 +1,51 @@
+services:
+  gatus-s:
+    build:
+      dockerfile_inline: |
+        FROM busybox:1.37.0-uclibc AS busybox
+        FROM twinproduction/gatus:v5.36.0
+        COPY --from=busybox /bin/busybox /bin/busybox
+    cap_drop:
+      - ALL
+    container_name: gatus-s
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    environment:
+      - GATUS_CONFIG_PATH=/config/managed
+      - SECONDARY_DOMAIN=${SECONDARY_DOMAIN:?SECONDARY_DOMAIN is required}
+      - SECONDARY_GATUS_CF_ACCESS_CLIENT_ID=${SECONDARY_GATUS_CF_ACCESS_CLIENT_ID:?SECONDARY_GATUS_CF_ACCESS_CLIENT_ID is required}
+      - SECONDARY_GATUS_CF_ACCESS_CLIENT_SECRET=${SECONDARY_GATUS_CF_ACCESS_CLIENT_SECRET:?SECONDARY_GATUS_CF_ACCESS_CLIENT_SECRET is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD
+        - /bin/busybox
+        - wget
+        - -q
+        - --spider
+        - http://127.0.0.1:8080/
+      timeout: 5s
+    labels:
+      - dockhand.update=false
+      - gatus.enable=false
+      - traefik.enable=false
+    networks:
+      secondary-status:
+        aliases:
+          - ${SECONDARY_GATUS_TUNNEL_ORIGIN:?SECONDARY_GATUS_TUNNEL_ORIGIN is required}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-s/data:/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus-s/config/service.yaml:/config/managed/service.yaml:ro

@@ -1,0 +1,19 @@
+use_default_settings: true
+
+general:
+  instance_name: "${SEARXNG_INSTANCE_NAME}"
+
+server:
+  base_url: "${SEARXNG_BASE_URL}"
+  image_proxy: true
+  limiter: true
+  public_instance: true
+  secret_key: "${SEARXNG_SECRET}"
+
+valkey:
+  url: valkey://valkey:6379/0
+
+outgoing:
+  enable_http2: false
+  max_request_timeout: 15.0
+  request_timeout: 10.0
