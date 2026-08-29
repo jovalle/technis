@@ -1,0 +1,30 @@
+# Syncthing ignore patterns
+# https://docs.syncthing.net/users/ignoring.html
+
+# Git
+.git
+
+# Node
+**/node_modules
+**/.npm
+.eslintcache
+
+# Build artifacts
+**/dist
+**/build
+**/*.tsbuildinfo
+
+# Logs
+**/*.log
+
+# Temporary files
+**/*.tmp
+**/*.retry
+**/.DS_Store
+
+# Archive
+archive
+
+# Submodules (managed separately)
+docs
+web

@@ -1,0 +1,7 @@
+[tools]
+# Active toolchain: Docker Compose and web subprojects.
+python = "3.14.3"
+"aqua:casey/just" = "1.40.0"
+"aqua:1Password/op" = "2.39.0"
+"aqua:google/yamlfmt" = "0.16.0"
+"aqua:mikefarah/yq" = "4.45.1"

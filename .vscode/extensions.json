@@ -1,0 +1,19 @@
+{
+  "recommendations": [
+    "bradymholt.vscode-jinja",
+    "golang.go",
+    "hashicorp.terraform",
+    "ms-azuretools.vscode-docker",
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "ms-python.python",
+    "ms-vscode.make",
+    "ms-vscode.powershell",
+    "ms-vscode.shellcheck",
+    "ms-vscode.vscode-json",
+    "ms-vscode.vscode-json",
+    "ms-vscode.vscode-terraform",
+    "redhat.ansible",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml"
+  ]
+}
