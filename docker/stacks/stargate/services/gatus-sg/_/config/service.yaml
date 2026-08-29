@@ -1,0 +1,124 @@
+---
+alerting:
+  ntfy:
+    click: "https://status.${DOMAIN}"
+    default-alert:
+      enabled: true
+      failure-threshold: 3
+      send-on-resolved: true
+      success-threshold: 2
+    priority: 5
+    token: "${NTFY_GATUS_TOKEN}"
+    topic: alerts
+    url: http://ntfy:8080
+connectivity:
+  checker:
+    interval: 30s
+    target: 1.1.1.1:53
+metrics: true
+storage:
+  path: /data/data.db
+  type: sqlite
+ui:
+  default-sort-by: group
+  favicon:
+    default: https://ik.imagekit.io/technis/tr:e-colorize-co-FF9800:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+    size16x16: https://ik.imagekit.io/technis/tr:e-colorize-co-FF9800:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+    size32x32: https://ik.imagekit.io/technis/tr:e-colorize-co-FF9800:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+  header: Stargate
+  link: "https://sg.status.${DOMAIN}"
+  logo: https://ik.imagekit.io/technis/tr:e-colorize-co-FF9800:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+  title: Status | Stargate
+web:
+  port: 8080
+
+endpoints:
+  - alerts:
+      - type: ntfy
+    client:
+      dns-resolver: tcp://1.1.1.1:53
+      timeout: 10s
+    conditions:
+      - "[STATUS] == any(200, 403)"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+    group: 00 · External Deadman
+    interval: 1m
+    name: Mothership Public Status
+    url: "https://status.${DOMAIN}"
+
+  - &tcp
+    conditions:
+      - "[CONNECTED] == true"
+    group: 01 · Authoritative DNS
+    interval: 30s
+    name: Primary DNS
+    url: tcp://100.100.1.2:53
+
+  - <<: *tcp
+    name: Nexus Secondary
+    url: tcp://100.100.1.3:53
+
+  - <<: *tcp
+    name: Mothership Secondary
+    url: tcp://100.100.1.1:53
+
+  - <<: *tcp
+    conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 1000"
+    group: 02 · Site Connectivity
+    name: Gateway
+    url: icmp://192.168.1.1
+
+  - <<: *tcp
+    conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 1000"
+    group: 02 · Site Connectivity
+    name: Mothership
+    url: icmp://100.100.1.1
+
+  - <<: *tcp
+    conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 1000"
+    group: 02 · Site Connectivity
+    name: Nexus
+    url: icmp://100.100.1.3
+
+  - <<: *tcp
+    conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 1000"
+    group: 02 · Site Connectivity
+    name: Cloudflare
+    url: icmp://1.1.1.1
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 03 · Edge Services
+    interval: 30s
+    name: Cloudflare Tunnel
+    url: http://cloudflared:60123/ready
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 03 · Edge Services
+    interval: 30s
+    name: Traefik
+    url: http://traefik:8080/ping
+
+  - conditions:
+      - "[STATUS] == 200"
+    group: 03 · Edge Services
+    interval: 30s
+    name: Authelia
+    url: http://authelia:9091/api/health
+
+  - conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == OK"
+    group: 03 · Edge Services
+    interval: 30s
+    name: Docker API
+    url: http://docker-socket-proxy:2375/_ping

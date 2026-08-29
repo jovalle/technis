@@ -1,0 +1,6 @@
+configuration.yml
+db.sqlite3
+oidc_config_snippet.yaml
+oidc_private_key.pem
+notification.txt
+users_database.yaml

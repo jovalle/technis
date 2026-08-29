@@ -1,0 +1,4 @@
+services:
+  docker-socket-proxy:
+    ports:
+      - 127.0.0.1:2375:2375

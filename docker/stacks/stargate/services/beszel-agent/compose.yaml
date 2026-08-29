@@ -1,0 +1,6 @@
+services:
+  beszel-agent:
+    environment: !override
+      - DOCKER_HOST=tcp://127.0.0.1:2375
+      - KEY=${BESZEL_AGENT_KEY:?BESZEL_AGENT_KEY is required}
+      - LISTEN=${BESZEL_AGENT_LISTEN:?BESZEL_AGENT_LISTEN is required}
