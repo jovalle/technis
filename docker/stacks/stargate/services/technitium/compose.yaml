@@ -1,0 +1,9 @@
+services:
+  technitium:
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    environment:
+      - DNS_SERVER_DOMAIN=sg.dns.techn.is
+    network_mode: host

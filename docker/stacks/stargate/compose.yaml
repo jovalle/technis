@@ -1,0 +1,47 @@
+include:
+  - path:
+      - ../../services/authelia/compose.yaml
+      - services/authelia/compose.yaml
+    env_file: &env
+      - ../../.env
+      - .env
+  - path:
+      - ../../services/beszel-agent/compose.yaml
+      - services/beszel-agent/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/cadvisor/compose.yaml
+      - services/cadvisor/compose.yaml
+    env_file: *env
+  - path: ../../services/cloudflared/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/docker-socket-proxy/compose.yaml
+      - services/docker-socket-proxy/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/docker-socket-proxy-api/compose.yaml
+      - services/docker-socket-proxy-api/compose.yaml
+    env_file: *env
+  - path: ../../services/external-dns/compose.yaml
+    env_file: *env
+  - path: ../../services/newt/compose.yaml
+    env_file: *env
+  - path: ../../services/ntfy/compose.yaml
+    env_file: *env
+  - path: ../../services/patchmon/compose.yaml
+    env_file: *env
+  - path: services/gatus-sg/compose.yaml
+    env_file: *env
+  - path: ../../services/tailscale/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/technitium/compose.yaml
+      - services/technitium/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/traefik/compose.yaml
+      - services/traefik/compose.yaml
+    env_file: *env
+
+name: stargate

@@ -1,0 +1,10 @@
+services:
+  docker-socket-proxy-api:
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    ports:
+      - host_ip: 100.100.1.2
+        published: "2375"
+        target: 2375
