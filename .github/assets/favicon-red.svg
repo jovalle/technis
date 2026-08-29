@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 25 600 600">
+  <title>Technis</title>
+  <path
+    fill="#FF3B30"
+    stroke="#FF3B30"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="1"
+    transform="scale(9.375)"
+    d="m18.84364,18.17974v11.87h-11.87v-11.87h11.87m2.1-2.1h-16.07v16.06h16.07v-16.06zm17.11,2.1v11.87h-11.86v-11.87h11.86m2.1-2.1h-16.03v16.06h16v-16.06h.03zm17.12,2.1v11.87h-11.87v-11.87h11.87m2.1-2.1h-16.07v16.06h16.07v-16.06zm-21.32,21.31v11.87h-11.86v-11.87h11.86m2.1-2.1h-16.03v16.07h16v-16.06l.03-.01z"
+  />
+</svg>

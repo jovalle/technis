@@ -1,42 +1,11 @@
+<div align="center">
+
+<img src=".github/assets/logo.svg" alt="Technis Logo" width="400" height="400" style="margin-bottom: -100px;">
+
 # Technis
 
-![Technis](docs/src/assets/technis.webp)
+[![Home Internet](https://img.shields.io/endpoint?url=https://status.techn.is/api/v1/endpoints/egress_cloudflare/health/badge.shields&style=for-the-badge&logo=ubiquiti&logoColor=white&label=Home%20Internet)](http://status.techn.is/endpoints/egress_cloudflare) [![Status Page](https://img.shields.io/endpoint?url=https://status.techn.is/api/v1/endpoints/external_status/health/badge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.techn.is)
 
-## 🌅 Overview
+![Availability](https://status.techn.is/api/v1/endpoints/external_status/uptimes/24h/badge.svg) ![Node Uptime](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=cluster_min_uptime&style=flat&label=uptime) ![CPU Usage](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=cluster_cpu_usage&style=flat&label=cpu) ![Memory Usage](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=cluster_memory_usage&style=flat&label=memory) ![Docker Containers](https://img.shields.io/endpoint?url=https://stat.techn.is/query?metric=docker_containers_running&style=flat&label=containers)
 
-Test bed for all things virtualization, automation, and Kubernetes.
-
-## 💿 Virtualization
-
-### [ESXi/vSphere](docs/src/assets/friendship.png)
-
-### Current Environments
-
-| Cluster        | Technologies                    | Description                                                                        |
-| -------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
-| Atlantis       | Terraform + libvirt + KVM       | Lab environment on Linux desktop                                                   |
-| Gotham/Krypton | Vagrant + Virtualbox            | Lab environment on Linux/macOS laptops                                             |
-| Hades          | Multi-arch baremetal            | Physical lab environment comprising of Intel/AMD mini PCs and Raspberry Pi devices |
-| Technis        | Terraform + Proxmox + baremetal | Main cluster and "production" environment                                          |
-
-## 🤖 Automation
-
-Taskfiles will call all required, and differing, tooling (e.g. `terraform`, `ansible-playbook`, `taloctl` and `helm`) to provision and configure targets.
-
-## ☸️ Kubernetes
-
-### Distros
-
-- [k3s](https://k3s.io)
-- [Talos Linux](https://www.talos.dev/)
-
-## 🤝 Kudos
-
-- [awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted)
-- [bjw-s/helm-charts](https://github.com/bjw-s/helm-charts)
-- [dmacvicar/terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
-- [gandazgul/k8s-infrastructure](https://github.com/gandazgul/k8s-infrastructure)
-- [kelseyhightower/kubernetes-the-hard-way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
-- [kinvolk-archives/kubernetes-the-hard-way-vagrant](https://github.com/kinvolk-archives/kubernetes-the-hard-way-vagrant)
-- [onedr0p/home-ops](https://github.com/onedr0p/home-ops)
-- [techno-tim/launchpad](https://github.com/techno-tim/launchpad)
+</div>
