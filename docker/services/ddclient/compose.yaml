@@ -1,0 +1,43 @@
+services:
+  ddclient:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: ddclient
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.02
+          memory: 16M
+    environment:
+      - DDCLIENT_CLOUDFLARE_API_TOKEN=${TRAEFIK_CLOUDFLARE_DNS_API_TOKEN:?TRAEFIK_CLOUDFLARE_DNS_API_TOKEN is required}
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - s6-svstat -u /run/service/svc-ddclient | grep -qx true || exit 1
+      timeout: 5s
+    hostname: ddclient
+    image: lscr.io/linuxserver/ddclient:latest
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/ddclient/config:/config

@@ -1,0 +1,149 @@
+services:
+  nextcloud:
+    container_name: nextcloud
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+      redis:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - APACHE_DISABLE_REWRITE_IP=1
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD:?NEXTCLOUD_ADMIN_PASSWORD is required}
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:?NEXTCLOUD_ADMIN_USER is required}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAINS:?NEXTCLOUD_TRUSTED_DOMAINS is required}
+      - OVERWRITECLIURL=https://${NEXTCLOUD_ROOT_DOMAIN:?NEXTCLOUD_ROOT_DOMAIN is required}
+      - OVERWRITEHOST=${NEXTCLOUD_ROOT_DOMAIN:?NEXTCLOUD_ROOT_DOMAIN is required}
+      - OVERWRITEPROTOCOL=https
+      - POSTGRES_DB=${NEXTCLOUD_POSTGRES_DB:?NEXTCLOUD_POSTGRES_DB is required}
+      - POSTGRES_HOST=${NEXTCLOUD_POSTGRES_HOST:?NEXTCLOUD_POSTGRES_HOST is required}
+      - POSTGRES_PASSWORD=${NEXTCLOUD_POSTGRES_PASSWORD:?NEXTCLOUD_POSTGRES_PASSWORD is required}
+      - POSTGRES_USER=${NEXTCLOUD_POSTGRES_USER:?NEXTCLOUD_POSTGRES_USER is required}
+      - REDIS_HOST=redis
+      - TRUSTED_PROXIES=172.16.0.0/12
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 2m0s
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1/status.php || exit 1
+      timeout: 10s
+    hostname: nextcloud
+    image: nextcloud:34-apache
+    labels:
+      - gatus.group=cloud
+      - gatus.priority=P2
+      - traefik.http.routers.nextcloud.rule=Host(`nextcloud.techn.is`) || Host(`${NEXTCLOUD_ROOT_DOMAIN:?NEXTCLOUD_ROOT_DOMAIN is required}`)
+      - traefik.http.services.nextcloud.loadbalancer.server.port=80
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/nextcloud:/var/www/html
+
+  nextcloud-oidc-init:
+    command:
+      - |
+        php occ app:enable user_oidc || php occ app:install user_oidc
+        php occ config:system:set trusted_domains 3 --type=string --value='cloud.ovall.es'
+        php occ config:system:set user_oidc send_userinfo_claims --type=boolean --value=false
+        php occ config:system:set user_oidc login_label --type=string --value='Continue with Google'
+        php occ user_oidc:provider cloudflare \
+          --clientid="$${NEXTCLOUD_OIDC_CLIENT_ID}" \
+          --clientsecret-env=NEXTCLOUD_OIDC_CLIENT_SECRET \
+          --discoveryuri="$${NEXTCLOUD_OIDC_DISCOVERY_URI}" \
+          --scope='openid email profile' \
+          --mapping-uid=email \
+          --mapping-email=email \
+          --mapping-display-name=name \
+          --unique-uid=0
+    container_name: nextcloud-oidc-init
+    depends_on:
+      nextcloud:
+        condition: service_healthy
+        required: true
+    entrypoint:
+      - /bin/sh
+      - -ec
+    environment:
+      - NEXTCLOUD_OIDC_CLIENT_ID=${NEXTCLOUD_OIDC_CLIENT_ID:?NEXTCLOUD_OIDC_CLIENT_ID is required}
+      - NEXTCLOUD_OIDC_CLIENT_SECRET=${NEXTCLOUD_OIDC_CLIENT_SECRET:?NEXTCLOUD_OIDC_CLIENT_SECRET is required}
+      - NEXTCLOUD_OIDC_DISCOVERY_URI=${NEXTCLOUD_OIDC_DISCOVERY_URI:?NEXTCLOUD_OIDC_DISCOVERY_URI is required}
+    healthcheck:
+      test:
+        - NONE
+    image: nextcloud:34-apache
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    profiles:
+      - manual
+    read_only: true
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    user: 33:33
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/nextcloud:/var/www/html
+
+  nextcloud-cron:
+    container_name: nextcloud-cron
+    depends_on:
+      nextcloud:
+        condition: service_started
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+      redis:
+        condition: service_healthy
+        required: true
+        restart: true
+    entrypoint:
+      - /cron.sh
+    environment:
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAINS:?NEXTCLOUD_TRUSTED_DOMAINS is required}
+      - NEXTCLOUD_UPDATE=1
+      - OVERWRITECLIURL=https://${NEXTCLOUD_ROOT_DOMAIN:?NEXTCLOUD_ROOT_DOMAIN is required}
+      - OVERWRITEHOST=${NEXTCLOUD_ROOT_DOMAIN:?NEXTCLOUD_ROOT_DOMAIN is required}
+      - OVERWRITEPROTOCOL=https
+      - POSTGRES_DB=${NEXTCLOUD_POSTGRES_DB:?NEXTCLOUD_POSTGRES_DB is required}
+      - POSTGRES_HOST=${NEXTCLOUD_POSTGRES_HOST:?NEXTCLOUD_POSTGRES_HOST is required}
+      - POSTGRES_PASSWORD=${NEXTCLOUD_POSTGRES_PASSWORD:?NEXTCLOUD_POSTGRES_PASSWORD is required}
+      - POSTGRES_USER=${NEXTCLOUD_POSTGRES_USER:?NEXTCLOUD_POSTGRES_USER is required}
+      - REDIS_HOST=redis
+      - TRUSTED_PROXIES=172.16.0.0/12
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      test:
+        - NONE
+    hostname: nextcloud-cron
+    image: nextcloud:34-apache
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/nextcloud:/var/www/html

@@ -1,0 +1,62 @@
+services:
+  gluetun:
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_MODULE
+    cap_drop:
+      - ALL
+    container_name: gluetun
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    devices:
+      - permissions: rwm
+        source: /dev/net/tun
+        target: /dev/net/tun
+    environment:
+      - DNS_UPSTREAM_PLAIN_ADDRESSES=1.1.1.1:53,8.8.8.8:53
+      - DNS_UPSTREAM_RESOLVER_TYPE=plain
+      - FIREWALL_INPUT_PORTS=${GLUETUN_FIREWALL_INPUT_PORTS:?GLUETUN_FIREWALL_INPUT_PORTS is required}
+      - GLUETUN_API_KEY=${GLUETUN_API_KEY:?GLUETUN_API_KEY is required}
+      - HEALTH_SMALL_CHECK_TYPE=dns
+      - HTTP_CONTROL_SERVER_LOG=${GLUETUN_HTTP_CONTROL_SERVER_LOG:?GLUETUN_HTTP_CONTROL_SERVER_LOG is required}
+      - HTTPPROXY_STEALTH=${GLUETUN_HTTPPROXY_STEALTH:?GLUETUN_HTTPPROXY_STEALTH is required}
+      - PGID=${PGID:-1000}
+      - PUBLICIP_FILE=${GLUETUN_PUBLICIP_FILE:?GLUETUN_PUBLICIP_FILE is required}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+      - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER:?GLUETUN_VPN_SERVICE_PROVIDER is required}
+      - VPN_TYPE=${GLUETUN_VPN_TYPE:?GLUETUN_VPN_TYPE is required}
+      - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES:?GLUETUN_WIREGUARD_ADDRESSES is required}
+      - WIREGUARD_ENDPOINT_IP=${GLUETUN_WIREGUARD_ENDPOINT_IP:?GLUETUN_WIREGUARD_ENDPOINT_IP is required}
+      - WIREGUARD_ENDPOINT_PORT=${GLUETUN_WIREGUARD_ENDPOINT_PORT:?GLUETUN_WIREGUARD_ENDPOINT_PORT is required}
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY:?GLUETUN_WIREGUARD_PRIVATE_KEY is required}
+      - WIREGUARD_PUBLIC_KEY=${GLUETUN_WIREGUARD_PUBLIC_KEY:?GLUETUN_WIREGUARD_PUBLIC_KEY is required}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 3m0s
+      test:
+        - CMD-SHELL
+        - >-
+          wget -q -O /dev/null http://127.0.0.1:9999 &&
+          test -d /sys/class/net/tun0 &&
+          nslookup github.com 127.0.0.1 >/dev/null 2>&1
+      timeout: 10s
+    hostname: gluetun
+    image: ghcr.io/qdm12/gluetun:latest
+    labels:
+      - gatus.group=transport
+      - gatus.priority=P2
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gluetun:/gluetun

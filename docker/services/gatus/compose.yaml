@@ -1,0 +1,46 @@
+services:
+  gatus:
+    build:
+      dockerfile_inline: |
+        FROM busybox:1.37.0-uclibc AS busybox
+        FROM twinproduction/gatus:v5.36.0
+        COPY --from=busybox /bin/busybox /bin/busybox
+    cap_add:
+      - NET_RAW
+    cap_drop:
+      - ALL
+    container_name: gatus
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    environment:
+      - DOMAIN=${DOMAIN:?DOMAIN is required}
+      - GATUS_CONFIG_PATH=/config/managed
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD
+        - /bin/busybox
+        - wget
+        - -q
+        - --spider
+        - http://127.0.0.1:8080/
+      timeout: 5s
+    labels:
+      - dockhand.update=false
+      - gatus.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/data:/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/config/base.yaml:/config/managed/base.yaml:ro

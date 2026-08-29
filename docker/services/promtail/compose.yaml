@@ -1,0 +1,46 @@
+services:
+  promtail:
+    cap_add:
+      - DAC_READ_SEARCH
+    cap_drop:
+      - ALL
+    command:
+      - -config.file=/etc/promtail/promtail-config.yaml
+    container_name: promtail
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD-SHELL
+        - bash -c 'echo > /dev/tcp/127.0.0.1/9080' || exit 1
+      timeout: 10s
+    hostname: promtail
+    image: grafana/promtail:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/promtail:/etc/promtail:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/promtail/positions:/var/lib/promtail/positions
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro

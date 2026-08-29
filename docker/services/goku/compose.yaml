@@ -1,0 +1,47 @@
+services:
+  goku:
+    cap_drop:
+      - ALL
+    container_name: goku
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - GOKU_ADMIN_PASSWORD=${GOKU_ADMIN_PASSWORD:?GOKU_ADMIN_PASSWORD is required}
+      - GOKU_CONFIG=${GOKU_CONFIG:?GOKU_CONFIG is required}
+      - GOKU_WEB_PORT=${GOKU_WEB_PORT:?GOKU_WEB_PORT is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:9001/healthz || exit 1
+      timeout: 10s
+    hostname: goku
+    image: ghcr.io/jovalle/goku:latest
+    labels:
+      - gatus.group=curation
+      - gatus.priority=P3
+      - traefik.http.routers.go.entrypoints=web,websecure
+      - traefik.http.routers.go.rule=Host(`go`) || Host(`go.techn.is`)
+      - traefik.http.routers.go.service=go
+      - traefik.http.routers.goku.entrypoints=websecure
+      - traefik.http.routers.goku.rule=Host(`goku.techn.is`)
+      - traefik.http.routers.goku.service=goku
+      - traefik.http.services.go.loadbalancer.server.port=9000
+      - traefik.http.services.goku.loadbalancer.server.port=9001
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/goku:/etc/goku

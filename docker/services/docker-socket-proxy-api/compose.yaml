@@ -1,0 +1,47 @@
+services:
+  docker-socket-proxy-api:
+    cap_drop:
+      - ALL
+    container_name: docker-socket-proxy-api
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - ALLOW_RESTARTS=1
+      - ALLOW_START=1
+      - ALLOW_STOP=1
+      - CONTAINERS=1
+      - DELETE=1
+      - EVENTS=1
+      - EXEC=0
+      - IMAGES=1
+      - INFO=1
+      - LOG_LEVEL=${DOCKER_SOCKET_PROXY_LOG_LEVEL:?DOCKER_SOCKET_PROXY_LOG_LEVEL is required}
+      - NETWORKS=1
+      - PING=1
+      - POST=1
+      - SYSTEM=1
+      - VERSION=1
+      - VOLUMES=1
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:2375/_ping || exit 1
+      timeout: 10s
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

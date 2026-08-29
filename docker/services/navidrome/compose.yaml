@@ -1,0 +1,48 @@
+services:
+  navidrome:
+    cap_drop:
+      - ALL
+    container_name: navidrome
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - ND_BASEURL=${NAVIDROME_ND_BASEURL:-/stream}
+      - ND_DATAFOLDER=/data
+      - ND_ENABLEUSEREDITING=false
+      - ND_EXTAUTH_TRUSTEDSOURCES=172.30.53.253/32
+      - ND_EXTAUTH_USERHEADER=CF-Access-Authenticated-User-Email
+      - ND_LOGLEVEL=${NAVIDROME_ND_LOGLEVEL:-info}
+      - ND_MUSICFOLDER=/music
+      - ND_PORT=4533
+      - ND_SCANNER_SCHEDULE=${NAVIDROME_ND_SCANNER_SCHEDULE:-@every 1h}
+      - ND_SESSIONTIMEOUT=${NAVIDROME_ND_SESSIONTIMEOUT:-24h}
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:4533/stream/ || exit 1
+      timeout: 10s
+    hostname: navidrome
+    image: deluan/navidrome:latest
+    labels:
+      - gatus.group=playback
+      - gatus.priority=P2
+      - traefik.http.services.navidrome.loadbalancer.server.port=4533
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: ${PUID:-1000}:${PGID:-1000}
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/navidrome:/data
+      - /mnt/media/music:/music:ro

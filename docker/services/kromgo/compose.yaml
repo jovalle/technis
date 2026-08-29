@@ -1,0 +1,39 @@
+services:
+  kromgo:
+    cap_drop:
+      - ALL
+    container_name: kromgo
+    depends_on:
+      prometheus:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - PROMETHEUS_URL=${KROMGO_PROMETHEUS_URL:?KROMGO_PROMETHEUS_URL is required}
+    healthcheck:
+      test:
+        - NONE
+    hostname: kromgo
+    image: ghcr.io/kashalls/kromgo:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+      - traefik.http.routers.kromgo.rule=Host(`stat.techn.is`)
+      - traefik.http.routers.kromgo.service=kromgo
+      - traefik.http.services.kromgo.loadbalancer.server.port=8080
+    ports:
+      - 8082:8080
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/kromgo/kromgo.yaml:/kromgo/config.yaml:ro

@@ -1,0 +1,88 @@
+services:
+  rackpad-data-init:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    cap_drop:
+      - ALL
+    command:
+      - chown
+      - -R
+      - 10001:999
+      - /data
+    container_name: rackpad-data-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/rackpad:/data
+
+  rackpad:
+    cap_drop:
+      - ALL
+    container_name: rackpad
+    depends_on:
+      rackpad-data-init:
+        condition: service_completed_successfully
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - APP_URL=https://rackpad.techn.is
+      - DATABASE_PATH=/data/rackpad.db
+      - DISCOVERY_MAC_SCAN_MODE=auto
+      - HOST=0.0.0.0
+      - MONITOR_INTERVAL_MS=300000
+      - NODE_ENV=production
+      - OUI_AUTO_UPDATE=1
+      - PORT=3000
+      - TRUSTED_HOSTS=rackpad.techn.is
+      - TRUSTED_ORIGINS=https://rackpad.techn.is
+      - TRUST_PROXY=1
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      timeout: 5s
+    hostname: rackpad
+    image: ghcr.io/kobii-git/rackpad:1.7.3
+    init: true
+    labels:
+      - gatus.group=operations
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.middlewares.rackpad-internal.ipallowlist.sourcerange=100.64.0.0/10,172.30.53.0/24,192.168.0.0/16,127.0.0.1/32
+      - traefik.http.routers.rackpad.middlewares=rackpad-internal
+      - traefik.http.routers.rackpad.rule=Host(`rackpad.techn.is`)
+      - traefik.http.routers.rackpad.service=rackpad
+      - traefik.http.routers.rackpad.tls.certresolver=letsencrypt
+      - traefik.http.routers.rackpad.tls=true
+      - traefik.http.services.rackpad.loadbalancer.server.port=3000
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/rackpad:/data

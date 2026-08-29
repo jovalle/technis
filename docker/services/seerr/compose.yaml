@@ -1,0 +1,44 @@
+services:
+  seerr:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: seerr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:5055/api/v1/status || exit 1
+      timeout: 10s
+    hostname: seerr
+    image: ghcr.io/seerr-team/seerr:develop
+    init: true
+    labels:
+      - gatus.group=curation
+      - gatus.priority=P3
+    ports:
+      - 5055:5055
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: node:node
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/seerr:/app/config

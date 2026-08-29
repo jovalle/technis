@@ -1,0 +1,46 @@
+services:
+  node-exporter:
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      - --no-collector.powersupplyclass
+    container_name: node-exporter
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:9100/ || exit 1
+      timeout: 10s
+    hostname: node-exporter
+    image: quay.io/prometheus/node-exporter:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    pid: host
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /run/udev/data:/run/udev/data:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro

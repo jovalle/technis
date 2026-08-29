@@ -1,0 +1,47 @@
+services:
+  unpackerr:
+    cap_drop:
+      - ALL
+    container_name: unpackerr
+    depends_on:
+      lidarr:
+        condition: service_healthy
+        required: true
+      radarr:
+        condition: service_healthy
+        required: true
+      sonarr:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - UN_LIDARR_0_API_KEY=${UNPACKERR_UN_LIDARR_0_API_KEY:?UNPACKERR_UN_LIDARR_0_API_KEY is required}
+      - UN_LIDARR_0_URL=${UNPACKERR_UN_LIDARR_0_URL:?UNPACKERR_UN_LIDARR_0_URL is required}
+      - UN_RADARR_0_API_KEY=${UNPACKERR_UN_RADARR_0_API_KEY:?UNPACKERR_UN_RADARR_0_API_KEY is required}
+      - UN_RADARR_0_URL=${UNPACKERR_UN_RADARR_0_URL:?UNPACKERR_UN_RADARR_0_URL is required}
+      - UN_SONARR_0_API_KEY=${UNPACKERR_UN_SONARR_0_API_KEY:?UNPACKERR_UN_SONARR_0_API_KEY is required}
+      - UN_SONARR_0_URL=${UNPACKERR_UN_SONARR_0_URL:?UNPACKERR_UN_SONARR_0_URL is required}
+    healthcheck:
+      test:
+        - NONE
+    hostname: unpackerr
+    image: ghcr.io/unpackerr/unpackerr:latest
+    labels:
+      - gatus.group=acquisition
+      - gatus.priority=P3
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - /mnt/media/downloads:/downloads

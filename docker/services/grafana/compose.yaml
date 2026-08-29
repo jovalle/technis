@@ -1,0 +1,49 @@
+services:
+  grafana:
+    cap_drop:
+      - ALL
+    container_name: grafana
+    depends_on:
+      loki:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - GF_INSTALL_PLUGINS=${GRAFANA_GF_INSTALL_PLUGINS:?GRAFANA_GF_INSTALL_PLUGINS is required}
+      - GF_METRICS_ENABLED=true
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_GF_SECURITY_ADMIN_PASSWORD:?GRAFANA_GF_SECURITY_ADMIN_PASSWORD is required}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_GF_SECURITY_ADMIN_USER:?GRAFANA_GF_SECURITY_ADMIN_USER is required}
+      - GF_SERVER_ROOT_URL=${GRAFANA_GF_SERVER_ROOT_URL:?GRAFANA_GF_SERVER_ROOT_URL is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:3000/api/health || exit 1
+      timeout: 10s
+    hostname: grafana
+    image: grafana/grafana:latest
+    labels:
+      - gatus.group=telemetry
+      - gatus.priority=P3
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana:/var/lib/grafana
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/maps/technis-world-ping-servers.geojson:/usr/share/grafana/public/maps/technis-world-ping-servers.geojson:ro

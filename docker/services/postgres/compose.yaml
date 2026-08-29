@@ -1,0 +1,46 @@
+services:
+  postgres:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: postgres
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2048M
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - PGDATA=${POSTGRES_PGDATA:?POSTGRES_PGDATA is required}
+      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres
+      timeout: 5s
+    hostname: postgres
+    image: pgvector/pgvector:pg17
+    labels:
+      - gatus.group=data
+      - gatus.priority=P2
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres:/var/lib/postgresql/data

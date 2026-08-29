@@ -1,0 +1,89 @@
+services:
+  garage:
+    command:
+      - /garage
+      - -c
+      - /etc/garage.toml
+      - server
+    container_name: garage
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 256M
+    environment:
+      - RUST_LOG=garage=info
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - /garage
+        - -c
+        - /etc/garage.toml
+        - status
+      timeout: 10s
+    hostname: garage
+    image: dxflrs/garage:v2.2.0
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.garage-s3-api.entrypoints=websecure
+      - traefik.http.routers.garage-s3-api.rule=Host(`${GARAGE_S3_ROOT_DOMAIN:?GARAGE_S3_ROOT_DOMAIN is required}`)
+      - traefik.http.routers.garage-s3-api.service=garage-s3-api
+      - traefik.http.services.garage-s3-api.loadbalancer.server.port=3900
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    volumes:
+      - garage-state:/var/lib/garage
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/garage/config/garage.toml:/etc/garage.toml:ro
+
+  garage-webui:
+    cap_drop:
+      - ALL
+    container_name: garage-webui
+    depends_on:
+      garage:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - API_BASE_URL=http://garage:3903
+      - CONFIG_PATH=/etc/garage.toml
+      - S3_ENDPOINT_URL=http://garage:3900
+      - S3_REGION=garage
+      - TZ=${TZ:-America/New_York}
+    hostname: garage-webui
+    image: khairul169/garage-webui:1.1.0
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.garage-webui.entrypoints=websecure
+      - traefik.http.routers.garage-webui.middlewares=auth@file
+      - traefik.http.routers.garage-webui.priority=200
+      - traefik.http.routers.garage-webui.rule=Host(`${GARAGE_UI_ROOT_DOMAIN:?GARAGE_UI_ROOT_DOMAIN is required}`)
+      - traefik.http.routers.garage-webui.service=garage-webui
+      - traefik.http.services.garage-webui.loadbalancer.server.port=3909
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/garage/config/garage.toml:/etc/garage.toml:ro
+
+volumes:
+  garage-state: null

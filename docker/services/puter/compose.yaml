@@ -1,0 +1,195 @@
+services:
+  puter-data-init:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    cap_drop:
+      - ALL
+    command:
+      - chown
+      - -R
+      - 1000:1000
+      - /data
+    container_name: puter-data-init
+    healthcheck:
+      test:
+        - NONE
+    image: alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/puter/data/puter:/data
+
+  puter-mariadb-init:
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        export MYSQL_PWD="$$MARIADB_ROOT_PASSWORD"
+        mariadb --host=mariadb --user=root <<SQL
+        CREATE DATABASE IF NOT EXISTS puter CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        CREATE USER IF NOT EXISTS 'puter'@'%' IDENTIFIED BY '$$PUTER_MARIADB_PASSWORD';
+        ALTER USER 'puter'@'%' IDENTIFIED BY '$$PUTER_MARIADB_PASSWORD';
+        GRANT ALL PRIVILEGES ON puter.* TO 'puter'@'%';
+        FLUSH PRIVILEGES;
+        SQL
+    container_name: puter-mariadb-init
+    depends_on:
+      mariadb:
+        condition: service_healthy
+        required: true
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}
+      - PUTER_MARIADB_PASSWORD=${PUTER_MARIADB_PASSWORD:?PUTER_MARIADB_PASSWORD is required}
+    image: mariadb:11@sha256:d9f7eb2637296652f24b484afd5d246f759f49f5babcadc6a9e344c9acb75fbf
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  puter-s3-init:
+    container_name: puter-s3-init
+    depends_on:
+      rustfs:
+        condition: service_healthy
+        required: true
+    environment:
+      - AWS_ACCESS_KEY_ID=${RUSTFS_ROOT_ACCESS_KEY:?RUSTFS_ROOT_ACCESS_KEY is required}
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_SECRET_ACCESS_KEY=${RUSTFS_ROOT_SECRET_KEY:?RUSTFS_ROOT_SECRET_KEY is required}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        endpoint=http://rustfs:9000
+        bucket=puter-local
+        if aws --endpoint-url "$$endpoint" s3api head-bucket --bucket "$$bucket" 2>/dev/null; then
+          echo "bucket $$bucket already exists"
+        else
+          aws --endpoint-url "$$endpoint" s3 mb "s3://$$bucket"
+        fi
+    image: amazon/aws-cli:latest@sha256:a807ac61090901c63dd4600eef3e6c8b010afdd07530e30d932a988e5a8405fa
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  puter-rustfs-iam-init:
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        api=http://rustfs:9000/rustfs/admin/v3
+        auth="$$RUSTFS_ROOT_ACCESS_KEY:$$RUSTFS_ROOT_SECRET_KEY"
+        sig=aws:amz:us-east-1:s3
+        user_body=$$(printf '{"secretKey":"%s","status":"enabled"}' "$$PUTER_S3_SECRET_KEY")
+        policy_body='{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["arn:aws:s3:::puter-local","arn:aws:s3:::puter-local/*"]}]}'
+        curl -fsS --aws-sigv4 "$$sig" --user "$$auth" \
+          -X PUT "$$api/add-user?accessKey=$$PUTER_S3_ACCESS_KEY" \
+          -H 'Content-Type: application/json' --data "$$user_body"
+        curl -fsS --aws-sigv4 "$$sig" --user "$$auth" \
+          -X PUT "$$api/add-canned-policy?name=puter" \
+          -H 'Content-Type: application/json' --data "$$policy_body"
+        curl -fsS --aws-sigv4 "$$sig" --user "$$auth" \
+          -X PUT "$$api/set-user-or-group-policy?policyName=puter&userOrGroup=$$PUTER_S3_ACCESS_KEY&isGroup=false"
+    container_name: puter-rustfs-iam-init
+    depends_on:
+      puter-s3-init:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      - PUTER_S3_ACCESS_KEY=${PUTER_S3_ACCESS_KEY:?PUTER_S3_ACCESS_KEY is required}
+      - PUTER_S3_SECRET_KEY=${PUTER_S3_SECRET_KEY:?PUTER_S3_SECRET_KEY is required}
+      - RUSTFS_ROOT_ACCESS_KEY=${RUSTFS_ROOT_ACCESS_KEY:?RUSTFS_ROOT_ACCESS_KEY is required}
+      - RUSTFS_ROOT_SECRET_KEY=${RUSTFS_ROOT_SECRET_KEY:?RUSTFS_ROOT_SECRET_KEY is required}
+    image: curlimages/curl:8.16.0@sha256:463eaf6072688fe96ac64fa623fe73e1dbe25d8ad6c34404a669ad3ce1f104b6
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  puter:
+    build:
+      context: ./image
+    container_name: puter
+    depends_on:
+      dynamodb:
+        condition: service_started
+        required: true
+      puter-data-init:
+        condition: service_completed_successfully
+        required: true
+      puter-mariadb-init:
+        condition: service_completed_successfully
+        required: true
+      puter-rustfs-iam-init:
+        condition: service_completed_successfully
+        required: true
+      valkey-cluster:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 4
+          memory: 4G
+        reservations:
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - PGID=1000
+      - PUID=1000
+      - PUTER_PUBLIC_DOMAIN=${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:4100/ || exit 1
+      timeout: 5s
+    hostname: puter
+    image: technis/puter:main-domain-offset
+    init: true
+    labels:
+      - gatus.group=utilities
+      - gatus.priority=P2
+      - traefik.enable=true
+      - traefik.http.middlewares.puter-internal.ipallowlist.sourcerange=10.0.0.0/8,100.64.0.0/10,127.0.0.1/32,172.16.0.0/12,192.168.0.0/16,::1/128,fd7a:115c:a1e0::/48
+      - traefik.http.routers.puter.entrypoints=websecure
+      - traefik.http.routers.puter.middlewares=puter-internal
+      - traefik.http.routers.puter.priority=100
+      - 'traefik.http.routers.puter.rule=Host(`${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}`) || HostRegexp(`^[^.]+\.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}$`) || HostRegexp(`^[^.]+\.(site|host|app|dev)\.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}$`)'
+      - traefik.http.routers.puter.service=puter
+      - traefik.http.routers.puter.tls.certresolver=letsencrypt
+      - traefik.http.routers.puter.tls.domains[0].main=${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[0].sans=*.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[1].main=site.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[1].sans=*.site.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[2].main=host.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[2].sans=*.host.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[3].main=app.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[3].sans=*.app.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[4].main=dev.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls.domains[4].sans=*.dev.${PUTER_ROOT_DOMAIN:?PUTER_ROOT_DOMAIN is required}
+      - traefik.http.routers.puter.tls=true
+      - traefik.http.services.puter.loadbalancer.server.port=4100
+    pull_policy: build
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/puter/config:/etc/puter:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/puter/data/puter:/var/puter

@@ -1,0 +1,41 @@
+services:
+  dockhand:
+    cap_drop:
+      - ALL
+    container_name: dockhand
+    depends_on:
+      docker-socket-proxy-api:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 2G
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - DOCKER_HOST=tcp://docker-socket-proxy-api:2375
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - curl -sf http://127.0.0.1:3000 || exit 1
+      timeout: 10s
+    hostname: dockhand
+    image: fnsys/dockhand:latest
+    labels:
+      - traefik.http.routers.dockhand.middlewares=auth@file
+    ports:
+      - ${INTERNAL_IP:?INTERNAL_IP is required}:3333:3000
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/dockhand:/app/data

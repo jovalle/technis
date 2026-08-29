@@ -1,0 +1,51 @@
+services:
+  plex:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - KILL
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: plex
+    deploy:
+      resources:
+        limits:
+          cpus: 8
+          memory: 8192M
+        reservations:
+          cpus: 2
+          memory: 2048M
+    devices:
+      - /dev/dri:/dev/dri:rwm
+    environment:
+      - ADVERTISE_IP=${PLEX_ADVERTISE_IP:?PLEX_ADVERTISE_IP is required}
+      - ALLOWED_NETWORKS=192.168.0.0/16,172.16.0.0/12
+      - PGID=${PGID:-1000}
+      - PUID=${PUID:-1000}
+      - TZ=${TZ:-America/New_York}
+      - UMASK_SET=${PLEX_UMASK_SET:?PLEX_UMASK_SET is required}
+      - VERSION=${PLEX_VERSION:?PLEX_VERSION is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:32400/identity || exit 1
+      timeout: 10s
+    hostname: plex
+    image: plexinc/pms-docker:latest
+    labels:
+      - gatus.group=playback
+      - gatus.priority=P2
+      - traefik.enable=false
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/plex:/config
+      - /mnt/media:/media
+      - /dev/shm/transcode:/transcode

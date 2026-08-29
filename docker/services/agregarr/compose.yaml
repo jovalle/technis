@@ -1,0 +1,32 @@
+services:
+  agregarr:
+    cap_drop:
+      - ALL
+    container_name: agregarr
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:7171 || exit 1
+      timeout: 10s
+    hostname: agregarr
+    image: agregarr/agregarr:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /app/config/logs:rw,noexec,nosuid,size=64m,uid=1000,gid=1000,mode=0775
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/agregarr:/app/config

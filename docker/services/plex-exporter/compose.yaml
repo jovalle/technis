@@ -1,0 +1,33 @@
+services:
+  plex-exporter:
+    cap_drop:
+      - ALL
+    container_name: plex-exporter
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - PLEX_SERVER=${PLEX_EXPORTER_PLEX_SERVER:?PLEX_EXPORTER_PLEX_SERVER is required}
+      - PLEX_TOKEN=${PLEX_EXPORTER_PLEX_TOKEN:?PLEX_EXPORTER_PLEX_TOKEN is required}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - NONE
+      timeout: 10s
+    hostname: plex-exporter
+    image: ghcr.io/timothystewart6/prometheus-plex-exporter:latest
+    labels:
+      - gatus.enable=false
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534

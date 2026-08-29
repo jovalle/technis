@@ -1,0 +1,47 @@
+services:
+  redis:
+    cap_add:
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    command:
+      - redis-server
+      - --save
+      - "60"
+      - "1"
+      - --loglevel
+      - warning
+    container_name: redis
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    healthcheck:
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 5s
+    hostname: redis
+    image: redis:latest
+    labels:
+      - gatus.group=data
+      - gatus.priority=P2
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/redis:/data
