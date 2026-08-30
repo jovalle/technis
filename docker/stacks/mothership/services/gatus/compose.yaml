@@ -17,7 +17,7 @@ services:
       - traefik.docker.network=external
       - traefik.enable=true
       - traefik.http.routers.gatus.middlewares=external-bypass@file
-      - traefik.http.routers.gatus.rule=Host(`status.${DOMAIN:?DOMAIN is required}`)
+      - traefik.http.routers.gatus.rule=Host(`status.${DOMAIN:?DOMAIN is required}`) || Host(`status.${GATUS_HOSTNAME:?GATUS_HOSTNAME is required}.${DOMAIN:?DOMAIN is required}`)
       - traefik.http.services.gatus.loadbalancer.server.port=8080
     networks:
       - default
