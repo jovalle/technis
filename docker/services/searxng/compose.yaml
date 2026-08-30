@@ -1,7 +1,7 @@
 services:
   searxng:
     build:
-      context: ../kasm/_/branding
+      context: ../../stacks/nexus/services/kasm/_/branding
       dockerfile_inline: |
         FROM docker.io/searxng/searxng:latest
 
