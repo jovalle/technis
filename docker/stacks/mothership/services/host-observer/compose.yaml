@@ -1,0 +1,7 @@
+services:
+  host-observer:
+    environment:
+      OBSERVABILITY_HOST: mothership
+      OBSERVABILITY_SITE: home
+  kernel-exporter:
+    networks: [internal]

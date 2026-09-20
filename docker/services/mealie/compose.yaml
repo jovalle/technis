@@ -47,8 +47,6 @@ services:
     hostname: mealie
     image: ghcr.io/mealie-recipes/mealie:latest
     labels:
-      - gatus.group=home
-      - gatus.priority=P2
       - traefik.http.routers.mealie.middlewares=auth@file
       - traefik.http.services.mealie.loadbalancer.server.port=9000
     restart: unless-stopped

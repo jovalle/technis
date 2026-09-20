@@ -1,11 +1,7 @@
 services:
   authelia:
-    networks:
-      - default
-    ports:
-      - host_ip: 192.168.1.2
-        published: "9091"
-        target: 9091
-      - host_ip: 100.100.1.2
-        published: "9091"
-        target: 9091
+    dns:
+      - 100.100.100.100
+    environment:
+      - AUTHELIA_SESSION_REDIS_HOST=nexus
+      - AUTHELIA_STORAGE_POSTGRES_ADDRESS=tcp://nexus:5433

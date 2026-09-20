@@ -1,6 +1,0 @@
-services:
-  whoami:
-    labels:
-      - traefik.enable=false
-    networks:
-      - external

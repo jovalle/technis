@@ -1,0 +1,29 @@
+services:
+  github-runner:
+    container_name: nexus-runner
+    deploy:
+      resources:
+        limits:
+          cpus: 2.0
+          memory: 2048M
+        reservations:
+          cpus: 0.2
+          memory: 256M
+    entrypoint: ["/entrypoint.sh"]
+    environment:
+      - GITHUB_RUNNER_NAME=${GITHUB_RUNNER_NAME:-nexus-runner}
+      - GITHUB_RUNNER_LABELS=${GITHUB_RUNNER_LABELS:-nexus,self-hosted,linux,x64}
+      - GITHUB_RUNNER_TOKEN=${GITHUB_RUNNER_TOKEN:?GITHUB_RUNNER_TOKEN is required}
+      - GITHUB_RUNNER_REPO_URL=${GITHUB_RUNNER_REPO_URL:-https://github.com/jovalle/plate-pantry}
+      - GITHUB_RUNNER_ORG=${GITHUB_RUNNER_ORG:-}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    group_add:
+      - 999
+    hostname: nexus-runner
+    image: ghcr.io/actions/actions-runner:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/libexec/docker/cli-plugins:/usr/local/lib/docker/cli-plugins:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/github-runner/_work:/home/runner/_work
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/github-runner/entrypoint.sh:/entrypoint.sh:ro

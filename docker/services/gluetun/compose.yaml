@@ -52,8 +52,6 @@ services:
     hostname: gluetun
     image: ghcr.io/qdm12/gluetun:latest
     labels:
-      - gatus.group=transport
-      - gatus.priority=P2
       - traefik.enable=false
     restart: unless-stopped
     security_opt:

@@ -34,9 +34,6 @@ services:
         - NONE
     hostname: unpackerr
     image: ghcr.io/unpackerr/unpackerr:latest
-    labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

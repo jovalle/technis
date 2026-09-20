@@ -32,8 +32,6 @@ services:
     hostname: trala
     image: ghcr.io/dannybouwers/trala:0.15.0
     labels:
-      - gatus.group=curation
-      - gatus.priority=P3
       - traefik.http.routers.trala.middlewares=auth@file
       - traefik.http.services.trala.loadbalancer.server.port=8080
     restart: unless-stopped

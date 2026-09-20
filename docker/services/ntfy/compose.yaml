@@ -28,6 +28,7 @@ services:
       - NTFY_ENABLE_LOGIN=true
       - NTFY_ENABLE_SIGNUP=false
       - NTFY_LISTEN_HTTP=:8080
+      - NTFY_TEMPLATE_DIR=/etc/ntfy/templates
       - NTFY_REQUIRE_LOGIN=true
       - NTFY_UPSTREAM_BASE_URL=https://ntfy.sh
       - NTFY_WEB_PUSH_EMAIL_ADDRESS=${NTFY_WEB_PUSH_EMAIL_ADDRESS:-admin@techn.is}
@@ -47,8 +48,6 @@ services:
     image: binwiederhier/ntfy:v2.26.3
     init: true
     labels:
-      - gatus.group=communications
-      - gatus.priority=P2
       - traefik.enable=true
       - traefik.http.routers.ntfy.rule=Host(`ntfy.techn.is`)
       - traefik.http.routers.ntfy.tls.certresolver=letsencrypt
@@ -64,3 +63,4 @@ services:
     user: 1000:1000
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/ntfy:/var/lib/ntfy
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/ntfy/templates:/etc/ntfy/templates:ro

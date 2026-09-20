@@ -2,13 +2,13 @@ services:
   external-dns:
     cap_drop:
       - ALL
-    container_name: external-dns
     command:
       - /bin/sh
       - -ec
       - |
         export TECHNITIUM_API_TOKEN="$$(cat /run/secrets/technitium-api-token)"
         exec external-dns
+    container_name: external-dns
     depends_on:
       tailscale:
         condition: service_healthy
@@ -36,7 +36,7 @@ services:
       - TECHNITIUM_URL=http://100.100.1.2:5380
       - TECHNITIUM_ZONES=techn.is,photos.ovall.es,homelab,nexus,mothership,stargate,go
     hostname: external-dns
-    image: ghcr.io/jovalle/external-dns:latest
+    image: ghcr.io/jovalle/external-dns@sha256:cfe6330238f318de565f11fda13271eac9aa0006f419242c598cdd540af32d79
     labels:
       - traefik.enable=false
     network_mode: host

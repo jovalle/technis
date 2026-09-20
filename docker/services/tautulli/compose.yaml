@@ -30,9 +30,6 @@ services:
       timeout: 10s
     hostname: tautulli
     image: ghcr.io/tautulli/tautulli:latest
-    labels:
-      - gatus.group=curation
-      - gatus.priority=P3
     ports:
       - 8181:8181
     restart: unless-stopped

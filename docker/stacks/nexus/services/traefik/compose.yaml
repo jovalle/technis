@@ -13,7 +13,6 @@ services:
       - --certificatesresolvers.letsencrypt.acme.email=admin@techn.is
       - --certificatesresolvers.letsencrypt.acme.storage=/etc/letsencrypt/acme.json
       - --entrypoints.golinks.address=:8091
-      - --entrypoints.metrics.address=:8082
       - --entrypoints.web.address=:80
       - --entrypoints.web.asDefault=true
       - --entrypoints.web.forwardedHeaders.trustedIPs=172.52.0.0/16
@@ -26,10 +25,6 @@ services:
       - --entrypoints.websecure.http.tls=true
       - --log.level=INFO
       - --metrics.prometheus=true
-      - --metrics.prometheus.addEntryPointsLabels=true
-      - --metrics.prometheus.addRoutersLabels=true
-      - --metrics.prometheus.addServicesLabels=true
-      - --metrics.prometheus.entryPoint=metrics
       - --ping=true
       - --providers.docker.defaultRule=Host(`{{ with index .Labels "com.docker.compose.service" }}{{ normalize . }}{{ else }}{{ normalize $.Name }}{{ end }}.techn.is`)
       - --providers.docker.endpoint=tcp://docker-socket-proxy:2375

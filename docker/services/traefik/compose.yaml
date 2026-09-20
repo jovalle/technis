@@ -9,8 +9,7 @@ services:
     image: traefik:latest
     labels:
       - dockhand.update=false
-      - gatus.group=edge
-      - gatus.priority=P2
+      - observability.metrics.address=traefik:8080
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

@@ -34,8 +34,6 @@ services:
     hostname: postgres
     image: pgvector/pgvector:pg17
     labels:
-      - gatus.group=data
-      - gatus.priority=P2
       - traefik.enable=false
     restart: unless-stopped
     security_opt:
@@ -44,3 +42,36 @@ services:
       - /tmp:rw,noexec,nosuid,size=256m
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres:/var/lib/postgresql/data
+  postgres-exporter:
+    cap_drop:
+      - ALL
+    container_name: postgres-exporter
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?sslmode=disable
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test: [CMD, /bin/postgres_exporter, --version]
+      timeout: 10s
+    hostname: postgres-exporter
+    image: prometheuscommunity/postgres-exporter:latest
+    labels:
+      - observability.metrics.address=postgres-exporter:9187
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true

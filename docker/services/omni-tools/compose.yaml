@@ -28,8 +28,6 @@ services:
     image: iib0011/omni-tools:0.6.0
     init: true
     labels:
-      - gatus.group=utilities
-      - gatus.priority=P3
       - traefik.docker.network=nexus_default
       - traefik.enable=true
       - traefik.http.middlewares.omni-tools-internal.ipallowlist.sourcerange=10.0.0.0/8,100.64.0.0/10,127.0.0.1/32,172.16.0.0/12,192.168.0.0/16,::1/128,fd7a:115c:a1e0::/48

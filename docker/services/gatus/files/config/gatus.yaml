@@ -1,0 +1,113 @@
+---
+metrics: true
+storage:
+  path: /data/data.db
+  type: sqlite
+ui:
+  default-sort-by: name
+  favicon:
+    default: https://ik.imagekit.io/technis/tr:w-32,h-32,cm-pad_resize,bg-00000000/logo.png
+    size16x16: https://ik.imagekit.io/technis/tr:w-16,h-16,cm-pad_resize,bg-00000000/logo.png
+    size32x32: https://ik.imagekit.io/technis/tr:w-32,h-32,cm-pad_resize,bg-00000000/logo.png
+  header: Technis
+  link: https://techn.is
+  logo: https://ik.imagekit.io/technis/tr:w-512,h-512,cm-pad_resize,bg-00000000/logo.png
+  title: Status | Technis
+web:
+  port: 8080
+endpoints:
+  - name: Website
+    url: https://www.techn.is
+    interval: 1m
+    client: &public-client
+      ignore-redirect: true
+      timeout: 10s
+    ui: &private-result
+      hide-conditions: true
+      hide-errors: true
+      hide-hostname: true
+      hide-port: true
+      hide-url: true
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Documentation
+    url: https://docs.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Authentication
+    url: https://auth.techn.is/api/health
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Status
+    url: https://status.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Connectivity
+    url: https://www.cloudflare.com
+    interval: 30s
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Media
+    url: https://plex.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 401"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Video
+    url: https://jellyfin.techn.is/health
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 302"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Music
+    url: https://navidrome.techn.is/stream/ping
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 302"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Requests
+    url: https://seerr.techn.is/api/v1/status
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Photos
+    url: https://photos.ovall.es/api/server/ping
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Files
+    url: https://cloud.ovall.es/status.php
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"

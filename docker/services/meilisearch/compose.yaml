@@ -29,8 +29,6 @@ services:
     hostname: meilisearch
     image: getmeili/meilisearch:v1.12.8
     labels:
-      - gatus.group=data
-      - gatus.priority=P2
       - traefik.enable=false
     restart: unless-stopped
     security_opt:

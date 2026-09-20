@@ -1,0 +1,6 @@
+services:
+  alloy:
+    environment:
+      - OBSERVABILITY_HOST=nexus
+      - OBSERVABILITY_SITE=home
+      - OBSERVABILITY_STACK=nexus

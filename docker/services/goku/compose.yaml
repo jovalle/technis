@@ -27,8 +27,6 @@ services:
     hostname: goku
     image: ghcr.io/jovalle/goku:latest
     labels:
-      - gatus.group=curation
-      - gatus.priority=P3
       - traefik.http.routers.go.entrypoints=web,websecure
       - traefik.http.routers.go.rule=Host(`go`) || Host(`go.techn.is`)
       - traefik.http.routers.go.service=go

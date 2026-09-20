@@ -46,9 +46,6 @@ services:
       timeout: 10s
     hostname: technitium
     image: docker.io/technitium/dns-server:latest
-    labels:
-      - gatus.group=transport
-      - gatus.priority=P2
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

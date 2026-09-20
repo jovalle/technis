@@ -36,8 +36,6 @@ services:
     hostname: cleanuparr
     image: ghcr.io/cleanuparr/cleanuparr:latest
     labels:
-      - gatus.group=curation
-      - gatus.priority=P3
       - traefik.enable=true
       - traefik.http.middlewares.cleanuparr-internal.ipallowlist.sourcerange=100.64.0.0/10,172.30.53.0/24,192.168.0.0/16,127.0.0.1/32
       - traefik.http.routers.cleanuparr.middlewares=cleanuparr-internal

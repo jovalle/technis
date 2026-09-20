@@ -28,10 +28,7 @@ services start:
 - `/sys/class/net/tun0` exists;
 - DNS resolves through Gluetun.
 
-qBittorrent already waits for a healthy Gluetun service. Nexus Gatus probes the
-published host port at `192.168.1.3:10095`, which also detects a stale shared
-network namespace that can leave a local container healthcheck green while the
-service is unreachable from the host.
+qBittorrent waits for a healthy Gluetun service before starting.
 
 ## Incident checks
 
@@ -39,17 +36,9 @@ Run these read-only checks from the repository root before making a runtime
 change:
 
 ```sh
-docker compose \
-  --env-file docker/.env \
-  --env-file docker/stacks/nexus/.env \
-  --file docker/stacks/nexus/compose.yaml \
-  ps gluetun qbittorrent qbittorrent-exporter
-
-docker compose \
-  --env-file docker/.env \
-  --env-file docker/stacks/nexus/.env \
-  --file docker/stacks/nexus/compose.yaml \
-  logs --since=30m gluetun qbittorrent
+./bin/tctl status nexus gluetun qbittorrent
+./bin/tctl logs nexus gluetun
+./bin/tctl logs nexus qbittorrent
 ```
 
 Interpret the results as follows:
@@ -57,16 +46,12 @@ Interpret the results as follows:
 - Gluetun is unhealthy or lacks `tun0`: investigate the VPN connection first.
 - qBittorrent logs the invalid-interface message: it started before the tunnel
   was ready; recreate the dependent services only after Gluetun is healthy.
-- qBittorrent is healthy but the Nexus probe fails: recreate the shared
-  Gluetun/qBittorrent namespace rather than trusting the local healthcheck.
+- qBittorrent is healthy but unreachable: recreate the shared
+  Gluetun/qBittorrent namespace.
 
 After configuration validation and operator approval, recreate the shared
 services together:
 
 ```sh
-docker compose \
-  --env-file docker/.env \
-  --env-file docker/stacks/nexus/.env \
-  --file docker/stacks/nexus/compose.yaml \
-  up -d --force-recreate gluetun qbittorrent qbittorrent-exporter
+./bin/tctl deploy nexus gluetun qbittorrent
 ```

@@ -48,9 +48,6 @@ services:
     hostname: n8n
     image: n8nio/n8n:latest
     init: true
-    labels:
-      - gatus.group=operations
-      - gatus.priority=P2
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

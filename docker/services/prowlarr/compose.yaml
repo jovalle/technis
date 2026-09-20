@@ -32,8 +32,6 @@ services:
     hostname: prowlarr
     image: lscr.io/linuxserver/prowlarr:latest
     labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
       - traefik.http.routers.prowlarr.middlewares=auth@file
     restart: unless-stopped
     security_opt:

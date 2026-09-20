@@ -1,0 +1,6 @@
+services:
+  alloy:
+    environment:
+      - OBSERVABILITY_HOST=stargate
+      - OBSERVABILITY_SITE=edge
+      - OBSERVABILITY_STACK=stargate
