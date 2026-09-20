@@ -1,0 +1,23 @@
+groups:
+  - name: fleet-logs
+    type: vlogs
+    interval: 5m
+    rules:
+      - alert: ExcessiveErrorLogs
+        expr: '{environment="homelab"} level:in(error,warn,critical) | stats by (host, service) count() as error_logs | filter error_logs:>100'
+        for: 5m
+        labels:
+          priority: P3
+          service: logging
+        annotations:
+          summary: Error log volume is elevated
+          description: "{{ $labels.service }} on {{ $labels.host }} emitted {{ $value }} warnings or errors in five minutes."
+      - alert: RepeatedAuthenticationFailures
+        expr: '{environment="homelab"} _msg:~"(?i)(authentication failed|invalid password|unauthorized)" | stats by (host, service) count() as failures | filter failures:>20'
+        for: 5m
+        labels:
+          priority: P2
+          service: security
+        annotations:
+          summary: Repeated authentication failures
+          description: "{{ $labels.service }} on {{ $labels.host }} logged {{ $value }} authentication failures in five minutes."
