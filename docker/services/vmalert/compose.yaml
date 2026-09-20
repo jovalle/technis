@@ -1,0 +1,69 @@
+services:
+  vmalert-metrics:
+    cap_drop:
+      - ALL
+    command:
+      - -datasource.url=http://victoriametrics:8428
+      - -remoteWrite.url=http://victoriametrics:8428
+      - -remoteRead.url=http://victoriametrics:8428
+      - -notifier.url=http://alertmanager:9093
+      - -rule=/etc/vmalert/rules/metrics.yaml
+      - -evaluationInterval=30s
+      - -httpListenAddr=:8880
+    container_name: vmalert-metrics
+    depends_on:
+      alertmanager:
+        condition: service_healthy
+        required: true
+    healthcheck: &healthcheck
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8880/health]
+      timeout: 10s
+    hostname: vmalert-metrics
+    image: &image victoriametrics/vmalert:v1.151.0@sha256:e519f14c31f4d68015702e684a0fc3f1b4e559aa985d8f4462768f07f55b05c9
+    labels:
+      - observability.metrics.address=vmalert-metrics:8880
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt: &security_opt
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/vmalert/rules:/etc/vmalert/rules:ro
+  vmalert-logs:
+    cap_drop:
+      - ALL
+    command:
+      - -datasource.url=http://victorialogs:9428
+      - -remoteWrite.url=http://victoriametrics:8428
+      - -remoteRead.url=http://victoriametrics:8428
+      - -notifier.url=http://alertmanager:9093
+      - -rule=/etc/vmalert/rules/logs.yaml
+      - -rule.defaultRuleType=vlogs
+      - -rule.evalDelay=5s
+      - -evaluationInterval=5m
+      - -httpListenAddr=:8880
+    container_name: vmalert-logs
+    depends_on:
+      alertmanager:
+        condition: service_healthy
+        required: true
+      victorialogs:
+        condition: service_healthy
+        required: true
+      victoriametrics:
+        condition: service_healthy
+        required: true
+    healthcheck: *healthcheck
+    hostname: vmalert-logs
+    image: *image
+    labels:
+      - observability.metrics.address=vmalert-logs:8880
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt: *security_opt
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/vmalert/rules:/etc/vmalert/rules:ro

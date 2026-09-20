@@ -1,0 +1,78 @@
+services:
+  host-observer:
+    image: grafana/alloy:v1.19.2@sha256:b8ec653c44235fbe910879145dac3597d66b0aaecf60bcbbe82580767771a839
+    container_name: host-observer
+    command:
+      - run
+      - --server.http.listen-addr=127.0.0.1:12346
+      - --storage.path=/var/lib/alloy
+      - /etc/alloy/config.alloy
+    network_mode: host
+    pid: host
+    user: root
+    read_only: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [SYS_PTRACE, DAC_READ_SEARCH]
+    security_opt: [no-new-privileges:true]
+    environment:
+      OBSERVABILITY_HOST: ${OBSERVABILITY_HOST:-${COMPOSE_PROJECT_NAME}}
+      OBSERVABILITY_SITE: ${OBSERVABILITY_SITE:-home}
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/host-observer/config.alloy:/etc/alloy/config.alloy:ro
+      - ${STACK_DATA_ROOT}/host-observer/data:/var/lib/alloy
+      - ${STACK_DATA_ROOT}/host-observer/textfile:/textfile:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+      - /run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
+      - /run/udev/data:/run/udev/data:ro
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+    healthcheck:
+      test: [CMD-SHELL, "bash -c 'echo > /dev/tcp/127.0.0.1/12346'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  kernel-exporter:
+    image: python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285
+    container_name: kernel-exporter
+    command: [python3, /app/kernel_exporter.py]
+    pid: host
+    user: root
+    read_only: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [SYS_PTRACE, DAC_READ_SEARCH]
+    security_opt: [no-new-privileges:true]
+    environment:
+      DOCKER_API: http://docker-socket-proxy:2375
+      EXPORT_INTERVAL: "5"
+    volumes:
+      - ${STACK_DATA_ROOT}/host-observer/kernel_exporter.py:/app/kernel_exporter.py:ro
+      - ${STACK_DATA_ROOT}/host-observer/textfile:/textfile
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 192M
+    healthcheck:
+      test:
+        [
+          CMD,
+          python3,
+          -c,
+          "import os,time; assert time.time()-os.stat('/textfile/kernel.prom').st_mtime < 30",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,39 @@
+services:
+  alertmanager:
+    cap_drop:
+      - ALL
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yaml
+      - --storage.path=/alertmanager
+      - --data.retention=9672h
+      - --cluster.listen-address=
+      - --log.format=json
+    container_name: alertmanager
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:9093/-/ready]
+      timeout: 10s
+    hostname: alertmanager
+    image: prom/alertmanager:v0.34.0@sha256:690c7b525f4367aa91f73e2f91c632206d32e97c6384bdbf2fb7a861b420340d
+    labels:
+      - observability.metrics.address=alertmanager:9093
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 65534:65534
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/alertmanager/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/alertmanager/data:/alertmanager
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/alertmanager/ntfy-token:/run/secrets/ntfy-token:ro

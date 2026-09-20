@@ -1,0 +1,223 @@
+prometheus.remote_write "central" {
+  external_labels = {
+    environment = "homelab",
+    site        = sys.env("OBSERVABILITY_SITE"),
+    host        = sys.env("OBSERVABILITY_HOST"),
+    stack       = sys.env("OBSERVABILITY_STACK"),
+  }
+
+  endpoint {
+    url = "http://100.100.1.3:8427/api/v1/write"
+
+    queue_config {
+      max_shards        = 10
+      retry_on_http_429 = true
+      sample_age_limit  = "0s"
+    }
+  }
+
+  wal {
+    truncate_frequency = "1h"
+    min_keepalive_time = "1h"
+    max_keepalive_time = "72h"
+  }
+}
+
+prometheus.exporter.self "alloy" {}
+
+discovery.relabel "alloy" {
+  targets = prometheus.exporter.self.alloy.targets
+
+  rule {
+    target_label = "instance"
+    replacement  = sys.env("OBSERVABILITY_HOST")
+  }
+}
+
+prometheus.scrape "alloy" {
+  targets         = discovery.relabel.alloy.output
+  forward_to      = [prometheus.remote_write.central.receiver]
+  job_name        = "alloy"
+  scrape_interval = "30s"
+}
+
+// Host and process metrics are collected by host-observer in the host namespaces.
+
+prometheus.scrape "cadvisor" {
+  targets = [{
+    "__address__" = "cadvisor:8080",
+    "instance"    = sys.env("OBSERVABILITY_HOST"),
+  }]
+  forward_to      = [prometheus.remote_write.central.receiver]
+  job_name        = "cadvisor"
+  scrape_interval = "30s"
+}
+
+discovery.docker "containers" {
+  host             = "tcp://docker-socket-proxy:2375"
+  refresh_interval = "30s"
+}
+
+discovery.relabel "metrics" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_observability_metrics_address"]
+    regex         = "(.+)"
+    target_label  = "__address__"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_observability_metrics_path"]
+    regex         = "(.+)"
+    target_label  = "__metrics_path__"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "job"
+  }
+
+  rule {
+    target_label = "instance"
+    replacement  = sys.env("OBSERVABILITY_HOST")
+  }
+}
+
+prometheus.scrape "services" {
+  targets         = discovery.relabel.metrics.output
+  forward_to      = [prometheus.remote_write.central.receiver]
+  job_name        = "services"
+  scrape_interval = "30s"
+}
+
+loki.write "central" {
+  endpoint {
+    url = "http://100.100.1.3:8427/insert/loki/api/v1/push?_stream_fields=environment,site,stack,service,stream"
+  }
+
+  external_labels = {
+    environment = "homelab",
+    site        = sys.env("OBSERVABILITY_SITE"),
+    host        = sys.env("OBSERVABILITY_HOST"),
+    stack       = sys.env("OBSERVABILITY_STACK"),
+  }
+}
+
+loki.relabel "fleet" {
+  forward_to = [loki.write.central.receiver]
+
+  rule {
+    action = "labeldrop"
+    regex  = "environment|site|host|stack"
+  }
+}
+
+loki.relabel "docker" {
+  forward_to = [loki.relabel.fleet.receiver]
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "tcp://docker-socket-proxy:2375"
+  targets    = discovery.docker.containers.targets
+  labels     = { source = "docker" }
+  forward_to = [loki.relabel.docker.receiver]
+}
+
+loki.relabel "journal" {
+  forward_to = [loki.relabel.fleet.receiver]
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
+
+loki.source.journal "host" {
+  path          = "/var/log/journal"
+  max_age       = "24h"
+  labels        = { source = "journal" }
+  relabel_rules = loki.relabel.journal.rules
+  forward_to    = [loki.write.central.receiver]
+}
+
+loki.source.journal "runtime" {
+  path          = "/run/log/journal"
+  max_age       = "24h"
+  labels        = { source = "journal" }
+  relabel_rules = loki.relabel.journal.rules
+  forward_to    = [loki.write.central.receiver]
+}
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  timeout             = "1s"
+  send_batch_size     = 1000
+  send_batch_max_size = 2000
+
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs    = [otelcol.exporter.loki.default.input]
+    traces  = [otelcol.exporter.otlphttp.tempo.input]
+  }
+}
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.central.receiver]
+}
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.relabel.fleet.receiver]
+}
+
+otelcol.exporter.otlphttp "tempo" {
+  traces_endpoint = "http://100.100.1.3:8427/otlp/v1/traces"
+
+  client {
+    endpoint = "http://100.100.1.3:8427/otlp"
+
+    tls {
+      insecure = true
+    }
+  }
+
+  retry_on_failure {
+    enabled          = true
+    max_elapsed_time = "30m"
+  }
+}
