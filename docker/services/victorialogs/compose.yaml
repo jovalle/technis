@@ -1,0 +1,38 @@
+services:
+  victorialogs:
+    cap_drop:
+      - ALL
+    command:
+      - -httpListenAddr=:9428
+      - -retentionPeriod=13M
+      - -storage.minFreeDiskSpaceBytes=20GB
+      - -storageDataPath=/storage
+      - -vmalert.proxyURL=http://vmalert-logs:8880
+    container_name: victorialogs
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 4G
+        reservations:
+          cpus: 0.25
+          memory: 512M
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test: [CMD, /victoria-logs-prod, -version]
+      timeout: 10s
+    hostname: victorialogs
+    image: victoriametrics/victoria-logs:v1.52.0@sha256:47b820890d64c4575a2a0a46415dcd8a4fd59a0f1fcd6a377693d7aea639442e
+    labels:
+      - observability.metrics.address=victorialogs:9428
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/victorialogs/data:/storage

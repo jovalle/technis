@@ -1,0 +1,3430 @@
+{
+  "uid": "technis-noc",
+  "title": "Technis \u00b7 Operations",
+  "id": null,
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "tags": ["technis", "noc", "operations"],
+  "timezone": "browser",
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": true
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "query",
+        "query": "label_values(up,environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics"
+        },
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "hide": 2,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "host",
+        "type": "query",
+        "query": "label_values(node_uname_info,host)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics"
+        },
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "hide": 2,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "stack",
+        "type": "query",
+        "query": "label_values(up,stack)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics"
+        },
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "hide": 2,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "expected_hosts",
+        "type": "constant",
+        "query": "3",
+        "hide": 2,
+        "current": {
+          "text": "3",
+          "value": "3"
+        }
+      },
+      {
+        "name": "ignored_containers",
+        "type": "constant",
+        "query": ".*-init|.*-data-init",
+        "hide": 2,
+        "current": {
+          "text": ".*-init|.*-data-init",
+          "value": ".*-init|.*-data-init"
+        }
+      },
+      {
+        "name": "wan_probe",
+        "type": "constant",
+        "query": "WAN|Internet",
+        "hide": 2,
+        "current": {
+          "text": "WAN|Internet",
+          "value": "WAN|Internet"
+        }
+      },
+      {
+        "name": "dashboard_revision",
+        "type": "constant",
+        "query": "2026-09-18",
+        "hide": 2,
+        "current": {
+          "text": "2026-09-18",
+          "value": "2026-09-18"
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "description": "1920\u00d71080 kiosk operations console. Unknown is not healthy. States combine available health checks and probes; backups and WAN remain unknown without direct evidence. Events are sampled metric transitions, not a complete Docker event log.",
+  "panels": [
+    {
+      "id": 1,
+      "title": "HOMELAB",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace((max(label_replace((max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace((max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace((max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"0\",\"\",\"\") or label_replace((max(label_replace((max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace((max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace((max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"1\",\"\",\"\") or label_replace((max(label_replace(((3 * (max(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"}) > bool 0)) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3 * (max(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"}) > bool 0)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((2 * (sum(increase(container_oom_events_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[15m])) > bool 0)) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"2\",\"\",\"\") or label_replace((max(label_replace(((3*(1-min(smartctl_device_smart_status{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((2 * (max(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})) > bool 0.85)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * ((count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",service=\"storage\"}) or vector(0)) > bool 0)) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"3\",\"\",\"\") or label_replace((max(label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Authentication\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Authentication\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3 * (1-min(pg_up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * (1-min(redis_up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"4\",\"\",\"\") or label_replace((max(label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victoriametrics\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victoriametrics\"}) < 90)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victorialogs\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victorialogs\"}) < 90)))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"node|process|host-observer\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"node|process|host-observer\"}) < 90)))) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"5\",\"\",\"\") or label_replace((max(label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Plex|Jellyfin|Navidrome\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Plex|Jellyfin|Navidrome\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Immich\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Immich\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Nextcloud\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Nextcloud\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"6\",\"\",\"\") or label_replace((max(label_replace((vector(1)),\"check\",\"0\",\"\",\"\") or label_replace((vector(1)),\"check\",\"1\",\"\",\"\") or label_replace((vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"7\",\"\",\"\") or label_replace((max(label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Cloudflare\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Cloudflare\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"cloudflared.*\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"cloudflared.*\"}) < 90)))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"2\",\"\",\"\"))),\"check\",\"8\",\"\",\"\") or label_replace((3*((count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"}) or vector(0)) > bool 0)),\"check\",\"9\",\"\",\"\") or label_replace((2*((count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority!~\"P0|P1\"}) or vector(0)) > bool 0)),\"check\",\"10\",\"\",\"\") or label_replace((((sum(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"} == 1) or vector(0)) < bool $expected_hosts)),\"check\",\"11\",\"\",\"\") or label_replace(((((max(time()-technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"})) > bool 45) or vector(1))),\"check\",\"12\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 32
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "CRIT ALERTS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              },
+              {
+                "color": "#F2495C",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 30
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "WARN ALERTS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority!~\"P0|P1\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              },
+              {
+                "color": "#FFB547",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 30
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "HOSTS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"} == 1) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Up",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "vector($expected_hosts)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Expected",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "CONTAINERS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 0,
+        "w": 3,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"healthy\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Passed",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "count(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Seen",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "HTTP CHECKS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 13,
+        "y": 0,
+        "w": 3,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Reachable",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "count(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Monitored",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "STORAGE",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3*(1-min(smartctl_device_smart_status{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((2 * (max(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})) > bool 0.85)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * ((count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",service=\"storage\"}) or vector(0)) > bool 0)) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "WAN",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "LOCAL TIME",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "vector(time()*1000)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "time:HH:mm"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "DATA AGE",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 22,
+        "y": 0,
+        "w": 2,
+        "h": 3
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(time()-technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              },
+              {
+                "color": "#FFB547",
+                "value": 30
+              },
+              {
+                "color": "#F2495C",
+                "value": 60
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "NETWORK",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace((max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace((max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace((max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*technitium\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "DNS",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\".*traefik\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Proxy",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "max((clamp_max(3*(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\"}) + on(host,container) (1 - max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"healthy\"}) + 2*max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"unhealthy\"}) + max by(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container=~\"tailscale|gluetun\",container!~\"$ignored_containers\",health=\"starting\"})),3)) and on(host) (time() - technis_collector_timestamp_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} < 45)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "VPN",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "COMPUTE / HOSTS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 5,
+        "y": 3,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace((max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace((max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace((max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"stargate\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "stargate",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"nexus\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "nexus",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "max(clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=\"mothership\",stack=~\"$stack\",job=\"node\"}))),3)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "mothership",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "CONTAINERS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 3,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3 * (max(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"}) > bool 0)) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3 * (max(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"}) > bool 0)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((2 * (sum(increase(container_oom_events_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[15m])) > bool 0)) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(3 * (max(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"}) > bool 0)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Checks",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(3 * (max(1-technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"}) > bool 0)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Stopped",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "(2 * (sum(increase(container_oom_events_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[15m])) > bool 0)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "OOM / 15m",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "STORAGE",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3*(1-min(smartctl_device_smart_status{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((2 * (max(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})) > bool 0.85)) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * ((count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",service=\"storage\"}) or vector(0)) > bool 0)) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(3*(1-min(smartctl_device_smart_status{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "SMART",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(2 * (max(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})) > bool 0.85)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Capacity",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "(3 * ((count(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",service=\"storage\"}) or vector(0)) > bool 0)) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Alerts",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "CORE INFRA",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 5,
+        "y": 6,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Authentication\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Authentication\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3 * (1-min(pg_up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * (1-min(redis_up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Authentication\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Authentication\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Auth",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(3 * (1-min(pg_up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Postgres",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "(3 * (1-min(redis_up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Redis",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "OBSERVABILITY",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 6,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victoriametrics\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victoriametrics\"}) < 90)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victorialogs\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victorialogs\"}) < 90)))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"node|process|host-observer\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"node|process|host-observer\"}) < 90)))) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victoriametrics\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victoriametrics\"}) < 90)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Metrics",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victorialogs\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"victorialogs\"}) < 90)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Logs",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "(3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"node|process|host-observer\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"node|process|host-observer\"}) < 90)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Collectors",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 17,
+      "title": "USER SERVICES",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Plex|Jellyfin|Navidrome\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Plex|Jellyfin|Navidrome\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Immich\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Immich\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Nextcloud\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Nextcloud\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Plex|Jellyfin|Navidrome\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Plex|Jellyfin|Navidrome\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Media",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Immich\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Immich\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Photos",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Nextcloud\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Nextcloud\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Files",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 18,
+      "title": "BACKUPS",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 5,
+        "y": 9,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace((vector(1)),\"check\",\"0\",\"\",\"\") or label_replace((vector(1)),\"check\",\"1\",\"\",\"\") or label_replace((vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Primary",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Offsite",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Last run",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "EXTERNAL",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 9,
+        "w": 5,
+        "h": 3
+      },
+      "description": "Worst meaningful member state. OK = observed passing check; UNKNOWN = absent evidence or no health check. See source adapters for membership.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Cloudflare\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Cloudflare\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"0\",\"\",\"\") or label_replace(((3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"cloudflared.*\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"cloudflared.*\"}) < 90)))) or vector(1)),\"check\",\"1\",\"\",\"\") or label_replace(((3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)),\"check\",\"2\",\"\",\"\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Domain",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Cloudflare\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"Cloudflare\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Cloudflare",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(3*(1-min(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"cloudflared.*\"} and (time()-timestamp(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=~\"cloudflared.*\"}) < 90)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Tunnels",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "(3 * (1 - min((gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"} and (time()-timestamp(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name=~\"$wan_probe\"}) < 90)) and on(host) (up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"gatus\"} == 1)))) or vector(1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "WAN",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "#719580",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5",
+                  "index": 1
+                },
+                "2": {
+                  "text": "WARN",
+                  "color": "#FFB547",
+                  "index": 2
+                },
+                "3": {
+                  "text": "FAIL",
+                  "color": "#F2495C",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 19
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "ACTIVE PROBLEMS \u00b7 five highest priority",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 3,
+        "w": 9,
+        "h": 5
+      },
+      "description": "Current firing alerts grouped by object/reason, plus stopped/unhealthy containers and resource thresholds. P0/P1 first, then oldest alert. A dash means condition age is unavailable. Header counts are firing alert instances, not derived-condition counts. Read-only-filesystem alerts are not suppressed.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sort_by_label(sort_desc((max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m])) > 0.20)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU pressure >20% / 5m\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Memory >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Filesystem >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m])) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU busy >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\"))) and on(priority,host,stack,object,reason) topk(5,(max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m])) > 0.20)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU pressure >20% / 5m\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Memory >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Filesystem >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m])) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU busy >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\"))) + on(priority,host,stack,object,reason) (1000000000*((max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\"))) >= bool 0) or 0*(max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m])) > 0.20)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU pressure >20% / 5m\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Memory >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Filesystem >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m])) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU busy >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\")))))),\"priority\")) and on(priority,host,stack,object,reason) (max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\")))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{priority}} \u00b7 {{host}} \u00b7 {{object}} \u00b7 {{reason}}",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(sort_by_label(sort_desc((max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m])) > 0.20)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU pressure >20% / 5m\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Memory >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Filesystem >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m])) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU busy >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\"))) and on(priority,host,stack,object,reason) topk(5,(max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m])) > 0.20)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU pressure >20% / 5m\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Memory >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Filesystem >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m])) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU busy >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\"))) + on(priority,host,stack,object,reason) (1000000000*((max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\"))) >= bool 0) or 0*(max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m])) > 0.20)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU pressure >20% / 5m\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Memory >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"Filesystem >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\") or label_replace((label_replace((label_replace((0*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m])) > 0.90)),\"object\",\"$1\",\"host\",\"(.*)\")),\"reason\",\"CPU busy >90%\",\"\",\"\")),\"priority\",\"P2\",\"\",\"\")))))),\"priority\")) unless on(priority,host,stack,object,reason) (max by(priority,host,stack,object,reason)(label_replace(label_replace((max by(priority,host,stack,service,alertname)(time()-(ALERTS_FOR_STATE{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"} and ignoring(alertstate) ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"}))),\"object\",\"$1\",\"service\",\"(.*)\"),\"reason\",\"$1\",\"alertname\",\"(.*)\") or label_replace((label_replace((label_replace((0*(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 0)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Stopped\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\") or label_replace((label_replace((label_replace((0*(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"} == 1)),\"object\",\"$1\",\"container\",\"(.*)\")),\"reason\",\"Unhealthy\",\"\",\"\")),\"priority\",\"P1\",\"\",\"\")))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{priority}} \u00b7 {{host}} \u00b7 {{object}} \u00b7 {{reason}}",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#FFB547"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "\u2014"
+                }
+              }
+            }
+          ],
+          "unit": "s"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "RECENT EVENTS \u00b7 newest five in last hour",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 8,
+        "w": 9,
+        "h": 4
+      },
+      "description": "Sampled starts, reboots, OOM increments and state/health/probe transitions. Five newest only. This is not an exact or complete Docker event log.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(topk(5,max by(host,object,event)(label_replace((label_replace((max by(host,name)(container_start_time_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"})),\"object\",\"$1\",\"name\",\"(.*)\")),\"event\",\"Started\",\"\",\"\") or label_replace((label_replace((max by(host)(node_boot_time_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"})),\"object\",\"Host\",\"\",\"\")),\"event\",\"Rebooted\",\"\",\"\") or label_replace((label_replace((max by(host,name)(tlast_change_over_time(container_oom_events_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[1h]) and (changes(container_oom_events_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[1h]) > 0))),\"object\",\"$1\",\"name\",\"(.*)\")),\"event\",\"OOM detected\",\"\",\"\") or label_replace((label_replace((max by(host,container)(tlast_change_over_time(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"}[1h]) and (changes(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"}[1h]) > 0))),\"object\",\"$1\",\"container\",\"(.*)\")),\"event\",\"State changed\",\"\",\"\") or label_replace((label_replace((max by(host,container)(tlast_change_over_time(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"healthy\"}[1h]) and (changes(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"healthy\"}[1h]) > 0))),\"object\",\"$1\",\"container\",\"(.*)\")),\"event\",\"Health changed\",\"\",\"\") or label_replace((label_replace((max by(host,name)(tlast_change_over_time(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}[1h]) and (changes(gatus_results_endpoint_success{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}[1h]) > 0))),\"object\",\"$1\",\"name\",\"(.*)\")),\"event\",\"Probe changed\",\"\",\"\")) > (time()-3600))*1000)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{host}} \u00b7 {{object}} \u00b7 {{event}}",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#83A9CF"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "time:HH:mm:ss"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "HOSTS \u00b7 pressure and headroom",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 6
+      },
+      "description": "Host state covers scrape availability and sustained resource use; domain alerts remain in the header. Container counts are observed, not desired-state inventory. Network is bytes/s, not link utilization.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "clamp_max((clamp_max(3*(1-max by(host)(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"})) + 2*(1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))> bool 0.90) + 2*(max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"})> bool 0.90) + 2*(max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})> bool 0.90) + 2*(max by(host)(avg_over_time(technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}[5m]))> bool 0.20),3)) + on(host) ((3*max by(host)(ALERTS{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",alertstate=\"firing\",priority=~\"P0|P1\"})) or (0*max by(host)(up{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}))),3)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "1-avg by(host)(rate(node_cpu_seconds_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",mode=\"idle\"}[1m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "max by(host)(1-node_memory_MemAvailable_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"}/node_memory_MemTotal_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "max by(host)(1-node_filesystem_avail_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"}/node_filesystem_size_bytes{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",fstype!~\"tmpfs|overlay|squashfs\",mountpoint!~\"/run.*|/var/lib/docker.*\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "E",
+          "expr": "sum by(host)(rate(node_network_receive_bytes_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",device!~\"lo|veth.*|br-.*|docker.*|tailscale.*\"}[1m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "F",
+          "expr": "sum by(host)(rate(node_network_transmit_bytes_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",device!~\"lo|veth.*|br-.*|docker.*|tailscale.*\"}[1m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "G",
+          "expr": "max by(host)(node_hwmon_temp_celsius{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "H",
+          "expr": "time()-max by(host)(node_boot_time_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "I",
+          "expr": "sum by(host)(technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "J",
+          "expr": "sum by(host)((technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == bool 0) + on(host,container) max by(host,container)(technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\",health=\"unhealthy\"}))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "UNKNOWN",
+                  "color": "#9299A5"
+                }
+              }
+            }
+          ],
+          "custom": {
+            "minWidth": 60,
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Host"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Host detail",
+                    "url": "/d/technis-host?var-host=${__value.text}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "OK",
+                        "color": "#719580",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "UNKNOWN",
+                        "color": "#9299A5",
+                        "index": 1
+                      },
+                      "2": {
+                        "text": "WARN",
+                        "color": "#FFB547",
+                        "index": 2
+                      },
+                      "3": {
+                        "text": "FAIL",
+                        "color": "#F2495C",
+                        "index": 3
+                      }
+                    }
+                  },
+                  {
+                    "type": "special",
+                    "options": {
+                      "match": "null",
+                      "result": {
+                        "text": "UNKNOWN",
+                        "color": "#9299A5"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#719580",
+                      "value": null
+                    },
+                    {
+                      "color": "#FFB547",
+                      "value": 0.8
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.92
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#719580",
+                      "value": null
+                    },
+                    {
+                      "color": "#FFB547",
+                      "value": 0.8
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.92
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Disk"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#719580",
+                      "value": null
+                    },
+                    {
+                      "color": "#FFB547",
+                      "value": 0.8
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.92
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Receive"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Transmit"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temp"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#719580",
+                      "value": null
+                    },
+                    {
+                      "color": "#FFB547",
+                      "value": 75
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Uptime"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Containers"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Abnormal"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#719580",
+                      "value": null
+                    },
+                    {
+                      "color": "#FFB547",
+                      "value": 1
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 3
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "host",
+            "mode": "outerTabular"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "host",
+                "Value #A",
+                "Value #B",
+                "Value #C",
+                "Value #D",
+                "Value #E",
+                "Value #F",
+                "Value #G",
+                "Value #H",
+                "Value #I",
+                "Value #J"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "host": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3,
+              "Value #D": 4,
+              "Value #E": 5,
+              "Value #F": 6,
+              "Value #G": 7,
+              "Value #H": 8,
+              "Value #I": 9,
+              "Value #J": 10
+            },
+            "renameByName": {
+              "host": "Host",
+              "Value #A": "State",
+              "Value #B": "CPU",
+              "Value #C": "Memory",
+              "Value #D": "Disk",
+              "Value #E": "Receive",
+              "Value #F": "Transmit",
+              "Value #G": "Temp",
+              "Value #H": "Uptime",
+              "Value #I": "Containers",
+              "Value #J": "Abnormal"
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "sortBy": [
+          {
+            "displayName": "Host",
+            "desc": false
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "CPU pressure \u00b7 1h",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 6,
+        "h": 5
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"cpu\",scope=\"some\",window=\"10\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{host}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "axisLabel": "",
+            "axisBorderShow": false,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "title": "Memory pressure \u00b7 1h",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 18,
+        "w": 6,
+        "h": 5
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"memory\",scope=\"some\",window=\"10\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{host}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "axisLabel": "",
+            "axisBorderShow": false,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "title": "I/O pressure \u00b7 1h",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 6,
+        "h": 5
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "technis_pressure_average_ratio{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",job=\"node\",resource=\"io\",scope=\"some\",window=\"10\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{host}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "axisLabel": "",
+            "axisBorderShow": false,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "title": "Slowest HTTP checks \u00b7 1h",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 18,
+        "w": 6,
+        "h": 5
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(3,max by(name)(gatus_results_duration_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\"}))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "{{name}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "spanNulls": false,
+            "axisLabel": "",
+            "axisBorderShow": false,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "title": "COVERAGE / RECENT CHANGES",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 16,
+        "h": 3
+      },
+      "description": "No-health-check count excludes Docker health states but does not imply no external HTTP coverage. Start changes detect restarts of an existing cAdvisor series; recreated containers can appear as a new series and are not an exact restart counter. OOM is sampled counter growth.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum((technis_docker_container_running{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 1) unless on(host,container) (technis_docker_container_health{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",container!~\"$ignored_containers\"} == 1)) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "No health check",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(changes(container_start_time_seconds{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[15m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "Start changes / 15m",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(increase(container_oom_events_total{environment=~\"$environment\",host=~\"$host\",stack=~\"$stack\",name!=\"\"}[15m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "legendFormat": "OOM / 15m",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 22
+        }
+      }
+    },
+    {
+      "id": 28,
+      "title": "READING THIS CONSOLE",
+      "type": "text",
+      "gridPos": {
+        "x": 16,
+        "y": 23,
+        "w": 8,
+        "h": 3
+      },
+      "description": "",
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "UNKNOWN",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#719580",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**OK** observed pass \u00b7 **UNKNOWN** missing evidence \u00b7 **WARN / FAIL** action\n\n15 s refresh \u00b7 1 h trends \u00b7 [Hosts](/d/technis-host) \u00b7 [Containers](/d/technis-cgroups) \u00b7 [Storage](/d/technis-disks)"
+      }
+    }
+  ]
+}

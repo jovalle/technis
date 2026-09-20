@@ -1,0 +1,101 @@
+// Host namespaces are required: /proc/net is relative to the reader's network namespace.
+prometheus.remote_write "central" {
+  external_labels = {
+    environment = "homelab",
+    host = sys.env("OBSERVABILITY_HOST"),
+    site = sys.env("OBSERVABILITY_SITE"),
+    stack = sys.env("OBSERVABILITY_HOST"),
+  }
+  endpoint {
+    url = "http://100.100.1.3:8427/api/v1/write"
+    queue_config { max_shards = 4 }
+  }
+  wal {
+    truncate_frequency = "1h"
+    min_keepalive_time = "1h"
+    max_keepalive_time = "72h"
+  }
+}
+
+prometheus.exporter.unix "host" {
+  procfs_path = "/host/proc"
+  sysfs_path = "/host/sys"
+  rootfs_path = "/rootfs"
+  udev_data_path = "/run/udev/data"
+  disable_collectors = ["powersupplyclass"]
+  enable_collectors = ["interrupts", "softirqs", "processes", "systemd", "slabinfo", "buddyinfo", "zoneinfo", "ethtool", "tcpstat", "logind", "drm"]
+  cpu { guest = true }
+  netstat { fields = ".*" }
+  vmstat { fields = ".*" }
+  textfile { directory = "/textfile" }
+  systemd {
+    enable_restarts = true
+    start_time = true
+    task_metrics = true
+  }
+  filesystem {
+    mount_points_exclude = "^/(dev|proc|sys|run/credentials/.+|var/lib/docker/.+)($|/)"
+  }
+}
+discovery.relabel "host" {
+  targets = prometheus.exporter.unix.host.targets
+  rule {
+    target_label = "instance"
+    replacement = sys.env("OBSERVABILITY_HOST")
+  }
+  rule {
+    target_label = "job"
+    replacement = "node"
+  }
+}
+prometheus.scrape "host" {
+  targets = discovery.relabel.host.output
+  forward_to = [prometheus.remote_write.central.receiver]
+  scrape_interval = "5s"
+  scrape_timeout = "4s"
+}
+
+prometheus.exporter.process "applications" {
+  procfs_path = "/host/proc"
+  track_children = false
+  track_threads = false
+  remove_empty_groups = true
+  matcher {
+    name = "{{.Username}}/{{.Comm}}"
+    cmdline = [".+"]
+  }
+}
+discovery.relabel "processes" {
+  targets = prometheus.exporter.process.applications.targets
+  rule {
+    target_label = "instance"
+    replacement = sys.env("OBSERVABILITY_HOST")
+  }
+  rule {
+    target_label = "job"
+    replacement = "process"
+  }
+}
+prometheus.scrape "processes" {
+  targets = discovery.relabel.processes.output
+  forward_to = [prometheus.remote_write.central.receiver]
+  scrape_interval = "5s"
+  scrape_timeout = "4s"
+}
+prometheus.exporter.self "observer" {}
+discovery.relabel "self" {
+  targets = prometheus.exporter.self.observer.targets
+  rule {
+    target_label = "instance"
+    replacement = sys.env("OBSERVABILITY_HOST")
+  }
+  rule {
+    target_label = "job"
+    replacement = "host-observer"
+  }
+}
+prometheus.scrape "self" {
+  targets = discovery.relabel.self.output
+  forward_to = [prometheus.remote_write.central.receiver]
+  scrape_interval = "30s"
+}

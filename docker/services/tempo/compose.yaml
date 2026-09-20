@@ -1,0 +1,35 @@
+services:
+  tempo:
+    cap_drop:
+      - ALL
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+      - -target=all
+    container_name: tempo
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 2G
+        reservations:
+          cpus: 0.1
+          memory: 256M
+    expose:
+      - 3200
+      - 4317
+      - 4318
+    hostname: tempo
+    image: grafana/tempo:2.8.2
+    labels:
+      - observability.metrics.address=tempo:3200
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 10001:10001
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/tempo/data:/var/tempo
