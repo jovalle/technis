@@ -1,0 +1,4 @@
+services:
+  go-check:
+    environment:
+      GO_CHECK_URL: ${GO_CHECK_URL:-}
