@@ -1,7 +1,8 @@
 {
+  "chat.newSession.defaultMode": "Technis",
   "files.associations": {
     "*.conf": "properties",
-    "*.env*": "shellscript",
+    "*.env*": "dotenv",
     "*.hcl": "hcl",
     "*.j2": "jinja2",
     "*.json5": "jsonc",
@@ -32,7 +33,6 @@
     "*.md": "markdown",
     "*.tf*": "terraform",
     "*config*": "settings",
-    "*taskfile*": "javascript",
     ".cz-config.*": "commitizen",
     ".git*": "git",
     ".prettier*": "prettier",
@@ -46,7 +46,6 @@
     "renovate.json*": "renovate",
     "talosconfig": "gear",
     "taplo.toml": "toml",
-    "taskfile.yaml": "taskfile",
     "technis.key": "key",
     "values.yaml": "helm"
   },
