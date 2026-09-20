@@ -1,0 +1,18 @@
+# Targets are explicit. tctl never uses the ambient Docker context.
+[hosts.mothership]
+endpoint = "ssh://mothership"
+expected_name = "mothership"
+
+[hosts.nexus]
+endpoint = "ssh://nexus"
+expected_name = "nexus"
+# Optional shared item first, host item second. Values are passed only to Compose children.
+# vault_items = ["shared-item-uuid", "nexus-item-uuid"]
+
+[hosts.stargate]
+endpoint = "ssh://stargate"
+expected_name = "stargate"
+
+# Optional overrides use key = action. See tools/tctl/README.md for action names.
+[keys]
+"ctrl-b" = "sidebar"
