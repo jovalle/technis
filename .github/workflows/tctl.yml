@@ -1,0 +1,94 @@
+name: tctl
+
+"on":
+  pull_request:
+    paths: ["tools/tctl/**", "Cargo.*", "rust-toolchain.toml", "tctl.toml", "scripts/tctl/**", "Makefile", ".github/workflows/tctl.yml"]
+  push:
+    branches: [main]
+    paths: ["tools/tctl/**", "Cargo.*", "rust-toolchain.toml", "tctl.toml", "scripts/tctl/**", "Makefile", ".github/workflows/tctl.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tctl-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      CARGO_TERM_COLOR: always
+      TCTL_REVISION: ${{ github.sha }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup show
+          rustup target add "$TARGET"
+      - name: Check and test
+        run: make check
+      - name: Build release archive
+        run: |
+          if [[ "$TARGET" == *-linux-musl ]]; then
+            export RUSTFLAGS="-C linker=rust-lld"
+          fi
+          cargo build --locked --release --target "$TARGET"
+          "target/$TARGET/release/tctl" --version
+          mkdir -p dist
+          tar -czf "dist/tctl-$TARGET.tar.gz" -C "target/$TARGET/release" tctl
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tctl-${{ matrix.target }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: tctl-*
+          path: dist
+          merge-multiple: true
+      - name: Publish immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          tag="tctl-${REVISION}"
+          cd dist
+          test "$(find . -name '*.tar.gz' | wc -l)" -eq 4
+          printf '# release: %s\n' "$tag" > SHA256SUMS
+          sha256sum ./*.tar.gz | sed 's|  ./|  |' >> SHA256SUMS
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; leaving it unchanged."
+          else
+            gh release create "$tag" ./*.tar.gz SHA256SUMS \
+              --target "$REVISION" --title "tctl ${REVISION:0:12}" \
+              --generate-notes --latest
+          fi
