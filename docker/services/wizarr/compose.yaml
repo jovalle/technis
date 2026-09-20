@@ -27,9 +27,6 @@ services:
       timeout: 10s
     hostname: wizarr
     image: ghcr.io/wizarrrr/wizarr:latest
-    labels:
-      - gatus.group=curation
-      - gatus.priority=P3
     ports:
       - 5690:5690
     restart: unless-stopped

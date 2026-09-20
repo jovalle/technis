@@ -38,8 +38,6 @@ services:
     hostname: plex
     image: plexinc/pms-docker:latest
     labels:
-      - gatus.group=playback
-      - gatus.priority=P2
       - traefik.enable=false
     network_mode: host
     restart: unless-stopped

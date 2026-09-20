@@ -31,8 +31,6 @@ services:
     hostname: bazarr
     image: lscr.io/linuxserver/bazarr:latest
     labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
       - traefik.http.routers.bazarr.middlewares=auth@file
       - traefik.http.services.bazarr.loadbalancer.server.port=6767
     restart: unless-stopped

@@ -1,0 +1,4 @@
+services:
+  gluetun:
+    profiles:
+      - unique-wireguard-peer

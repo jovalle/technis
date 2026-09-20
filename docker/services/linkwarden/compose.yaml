@@ -38,8 +38,6 @@ services:
     hostname: linkwarden
     image: ghcr.io/linkwarden/linkwarden:latest
     labels:
-      - gatus.group=cloud
-      - gatus.priority=P2
       - traefik.http.services.linkwarden.loadbalancer.server.port=3000
     restart: unless-stopped
     volumes:

@@ -31,8 +31,6 @@ services:
     hostname: pgadmin
     image: dpage/pgadmin4:latest
     labels:
-      - gatus.group=admin
-      - gatus.priority=P3
       - traefik.http.routers.pgadmin.rule=Host(`pgadmin.techn.is`)
       - traefik.http.routers.pgadmin.service=pgadmin
       - traefik.http.services.pgadmin.loadbalancer.server.port=8080

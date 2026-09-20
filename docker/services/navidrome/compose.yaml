@@ -36,8 +36,6 @@ services:
     hostname: navidrome
     image: deluan/navidrome:latest
     labels:
-      - gatus.group=playback
-      - gatus.priority=P2
       - traefik.http.services.navidrome.loadbalancer.server.port=4533
     restart: unless-stopped
     security_opt:

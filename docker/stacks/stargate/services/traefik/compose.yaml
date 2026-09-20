@@ -16,12 +16,18 @@ services:
       - --entrypoints.websecure.http.tls.certresolver=letsencrypt
       - --entrypoints.websecure.http.tls=true
       - --log.level=INFO
+      - --metrics.prometheus=true
       - --ping=true
       - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
       - --providers.docker.exposedbydefault=false
       - --providers.docker=true
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
     depends_on:
       docker-socket-proxy:
+        condition: service_healthy
+        required: true
+      tailscale:
         condition: service_healthy
         required: true
     deploy:
@@ -76,4 +82,5 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/data/dynamic:/etc/traefik/dynamic:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/letsencrypt:/etc/letsencrypt

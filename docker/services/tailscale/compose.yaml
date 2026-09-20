@@ -29,8 +29,6 @@ services:
     hostname: ${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}
     image: tailscale/tailscale:latest
     labels:
-      - gatus.group=transport
-      - gatus.priority=P2
       - traefik.enable=false
     network_mode: host
     restart: unless-stopped

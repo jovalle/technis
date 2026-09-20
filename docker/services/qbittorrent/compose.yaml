@@ -37,8 +37,6 @@ services:
       timeout: 10s
     image: lscr.io/linuxserver/qbittorrent:latest
     labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
       - traefik.enable=false
     network_mode: service:gluetun
     restart: unless-stopped

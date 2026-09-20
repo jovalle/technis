@@ -1,0 +1,5 @@
+services:
+  host-observer:
+    environment:
+      OBSERVABILITY_HOST: nexus
+      OBSERVABILITY_SITE: home

@@ -35,9 +35,6 @@ services:
       timeout: 10s
     hostname: profilarr
     image: ghcr.io/dictionarry-hub/profilarr:latest
-    labels:
-      - gatus.group=curation
-      - gatus.priority=P3
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

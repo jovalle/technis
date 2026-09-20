@@ -26,19 +26,23 @@ services:
       interval: 30s
       retries: 3
       start_period: 30s
-      test:
-        - CMD
-        - wget
-        - -q
-        - -O-
-        - http://127.0.0.1:9091/api/health
+      test: [CMD, wget, -q, -O-, http://127.0.0.1:9091/api/health]
       timeout: 10s
     hostname: authelia
-    image: authelia/authelia:latest
+    image: authelia/authelia:4.39.23@sha256:0b6409d5cfa1bc244812fa4094f0272421ac156b864ed4178c60480c3f6d3ee9
     labels:
       - traefik.enable=true
       - traefik.http.routers.authelia.rule=Host(`auth.techn.is`)
       - traefik.http.services.authelia.loadbalancer.server.port=9091
+    networks:
+      - default
+    ports:
+      - host_ip: 192.168.1.2
+        published: "9091"
+        target: 9091
+      - host_ip: 100.100.1.2
+        published: "9091"
+        target: 9091
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

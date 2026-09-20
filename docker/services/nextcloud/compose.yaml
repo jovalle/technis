@@ -44,8 +44,6 @@ services:
     hostname: nextcloud
     image: nextcloud:34-apache
     labels:
-      - gatus.group=cloud
-      - gatus.priority=P2
       - traefik.http.routers.nextcloud.rule=Host(`nextcloud.techn.is`) || Host(`${NEXTCLOUD_ROOT_DOMAIN:?NEXTCLOUD_ROOT_DOMAIN is required}`)
       - traefik.http.services.nextcloud.loadbalancer.server.port=80
     restart: unless-stopped
@@ -89,7 +87,6 @@ services:
         - NONE
     image: nextcloud:34-apache
     labels:
-      - gatus.enable=false
       - traefik.enable=false
     profiles:
       - manual
@@ -138,7 +135,6 @@ services:
     hostname: nextcloud-cron
     image: nextcloud:34-apache
     labels:
-      - gatus.enable=false
       - traefik.enable=false
     restart: unless-stopped
     security_opt:

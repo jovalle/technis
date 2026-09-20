@@ -32,8 +32,6 @@ services:
     hostname: sabnzbd
     image: lscr.io/linuxserver/sabnzbd:latest
     labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
       - traefik.http.routers.sabnzbd.middlewares=auth@file
     ports:
       - 8081:8080

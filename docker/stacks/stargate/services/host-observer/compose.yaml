@@ -1,0 +1,5 @@
+services:
+  host-observer:
+    environment:
+      OBSERVABILITY_HOST: stargate
+      OBSERVABILITY_SITE: edge

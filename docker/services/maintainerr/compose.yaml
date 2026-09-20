@@ -26,8 +26,6 @@ services:
     hostname: maintainerr
     image: ghcr.io/maintainerr/maintainerr:latest
     labels:
-      - gatus.group=curation
-      - gatus.priority=P3
       - traefik.http.routers.maintainerr.middlewares=auth@file
       - traefik.http.services.maintainerr.loadbalancer.server.port=6246
     restart: unless-stopped

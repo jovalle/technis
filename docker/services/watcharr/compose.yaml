@@ -27,8 +27,6 @@ services:
     hostname: watcharr
     image: ghcr.io/sbondco/watcharr:v4.2.1
     labels:
-      - gatus.group=curation
-      - gatus.priority=P3
       - traefik.docker.network=nexus_default
       - traefik.enable=true
       - traefik.http.routers.watcharr.entrypoints=websecure
@@ -44,6 +42,5 @@ services:
       - /tmp:rw,noexec,nosuid,size=64m
     networks:
       - default
-      - coolify
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/watcharr:/data
