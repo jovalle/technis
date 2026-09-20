@@ -33,8 +33,6 @@ services:
     hostname: redis
     image: redis:latest
     labels:
-      - gatus.group=data
-      - gatus.priority=P2
       - traefik.enable=false
     read_only: true
     restart: unless-stopped
@@ -45,3 +43,36 @@ services:
     user: 1000:1000
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/redis:/data
+  redis-exporter:
+    cap_drop:
+      - ALL
+    container_name: redis-exporter
+    depends_on:
+      redis:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 64M
+        reservations:
+          cpus: 0.05
+          memory: 16M
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test: [CMD, /redis_exporter, --version]
+      timeout: 10s
+    hostname: redis-exporter
+    image: oliver006/redis_exporter:latest
+    labels:
+      - observability.metrics.address=redis-exporter:9121
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true

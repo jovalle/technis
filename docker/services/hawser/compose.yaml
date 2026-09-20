@@ -1,0 +1,40 @@
+services:
+  hawser:
+    cap_drop:
+      - ALL
+    container_name: hawser
+    depends_on:
+      tailscale:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - AGENT_NAME=${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - DOCKHAND_SERVER_URL=wss://dockhand.${DOMAIN:?DOMAIN is required}/api/hawser/connect
+      - LOG_LEVEL=${HAWSER_LOG_LEVEL:-info}
+      - REQUEST_TIMEOUT=${HAWSER_REQUEST_TIMEOUT:-1800}
+      - STACKS_DIR=${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/hawser/stacks
+      - TOKEN=${HAWSER_TOKEN:?HAWSER_TOKEN is required}
+    hostname: hawser
+    image: ghcr.io/finsys/hawser:0.2.49@sha256:6322eafea118a26aee4f1b12bb42b34bb841bda85e38a8a6d24c1cc86bffb6ec
+    labels:
+      - dockhand.notify=false
+      - dockhand.update=false
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/hawser/stacks:${STACK_DATA_ROOT}/hawser/stacks

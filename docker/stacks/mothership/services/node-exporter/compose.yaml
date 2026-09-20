@@ -5,9 +5,12 @@ services:
       - --path.sysfs=/host/sys
       - --path.rootfs=/rootfs
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-      - --web.listen-address=${INTERNAL_IP}:9100
+      - --no-collector.powersupplyclass
+      - --web.listen-address=${INTERNAL_IP:?INTERNAL_IP is required}:9100
     healthcheck:
       test:
-        - CMD-SHELL
-        - wget -q --spider http://${INTERNAL_IP}:9100/metrics || exit 1
+        [
+          CMD-SHELL,
+          "wget -q --spider http://${INTERNAL_IP:?INTERNAL_IP is required}:9100/metrics || exit 1",
+        ]
     network_mode: host

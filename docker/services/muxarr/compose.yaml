@@ -32,8 +32,6 @@ services:
     hostname: muxarr
     image: ghcr.io/kirovair/muxarr:latest
     labels:
-      - gatus.group=curation
-      - gatus.priority=P3
       - traefik.http.routers.muxarr.middlewares=auth@file
       - traefik.http.services.muxarr.loadbalancer.server.port=8183
     restart: unless-stopped

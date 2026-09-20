@@ -1,6 +1,0 @@
-services:
-  authelia:
-    labels:
-      - traefik.enable=false
-    networks:
-      - internal

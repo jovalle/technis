@@ -19,13 +19,12 @@ services:
       retries: 3
       start_period: 30s
       test:
-        - CMD-SHELL
-        - wget -q --spider http://127.0.0.1:8080/healthz || exit 1
+        [CMD-SHELL, wget -q --spider http://127.0.0.1:8080/healthz || exit 1]
       timeout: 10s
     hostname: cadvisor
     image: ghcr.io/google/cadvisor:latest
     labels:
-      - traefik.http.routers.cadvisor.middlewares=auth@file
+      - traefik.enable=false
     privileged: true
     read_only: true
     restart: unless-stopped
@@ -35,5 +34,5 @@ services:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro

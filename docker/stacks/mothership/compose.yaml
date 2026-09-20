@@ -1,13 +1,11 @@
 include:
-  - path: ../../services/atuin/compose.yaml
+  - path:
+      - ../../services/alloy/compose.yaml
+      - services/alloy/compose.yaml
     env_file: &env
       - ../../.env
       - .env
-  - path:
-      - ../../services/authelia/compose.yaml
-      - services/authelia/compose.yaml
-    env_file: *env
-  - path: ../../services/beszel-agent/compose.yaml
+  - path: ../../services/atuin/compose.yaml
     env_file: *env
   - path:
       - ../../services/cadvisor/compose.yaml
@@ -15,45 +13,27 @@ include:
     env_file: *env
   - path: services/cloudflared/compose.yaml
     env_file: *env
-  - path: ../../services/crowdsec/compose.yaml
-    env_file: *env
-  - path: ../../services/docker-metrics-proxy/compose.yaml
-    env_file: *env
   - path:
       - ../../services/docker-socket-proxy/compose.yaml
       - services/docker-socket-proxy/compose.yaml
     env_file: *env
-  - path:
-      - ../../services/docker-socket-proxy-api/compose.yaml
-      - services/docker-socket-proxy-api/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/gatus/compose.yaml
-      - services/gatus/compose.yaml
-    env_file: *env
-  - path: services/gatus-ms/compose.yaml
-    env_file: *env
-  - path: services/gatus-s/compose.yaml
-    env_file: *env
-  - path: ../../services/searxng/compose.yaml
-    env_file: *env
-  - path: ../../services/loki/compose.yaml
-    env_file: *env
-  - path: ../../services/pangolin/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/newt/compose.yaml
-      - services/newt/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/node-exporter/compose.yaml
-      - services/node-exporter/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/promtail/compose.yaml
-      - services/promtail/compose.yaml
-    env_file: *env
   - path: ../../services/external-dns/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/go-check/compose.yaml
+      - services/go-check/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/gluetun/compose.yaml
+      - services/gluetun/compose.yaml
+    env_file: *env
+  - path: ../../services/hawser/compose.yaml
+    env_file: *env
+  - path:
+      - ../../services/host-observer/compose.yaml
+      - services/host-observer/compose.yaml
+    env_file: *env
+  - path: ../../services/netdata/compose.yaml
     env_file: *env
   - path: ../../services/tailscale/compose.yaml
     env_file: *env
@@ -64,14 +44,6 @@ include:
   - path:
       - ../../services/traefik/compose.yaml
       - services/traefik/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/valkey/compose.yaml
-      - services/valkey/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/whoami/compose.yaml
-      - services/whoami/compose.yaml
     env_file: *env
 
 name: mothership
@@ -87,7 +59,7 @@ networks:
       config:
         - subnet: 172.52.0.0/16
     name: internal
-  secondary-status:
+  status:
     driver: bridge
     enable_ipv6: true
-    name: mothership_secondary_status
+    name: status

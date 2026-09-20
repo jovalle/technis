@@ -1,6 +1,0 @@
-jwks:
-  - key_id: main
-    algorithm: RS256
-    use: sig
-    key: |
-      OIDC_SIGNING_KEY_CONTENT_HERE

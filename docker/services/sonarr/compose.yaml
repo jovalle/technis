@@ -32,8 +32,6 @@ services:
     hostname: sonarr
     image: lscr.io/linuxserver/sonarr:latest
     labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
       - traefik.http.routers.sonarr.middlewares=auth@file
       - traefik.http.services.sonarr.loadbalancer.server.port=8989
     restart: unless-stopped

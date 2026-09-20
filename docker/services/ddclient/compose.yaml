@@ -19,9 +19,27 @@ services:
           memory: 16M
     environment:
       - DDCLIENT_CLOUDFLARE_API_TOKEN=${TRAEFIK_CLOUDFLARE_DNS_API_TOKEN:?TRAEFIK_CLOUDFLARE_DNS_API_TOKEN is required}
+      - DDCLIENT_HOSTNAME=${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}.techn.is
       - PGID=${PGID:-1000}
       - PUID=${PUID:-1000}
       - TZ=${TZ:-America/New_York}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        printf '%s\n' \
+          'daemon=300' \
+          'foreground=yes' \
+          'syslog=no' \
+          'quiet=no' \
+          'usev4=webv4' \
+          'webv4=ipify-ipv4' \
+          'protocol=cloudflare' \
+          'zone=techn.is' \
+          'login=token' \
+          'password_env=DDCLIENT_CLOUDFLARE_API_TOKEN' \
+          "$$DDCLIENT_HOSTNAME" > /config/ddclient.conf
+        exec /init
     healthcheck:
       interval: 30s
       retries: 3

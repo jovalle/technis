@@ -32,8 +32,6 @@ services:
     hostname: lidarr
     image: lscr.io/linuxserver/lidarr:latest
     labels:
-      - gatus.group=acquisition
-      - gatus.priority=P3
       - traefik.http.routers.lidarr.middlewares=auth@file
     restart: unless-stopped
     security_opt:
