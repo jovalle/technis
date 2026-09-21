@@ -1,0 +1,6 @@
+services:
+  postgres:
+    ports:
+      - host_ip: 100.100.1.2
+        published: "5433"
+        target: 5432

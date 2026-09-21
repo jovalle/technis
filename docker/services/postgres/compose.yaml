@@ -1,47 +1,40 @@
 services:
   postgres:
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: postgres
     deploy:
       resources:
         limits:
-          cpus: 2
-          memory: 2048M
-        reservations:
           cpus: 0.5
-          memory: 512M
-    environment:
-      - PGDATA=${POSTGRES_PGDATA:?POSTGRES_PGDATA is required}
-      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB is required}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
-      - TZ=${TZ:-America/New_York}
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
     healthcheck:
       interval: 10s
       retries: 5
       start_period: 30s
       test:
-        - CMD-SHELL
-        - pg_isready -U postgres
+        - CMD
+        - wget
+        - -q
+        - -O-
+        - http://127.0.0.1:8404/health
       timeout: 5s
     hostname: postgres
-    image: pgvector/pgvector:pg17
+    image: haproxy:3.2-alpine@sha256:5961c68bc8a81c5124d0a98ab20f81b74717d6afe596e805977d9cf84c126222
     labels:
       - traefik.enable=false
+      - com.centurylinklabs.watchtower.enable=false
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
     volumes:
-      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres:/var/lib/postgresql/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
   postgres-exporter:
     cap_drop:
       - ALL
