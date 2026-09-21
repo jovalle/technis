@@ -4,4 +4,4 @@ services:
       - 100.100.100.100
     environment:
       - AUTHELIA_SESSION_REDIS_HOST=nexus
-      - AUTHELIA_STORAGE_POSTGRES_ADDRESS=tcp://nexus:5433
+      - AUTHELIA_STORAGE_POSTGRES_ADDRESS=tcp://postgres:5432

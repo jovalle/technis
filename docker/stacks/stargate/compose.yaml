@@ -43,6 +43,10 @@ include:
     env_file: *env
   - path: ../../services/ntfy/compose.yaml
     env_file: *env
+  - path:
+      - ../../services/postgres/compose.yaml
+      - services/postgres/compose.yaml
+    env_file: *env
   - path: ../../services/tailscale/compose.yaml
     env_file: *env
   - path:
