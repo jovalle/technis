@@ -31,6 +31,10 @@ services:
     init: true
     ports:
       - 5055:5055
+    labels:
+      - traefik.http.routers.seerr.rule=Host(`seerr.techn.is`) || Host(`request.techn.is`) || Host(`req.techn.is`)
+      - traefik.http.routers.seerr.service=seerr
+      - traefik.http.services.seerr.loadbalancer.server.port=5055
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

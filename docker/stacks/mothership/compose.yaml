@@ -1,18 +1,8 @@
 include:
-  - path:
-      - ../../services/alloy/compose.yaml
-      - services/alloy/compose.yaml
+  - path: services/cloudflared/compose.yaml
     env_file: &env
       - ../../.env
       - .env
-  - path: ../../services/atuin/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/cadvisor/compose.yaml
-      - services/cadvisor/compose.yaml
-    env_file: *env
-  - path: services/cloudflared/compose.yaml
-    env_file: *env
   - path:
       - ../../services/docker-socket-proxy/compose.yaml
       - services/docker-socket-proxy/compose.yaml
@@ -20,18 +10,10 @@ include:
   - path: ../../services/external-dns/compose.yaml
     env_file: *env
   - path:
-      - ../../services/go-check/compose.yaml
-      - services/go-check/compose.yaml
-    env_file: *env
-  - path:
       - ../../services/gluetun/compose.yaml
       - services/gluetun/compose.yaml
     env_file: *env
   - path: ../../services/hawser/compose.yaml
-    env_file: *env
-  - path:
-      - ../../services/host-observer/compose.yaml
-      - services/host-observer/compose.yaml
     env_file: *env
   - path: ../../services/netdata/compose.yaml
     env_file: *env
@@ -59,7 +41,3 @@ networks:
       config:
         - subnet: 172.52.0.0/16
     name: internal
-  status:
-    driver: bridge
-    enable_ipv6: true
-    name: status

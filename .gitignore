@@ -30,6 +30,7 @@ __pycache__/
 *.tfstate
 *.tfstate.*
 .terraform.tfstate.lock.info
+*.local.hcl
 
 # Sensitive files
 .env
