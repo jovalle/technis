@@ -1,6 +1,6 @@
 [submodule "docs"]
 	path = docs
-	url = https://github.com/jovalle/docs.techn.is
+	url = https://github.com/jovalle/technis-web-docs
 [submodule "web"]
 	path = web
-	url = https://github.com/jovalle/www.techn.is
+	url = https://github.com/jovalle/technis-web-www
