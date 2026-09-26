@@ -9,7 +9,6 @@ services:
     image: traefik:latest
     labels:
       - dockhand.update=false
-      - observability.metrics.address=traefik:8080
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

@@ -37,5 +37,4 @@ services:
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN:?CLOUDFLARED_TUNNEL_TOKEN is required}
     labels:
-      - observability.metrics.address=cloudflared:60123
       - traefik.enable=false
