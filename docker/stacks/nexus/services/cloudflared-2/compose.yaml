@@ -29,7 +29,6 @@ services:
     hostname: nexus
     image: cloudflare/cloudflared:latest
     labels:
-      - observability.metrics.address=cloudflared-2:60123
       - traefik.enable=false
     networks:
       default:

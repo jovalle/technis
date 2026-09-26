@@ -1,70 +1,65 @@
 services:
   postgres:
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    build:
+      context: .
     cap_drop:
       - ALL
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - port=5432
+      - -c
+      - shared_preload_libraries=timescaledb
+      - -c
+      - timescaledb.license=timescale
+      - -c
+      - timescaledb.telemetry_level=off
+      - -c
+      - max_locks_per_transaction=4096
+      - -c
+      - max_worker_processes=27
+      - -c
+      - shared_buffers=512MB
     container_name: postgres
     deploy:
       resources:
         limits:
-          cpus: 0.5
-          memory: 128M
+          cpus: 2
+          memory: 4096M
         reservations:
-          cpus: 0.05
-          memory: 32M
+          cpus: 0.5
+          memory: 512M
+    environment:
+      - PGDATA=${POSTGRES_PGDATA:?POSTGRES_PGDATA is required}
+      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - TZ=${TZ:-America/New_York}
     healthcheck:
       interval: 10s
       retries: 5
       start_period: 30s
       test:
-        - CMD
-        - wget
-        - -q
-        - -O-
-        - http://127.0.0.1:8404/health
+        - CMD-SHELL
+        - pg_isready -U postgres
       timeout: 5s
     hostname: postgres
-    image: haproxy:3.2-alpine@sha256:5961c68bc8a81c5124d0a98ab20f81b74717d6afe596e805977d9cf84c126222
+    image: technis/postgres:pg17-timescaledb2.28.3
     labels:
       - traefik.enable=false
-      - com.centurylinklabs.watchtower.enable=false
-    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    shm_size: 512m
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
     volumes:
-      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-  postgres-exporter:
-    cap_drop:
-      - ALL
-    container_name: postgres-exporter
-    depends_on:
-      postgres:
-        condition: service_healthy
-        required: true
-    deploy:
-      resources:
-        limits:
-          cpus: 0.25
-          memory: 128M
-        reservations:
-          cpus: 0.05
-          memory: 32M
-    environment:
-      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?sslmode=disable
-    healthcheck:
-      interval: 30s
-      retries: 3
-      start_period: 15s
-      test: [CMD, /bin/postgres_exporter, --version]
-      timeout: 10s
-    hostname: postgres-exporter
-    image: prometheuscommunity/postgres-exporter:latest
-    labels:
-      - observability.metrics.address=postgres-exporter:9187
-      - traefik.enable=false
-    read_only: true
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres:/var/lib/postgresql/data
