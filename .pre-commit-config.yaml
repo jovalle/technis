@@ -29,7 +29,7 @@ repos:
   - hooks:
       - id: gitleaks
     repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
+    rev: v8.30.0
   - hooks:
       - args:
           - --severity=warning
@@ -37,7 +37,7 @@ repos:
         exclude: ^(docs/|web/|archive/)
         id: shellcheck
     repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+    rev: v0.11.0.1-1
   - hooks:
       - args:
           - -i
@@ -47,21 +47,21 @@ repos:
         exclude: ^(docs/|web/|archive/)
         id: shfmt
     repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.12.0-2
+    rev: v3.14.1-1
   - hooks:
       - args:
           - --config-file=.yamllint.yaml
         exclude: ^(archive/|docs/)
         id: yamllint
     repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
   - hooks:
       - args:
           - --config=.markdownlint.yaml
         exclude: ^(archive/|CHANGELOG)
         id: markdownlint
     repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.45.0
+    rev: v0.49.1
   - hooks:
       - exclude: ^(archive/|package-lock\.json)
         args:
@@ -80,4 +80,4 @@ repos:
         stages:
           - commit-msg
     repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.3.0
+    rev: v4.4.0
