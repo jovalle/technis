@@ -47,5 +47,13 @@
       "pattern": "requests.techn.is/*",
       "zone_name": "techn.is",
     },
+    {
+      "pattern": "photos.ovall.es/*",
+      "zone_name": "ovall.es",
+    },
+    {
+      "pattern": "photos.techn.is/api/auth/login",
+      "zone_name": "techn.is",
+    },
   ],
 }

@@ -121,7 +121,7 @@ endpoints:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Photos
-    url: https://photos.ovall.es/api/server/ping
+    url: https://photos.techn.is/api/server/ping
     interval: 1m
     client: *public-client
     ui: *private-result
