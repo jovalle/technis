@@ -16,6 +16,7 @@ services:
         reservations:
           memory: 64M
     environment:
+      - AUTHELIA_SERVER_ASSET_PATH=/config/assets
       - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET is required}
       - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY:?AUTHELIA_STORAGE_ENCRYPTION_KEY is required}
       - TZ=${TZ:-America/New_York}
@@ -44,3 +45,4 @@ services:
     user: 1000:1000
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/authelia:/config
+      - ../../../assets:/config/assets:ro

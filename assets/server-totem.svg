@@ -1,0 +1,302 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="332" height="332" viewBox="2.5 14.75 332 332"
+     fill="none" role="img" aria-labelledby="technis-title">
+  <title id="technis-title">Technis cyan glass T symbol</title>
+
+  <defs>
+    <linearGradient id="top-left" x1="63" y1="36" x2="174" y2="61" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38D6F3"/>
+      <stop offset="1" stop-color="#13C3EF"/>
+    </linearGradient>
+
+    <linearGradient id="top-right" x1="191" y1="25" x2="252" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00AFDA"/>
+      <stop offset="1" stop-color="#00D0F0"/>
+    </linearGradient>
+
+    <linearGradient id="upper-front-left" x1="34" y1="80" x2="168.5" y2="83" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00536B"/>
+      <stop offset=".55" stop-color="#002D3E"/>
+      <stop offset="1" stop-color="#002B3F"/>
+    </linearGradient>
+
+    <linearGradient id="upper-front-right" x1="168.5" y1="81" x2="303" y2="81" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00334B"/>
+      <stop offset=".56" stop-color="#005578"/>
+      <stop offset=".86" stop-color="#0088AF"/>
+      <stop offset="1" stop-color="#00AED2"/>
+    </linearGradient>
+
+    <radialGradient id="upper-reflection"
+                    cx="260" cy="61" r="98"
+                    gradientTransform="translate(0 40.26) scale(1 .34)"
+                    gradientUnits="userSpaceOnUse">
+      <stop stop-color="#29E9FA" stop-opacity=".76"/>
+      <stop offset=".45" stop-color="#00CDEC" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#00CDEC" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="underside" x1="34" y1="0" x2="303" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#005269"/>
+      <stop offset=".2" stop-color="#001A22"/>
+      <stop offset=".51" stop-color="#000A0E"/>
+      <stop offset=".78" stop-color="#00202B"/>
+      <stop offset="1" stop-color="#007A96"/>
+    </linearGradient>
+
+    <linearGradient id="middle-underside" x1="34" y1="0" x2="303" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#005268"/>
+      <stop offset=".2" stop-color="#001E27"/>
+      <stop offset=".5" stop-color="#000506"/>
+      <stop offset=".65" stop-color="#000708"/>
+      <stop offset=".82" stop-color="#002532"/>
+      <stop offset="1" stop-color="#008FAC"/>
+    </linearGradient>
+
+    <linearGradient id="middle-top-left" x1="64" y1="123" x2="168" y2="144" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8CF3FC"/>
+      <stop offset=".55" stop-color="#47E2F7"/>
+      <stop offset="1" stop-color="#00C9EC"/>
+    </linearGradient>
+
+    <linearGradient id="middle-top-right" x1="168.5" y1="131" x2="296" y2="136" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C4E7"/>
+      <stop offset=".54" stop-color="#21DFF3"/>
+      <stop offset="1" stop-color="#92F4FC"/>
+    </linearGradient>
+
+    <linearGradient id="middle-left-light" x1="74" y1="141" x2="157" y2="185" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12C5E8"/>
+      <stop offset="1" stop-color="#009BC8"/>
+    </linearGradient>
+
+    <linearGradient id="middle-left-dark" x1="34" y1="157" x2="163" y2="183" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00A1C4"/>
+      <stop offset=".3" stop-color="#005C7B"/>
+      <stop offset=".66" stop-color="#00384D"/>
+      <stop offset="1" stop-color="#001B29"/>
+    </linearGradient>
+
+    <linearGradient id="middle-right" x1="168.5" y1="161" x2="303" y2="161" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00283E"/>
+      <stop offset=".6" stop-color="#005379"/>
+      <stop offset=".86" stop-color="#008EBB"/>
+      <stop offset="1" stop-color="#04BFE4"/>
+    </linearGradient>
+
+    <linearGradient id="wing-top-left" x1="54" y1="205" x2="125" y2="211" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9DF5FC"/>
+      <stop offset="1" stop-color="#00CCED"/>
+    </linearGradient>
+
+    <linearGradient id="wing-top-right" x1="216" y1="205" x2="294" y2="215" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#009FC9"/>
+      <stop offset=".62" stop-color="#0CD8F1"/>
+      <stop offset="1" stop-color="#78ECFA"/>
+    </linearGradient>
+
+    <linearGradient id="wing-front-left" x1="36" y1="239" x2="120" y2="242" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00BEDF"/>
+      <stop offset=".46" stop-color="#005B7E"/>
+      <stop offset="1" stop-color="#002B3D"/>
+    </linearGradient>
+
+    <linearGradient id="wing-front-right" x1="217" y1="244" x2="302" y2="229" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#002536"/>
+      <stop offset=".58" stop-color="#00577B"/>
+      <stop offset="1" stop-color="#00B6DD"/>
+    </linearGradient>
+
+    <linearGradient id="stem-left" x1="120" y1="240" x2="168.5" y2="262.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67E9FF"/>
+      <stop offset=".5" stop-color="#1CD4F3"/>
+      <stop offset="1" stop-color="#00C3E8"/>
+    </linearGradient>
+
+    <linearGradient id="stem-right" x1="168.5" y1="268" x2="217" y2="268" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#003D5B"/>
+      <stop offset=".3" stop-color="#005779"/>
+      <stop offset=".78" stop-color="#007DA4"/>
+      <stop offset="1" stop-color="#00A6C9"/>
+    </linearGradient>
+
+    <linearGradient id="stem-reflection" x1="177" y1="195" x2="204" y2="329" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#119FE2" stop-opacity=".4"/>
+      <stop offset=".5" stop-color="#0089BE" stop-opacity="0"/>
+      <stop offset="1" stop-color="#00CDEC" stop-opacity=".22"/>
+    </linearGradient>
+
+    <radialGradient id="stem-shadow"
+                    cx="192" cy="255" r="27"
+                    gradientTransform="translate(0 -408) scale(1 2.6)"
+                    gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00152B" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#00152B" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="white-rim" x1="34" y1="0" x2="303" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E1FFFF"/>
+      <stop offset=".46" stop-color="#90F5FF"/>
+      <stop offset=".8" stop-color="#CFFFFF"/>
+      <stop offset="1" stop-color="#EEFFFF"/>
+    </linearGradient>
+
+    <linearGradient id="vertical-rim" x1="168.5" y1="198" x2="168.5" y2="337" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E1FFFF"/>
+      <stop offset=".56" stop-color="#A0F6FF"/>
+      <stop offset="1" stop-color="#38DBEF"/>
+    </linearGradient>
+
+    <filter id="edge-glow"
+            x="-15%" y="-15%" width="130%" height="130%"
+            color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation=".65" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- Upper floating glass beam -->
+    <path d="M34 99 168.5 103 303 99 270 116H67Z"
+          fill="url(#underside)"/>
+
+    <path d="M34 61 102 25H236L303 61Z"
+          fill="url(#top-left)"/>
+    <path d="M168.5 25H236L303 61H168.5Z"
+          fill="url(#top-right)"/>
+    <path d="M102 27H165L123 60H44Z"
+          fill="#A0F6FF" opacity=".055"/>
+
+    <path d="M34 61H303V99L168.5 103 34 99Z"
+          fill="url(#upper-front-left)"/>
+    <path d="M168.5 61H303V99L168.5 103Z"
+          fill="url(#upper-front-right)"/>
+    <path d="M34 62 168.5 103 34 99Z"
+          fill="#001C27" opacity=".3"/>
+    <path d="M168.5 103 303 62V99Z"
+          fill="#00536C" opacity=".16"/>
+    <path d="M168.5 61H303V99L168.5 103Z"
+          fill="url(#upper-reflection)"/>
+
+    <path d="M34 99 67 116H270L303 99"
+          stroke="#08728B" stroke-opacity=".22" stroke-width="1.1"/>
+    <path d="M168.5 62V102"
+          stroke="#22B5D4" stroke-opacity=".16" stroke-width="1.2"/>
+    <path d="M34 99 168.5 103 303 99"
+          stroke="#21C6E5" stroke-opacity=".42" stroke-width="1.2"/>
+
+    <g filter="url(#edge-glow)">
+      <path d="M34 61 102 25H236L303 61"
+            stroke="#70EAF7" stroke-opacity=".85" stroke-width="1.15"/>
+      <path d="M34 61H303"
+            stroke="url(#white-rim)" stroke-width="1.8"/>
+      <path d="M34 61V99"
+            stroke="#89F3FD" stroke-width="1.2"/>
+      <path d="M303 61V99"
+            stroke="#75F0FD" stroke-width="1.3"/>
+    </g>
+
+    <!-- Middle beam with V-shaped front facets -->
+    <path d="M34 176 168.5 183 303 176 270 195H68Z"
+          fill="url(#middle-underside)"/>
+
+    <path d="M34 141 68 118H270L303 141 168.5 145Z"
+          fill="url(#middle-top-left)"/>
+    <path d="M168.5 118H270L303 141 168.5 145Z"
+          fill="url(#middle-top-right)"/>
+
+    <path d="M34 141 168.5 145 303 141V176L168.5 183 34 176Z"
+          fill="url(#middle-left-dark)"/>
+    <path d="M34 141 168.5 145V183Z"
+          fill="url(#middle-left-light)"/>
+    <path d="M168.5 145 303 141V176L168.5 183Z"
+          fill="url(#middle-right)"/>
+    <path d="M168.5 183 303 141V176Z"
+          fill="#0083AD" opacity=".13"/>
+
+    <path d="M34 176 68 195H270L303 176"
+          stroke="#06677D" stroke-opacity=".16" stroke-width="1"/>
+    <path d="M34 176 168.5 183 303 176"
+          stroke="#10AACA" stroke-opacity=".5" stroke-width="1.2"/>
+    <path d="M34 141 168.5 183"
+          stroke="#5DE9F9" stroke-opacity=".8" stroke-width="1.25"/>
+    <path d="M168.5 183 303 141"
+          stroke="#0CA8D3" stroke-opacity=".45" stroke-width="1.3"/>
+    <path d="M168.5 119V144"
+          stroke="#7CEFFD" stroke-opacity=".3" stroke-width=".8"/>
+
+    <g filter="url(#edge-glow)">
+      <path d="M34 141 68 118H270L303 141"
+            stroke="#AEF7FC" stroke-opacity=".75" stroke-width="1.15"/>
+      <path d="M34 141 168.5 145 303 141"
+            stroke="url(#white-rim)" stroke-width="1.8"/>
+      <path d="M34 141V176"
+            stroke="#A1F7FE" stroke-width="1.3"/>
+      <path d="M303 141V176"
+            stroke="#7CF3FD" stroke-width="1.3"/>
+      <path d="M168.5 145V183"
+            stroke="#BFFAFF" stroke-width="1.4"/>
+    </g>
+
+    <!-- Lower crossbar: both arms pass behind the stem -->
+    <path d="M36 217 120 220V271L36 237Z"
+          fill="url(#wing-front-left)"/>
+    <path d="M217 220 302 217V237L217 271Z"
+          fill="url(#wing-front-right)"/>
+
+    <path d="M36 217 120 250V271L36 237Z"
+          fill="#003B4E" opacity=".1"/>
+    <path d="M217 249 302 217V237L217 271Z"
+          fill="#009BC4" opacity=".04"/>
+
+    <path d="M36 217 69 197 120 198V220Z"
+          fill="url(#wing-top-left)"/>
+    <path d="M217 198 271 197 302 217 217 220Z"
+          fill="url(#wing-top-right)"/>
+
+    <path d="M36 237 120 271M217 271 302 237"
+          stroke="#0A9AB8" stroke-opacity=".65" stroke-width="1.25"/>
+
+    <g filter="url(#edge-glow)">
+      <path d="M36 217 69 197 120 198M217 198 271 197 302 217"
+            stroke="#8FF2FC" stroke-opacity=".85" stroke-width="1.2"/>
+      <path d="M36 217 120 220M217 220 302 217"
+            stroke="url(#white-rim)" stroke-width="1.7"/>
+      <path d="M36 217V237M302 217V237"
+            stroke="#88F2FD" stroke-width="1.35"/>
+    </g>
+
+    <!-- Continuous vertical stem -->
+    <path d="M120 198 168.5 199 217 198V306L168.5 336 120 306Z"
+          fill="url(#stem-left)"/>
+    <path d="M168.5 199 217 198V306L168.5 336Z"
+          fill="url(#stem-right)"/>
+    <path d="M168.5 199 217 198V306L168.5 336Z"
+          fill="url(#stem-reflection)"/>
+    <path d="M168.5 199 217 198V306L168.5 336Z"
+          fill="url(#stem-shadow)"/>
+
+    <path d="M122 200 166 200 122 232Z"
+          fill="#B7FBFF" opacity=".045"/>
+    <path d="M172 201 215 200V227Z"
+          fill="#00B5DE" opacity=".075"/>
+
+    <path d="M120 198 168.5 199 217 198"
+          stroke="#7DE9F8" stroke-opacity=".66" stroke-width="1.1"/>
+
+    <g filter="url(#edge-glow)">
+      <path d="M120 220V306"
+            stroke="#B3F7FD" stroke-width="1.3"/>
+      <path d="M120 306 168.5 336"
+            stroke="#39D6EC" stroke-width="1.1"/>
+      <path d="M217 220V306L168.5 336"
+            stroke="#12B9D9" stroke-width="1.35"/>
+      <path d="M168.5 199V336"
+            stroke="url(#vertical-rim)" stroke-width="1.65"/>
+    </g>
+  </g>
+</svg>
