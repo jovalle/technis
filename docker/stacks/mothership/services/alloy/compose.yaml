@@ -1,0 +1,14 @@
+services:
+  alloy:
+    environment:
+      - OBSERVABILITY_HOST=mothership
+      - OBSERVABILITY_SITE=home
+      - OBSERVABILITY_STACK=mothership
+    networks:
+      - internal
+  alloy-host:
+    environment:
+      OBSERVABILITY_HOST: mothership
+      OBSERVABILITY_SITE: home
+  kernel-exporter:
+    networks: [internal]

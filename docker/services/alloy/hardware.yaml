@@ -1,0 +1,60 @@
+services:
+  smartctl-exporter:
+    image: quay.io/prometheuscommunity/smartctl-exporter:v0.14.0@sha256:cfe22c36d7d2fac48ebf619707305acb65eb0fb670656eb80f356e606d782bc1
+    container_name: smartctl-exporter
+    network_mode: host
+    command:
+      - --web.listen-address=127.0.0.1:9633
+      - --smartctl.interval=60s
+    user: root
+    cap_drop: [ALL]
+    cap_add: [SYS_RAWIO, SYS_ADMIN]
+    read_only: true
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    # Device mappings are discovered by deploy.py from smartctl --scan.
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+  drm-exporter:
+    image: ghcr.io/home-operations/drm-exporter:0.3.3@sha256:7229811068328ff3d9f9ac70b17319bb036e5e13dff6d743d5c5e3705d961488
+    container_name: drm-exporter
+    network_mode: host
+    environment:
+      DRM_EXPORTER_ADDRESS: 127.0.0.1
+      DRM_EXPORTER_PORT: "9634"
+      DRM_EXPORTER_INTERVAL_SECONDS: "5"
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - /sys:/sys:ro
+    cap_drop: [ALL]
+    cap_add: [PERFMON]
+    read_only: true
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+  nvidia-gpu-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:1.15.1@sha256:7aee2d42836ad29d4adb2722b7cfdc806ec9cc8d45fd0b8971ebbad2d9f3d087
+    container_name: nvidia-gpu-exporter
+    network_mode: host
+    command: ["--web.listen-address=127.0.0.1:9835"]
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: utility
+      NVIDIA_VISIBLE_DEVICES: all
+    gpus: all
+    cap_drop: [ALL]
+    read_only: true
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M

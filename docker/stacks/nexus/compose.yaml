@@ -1,11 +1,19 @@
 include:
-  - path: ../../services/azuracast/compose.yaml
+  - path: ../../services/alertmanager/compose.yaml
     env_file: &env
       - ../../.env
       - .env
+  - path:
+      - ../../services/alloy/compose.yaml
+      - services/alloy/compose.yaml
+    env_file: *env
+  - path: ../../services/azuracast/compose.yaml
+    env_file: *env
   - path: ../../services/bazarr/compose.yaml
     env_file: *env
   - path: ../../services/boxarr/compose.yaml
+    env_file: *env
+  - path: ../../services/cadvisor/compose.yaml
     env_file: *env
   - path: services/cloudflared-1/compose.yaml
     env_file: *env
@@ -25,11 +33,15 @@ include:
     env_file: *env
   - path: ../../services/hawser/compose.yaml
     env_file: *env
+  - path: ../../services/grafana/compose.yaml
+    env_file: *env
   - path: ../../services/netdata/compose.yaml
     env_file: *env
   - path: ../../services/goku/compose.yaml
     env_file: *env
   - path: ../../services/immich/compose.yaml
+    env_file: *env
+  - path: ../../services/kromgo/compose.yaml
     env_file: *env
   - path: ../../services/lidarr/compose.yaml
     env_file: *env
@@ -65,6 +77,8 @@ include:
       - ../../services/technitium/compose.yaml
       - services/technitium/compose.yaml
     env_file: *env
+  - path: ../../services/tempo/compose.yaml
+    env_file: *env
   - path: ../../services/tracearr/compose.yaml
     env_file: *env
   - path:
@@ -72,6 +86,14 @@ include:
       - services/traefik/compose.yaml
     env_file: *env
   - path: ../../services/unpackerr/compose.yaml
+    env_file: *env
+  - path: ../../services/victoriametrics/alert/compose.yaml
+    env_file: *env
+  - path: ../../services/victoriametrics/auth/compose.yaml
+    env_file: *env
+  - path: ../../services/victoriametrics/logs/compose.yaml
+    env_file: *env
+  - path: ../../services/victoriametrics/metrics/compose.yaml
     env_file: *env
   - path: ../../services/wizarr/compose.yaml
     env_file: *env

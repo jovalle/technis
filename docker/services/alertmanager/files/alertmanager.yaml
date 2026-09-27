@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 5m
+# No notification receiver since ntfy was retired.
+route:
+  receiver: quiet
+  group_by: [alertname, host, service, priority]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 24h
+inhibit_rules:
+  - source_matchers: ['alertname="HostTelemetryMissing"']
+    target_matchers: ['alertname!="HostTelemetryMissing"']
+    equal: [host]
+receivers:
+  - name: quiet
