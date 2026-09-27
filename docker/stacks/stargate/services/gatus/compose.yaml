@@ -1,0 +1,7 @@
+services:
+  gatus:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gatus.rule=Host(`status.techn.is`)
+      - traefik.http.routers.gatus.service=gatus
+      - traefik.http.services.gatus.loadbalancer.server.port=8080
