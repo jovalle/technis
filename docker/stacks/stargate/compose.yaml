@@ -19,6 +19,7 @@ include:
     env_file: *env
   - path: ../../services/dockhand/compose.yaml
     env_file: *env
+  # Sole external-dns writer, beside the Technitium primary; more writers race each other.
   - path: ../../services/external-dns/compose.yaml
     env_file: *env
   - path:
