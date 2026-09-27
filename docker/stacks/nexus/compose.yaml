@@ -23,8 +23,6 @@ include:
     env_file: *env
   - path: ../../services/docker-socket-proxy/compose.yaml
     env_file: *env
-  - path: ../../services/external-dns/compose.yaml
-    env_file: *env
   - path: ../../services/flaresolverr/compose.yaml
     env_file: *env
   - path:
