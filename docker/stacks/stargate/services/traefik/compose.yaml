@@ -18,6 +18,7 @@ services:
       - --log.level=INFO
       - --metrics.prometheus=true
       - --ping=true
+      - --providers.docker.allowEmptyServices=true
       - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
       - --providers.docker.exposedbydefault=false
       - --providers.docker=true
