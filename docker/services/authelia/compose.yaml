@@ -1,5 +1,8 @@
 services:
   authelia:
+    build:
+      context: ../../..
+      dockerfile: docker/services/authelia/Dockerfile
     cap_drop:
       - ALL
     container_name: authelia
@@ -16,7 +19,8 @@ services:
         reservations:
           memory: 64M
     environment:
-      - AUTHELIA_SERVER_ASSET_PATH=/config/assets
+      - AUTHELIA_SERVER_ASSET_PATH=/app/assets
+      - AUTHELIA_THEME=dark
       - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET is required}
       - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY:?AUTHELIA_STORAGE_ENCRYPTION_KEY is required}
       - TZ=${TZ:-America/New_York}
@@ -32,7 +36,7 @@ services:
         - http://127.0.0.1:9091/api/health
       timeout: 10s
     hostname: authelia
-    image: authelia/authelia:latest
+    image: technis/authelia:4.39.28
     labels:
       - traefik.enable=true
       - traefik.http.routers.authelia.rule=Host(`auth.techn.is`)
@@ -45,4 +49,3 @@ services:
     user: 1000:1000
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/authelia:/config
-      - ../../../assets:/config/assets:ro
