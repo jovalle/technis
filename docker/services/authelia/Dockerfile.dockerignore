@@ -1,0 +1,13 @@
+*
+!assets/
+!assets/logo.svg
+!assets/logo.png
+!assets/favicon.ico
+!docker/
+!docker/services/
+!docker/services/authelia/
+!docker/services/authelia/Dockerfile
+!docker/services/authelia/frontend.patch
+!docker/services/authelia/frontend/
+!docker/services/authelia/frontend/inter-latin.woff2
+!docker/services/authelia/frontend/OFL.txt

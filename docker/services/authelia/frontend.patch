@@ -1,0 +1,492 @@
+diff --git a/web/index.html b/web/index.html
+index ebbe9f5..ce5ad62 100644
+--- a/web/index.html
++++ b/web/index.html
+@@ -11,10 +11,10 @@ SPDX-License-Identifier: Apache-2.0
+         <meta property="csp-nonce" content="{{ .CSPNonce }}" />
+         <meta charset="utf-8" />
+         <meta name="viewport" content="width=device-width, initial-scale=1" />
+-        <meta name="theme-color" content="#000000" />
++        <meta name="theme-color" content="#030712" />
+         <link rel="manifest" href="/manifest.json" />
+         <link rel="icon" href="/favicon.ico" />
+-        <title></title>
++        <title>Login - Technis</title>
+     </head>
+ 
+     <body
+diff --git a/web/src/components/AppBarLoginPortal.tsx b/web/src/components/AppBarLoginPortal.tsx
+index ebf1b8b..ae9465f 100644
+--- a/web/src/components/AppBarLoginPortal.tsx
++++ b/web/src/components/AppBarLoginPortal.tsx
+@@ -16,8 +16,11 @@ export interface Props {
+ 
+ const AppBarLoginPortal = function (props: Props) {
+     return (
+-        <header className="bg-transparent">
+-            <div className="mx-auto flex items-center px-4 pb-4 pt-2">
++        <header className="technis-auth-header">
++            <div className="mx-auto flex h-16 max-w-6xl items-center px-4">
++                <a href="https://www.techn.is" aria-label="Technis home">
++                    <img src="/static/media/technis-logo.svg" alt="Technis" className="h-8 w-auto" />
++                </a>
+                 <div className="grow" />
+                 <AppBarItemLanguage
+                     localeCurrent={props.localeCurrent}
+diff --git a/web/src/components/Brand.test.tsx b/web/src/components/Brand.test.tsx
+index 3640147..2394359 100644
+--- a/web/src/components/Brand.test.tsx
++++ b/web/src/components/Brand.test.tsx
+@@ -6,16 +6,6 @@ import { render, screen } from "@testing-library/react";
+ 
+ import Brand from "@components/Brand";
+ 
+-vi.mock("@constants/constants", () => ({
+-    EncodedName: Array.from("Authelia".split("").map((c) => c.charCodeAt(0))),
+-    EncodedURL: Array.from("https://www.authelia.com".split("").map((c) => c.charCodeAt(0))),
+-}));
+-
+-vi.stubGlobal(
+-    "atob",
+-    vi.fn((str) => str),
+-);
+-
+ it("renders without crashing", () => {
+     render(<Brand />);
+ });
+@@ -23,8 +13,8 @@ it("renders without crashing", () => {
+ it("renders link with correct text", () => {
+     render(<Brand />);
+     const link = screen.getByRole("link");
+-    expect(link).toHaveAttribute("href", "https://www.authelia.com");
+-    expect(link).toHaveTextContent("Powered by Authelia");
++    expect(link).toHaveAttribute("href", "https://www.techn.is");
++    expect(link).toHaveTextContent("Powered by Technis");
+ });
+ 
+ it("renders privacy policy when enabled", () => {
+diff --git a/web/src/components/Brand.tsx b/web/src/components/Brand.tsx
+index 85240b6..181a0c4 100644
+--- a/web/src/components/Brand.tsx
++++ b/web/src/components/Brand.tsx
+@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
+ 
+ import PrivacyPolicyLink from "@components/PrivacyPolicyLink";
+ import { Separator } from "@components/UI/Separator";
+-import { EncodedName, EncodedURL } from "@constants/constants";
+ import { getPrivacyPolicyEnabled } from "@utils/Configuration";
+ 
+ export interface Props {}
+@@ -21,17 +20,17 @@ const Brand = function () {
+     return (
+         <div className="flex items-center justify-center gap-2 w-full">
+             <a
+-                href={atob(String.fromCodePoint(...EncodedURL))}
++                href="https://www.techn.is"
+                 target="_blank"
+                 rel="noopener noreferrer"
+-                className="text-[#9e9e9e] text-[0.7rem] whitespace-nowrap hover:underline"
++                className="text-muted-foreground text-xs whitespace-nowrap hover:text-foreground hover:underline"
+             >
+-                {translate("Powered by {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) })}
++                {translate("Powered by {{authelia}}", { authelia: "Technis" })}
+             </a>
+             {privacyEnabled ? (
+                 <Fragment>
+                     <Separator orientation="vertical" className="h-4" />
+-                    <PrivacyPolicyLink className="text-[#9e9e9e] text-[0.7rem] whitespace-nowrap hover:underline" />
++                    <PrivacyPolicyLink className="text-muted-foreground text-xs whitespace-nowrap hover:text-foreground hover:underline" />
+                 </Fragment>
+             ) : null}
+         </div>
+diff --git a/web/src/index.css b/web/src/index.css
+index cdd0566..2911df4 100644
+--- a/web/src/index.css
++++ b/web/src/index.css
+@@ -6,6 +6,7 @@
+ 
+ @import "tailwindcss";
+ @import "@themes/tailwind-themes.css";
++@import "./technis.css";
+ 
+ @layer base {
+     * {
+@@ -16,7 +17,7 @@
+         @apply bg-background text-foreground;
+         margin: 0;
+         font-family:
+-            "Roboto",
++            "Inter",
+             "Helvetica",
+             "Arial",
+             sans-serif;
+@@ -98,8 +99,8 @@
+     --color-input: var(--input);
+     --color-ring: var(--ring);
+ 
+-    --radius-sm: calc(var(--radius) - 4px);
+-    --radius-md: calc(var(--radius) - 2px);
+-    --radius-lg: var(--radius);
+-    --radius-xl: calc(var(--radius) + 4px);
++    --radius-sm: 0;
++    --radius-md: 0;
++    --radius-lg: 0;
++    --radius-xl: 0;
+ }
+diff --git a/web/src/layouts/LoginLayout.test.tsx b/web/src/layouts/LoginLayout.test.tsx
+index d93c0fd..073fc92 100644
+--- a/web/src/layouts/LoginLayout.test.tsx
++++ b/web/src/layouts/LoginLayout.test.tsx
+@@ -7,7 +7,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+ import LoginLayout from "@layouts/LoginLayout";
+ 
+ vi.mock("react-i18next", () => ({
+-    useTranslation: () => ({ t: (key: string) => key }),
++    useTranslation: () => ({
++        t: (key: string, options?: { authelia?: string }) =>
++            key.replace("{{authelia}}", options?.authelia ?? "Authelia"),
++    }),
+ }));
+ 
+ vi.mock("@assets/images/user.svg?react", () => ({
+@@ -34,10 +37,6 @@ vi.mock("@components/TypographyWithTooltip", () => ({
+     default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
+ }));
+ 
+-vi.mock("@constants/constants", () => ({
+-    EncodedName: [81, 88, 86, 48, 97, 71, 86, 115, 97, 87, 69, 61],
+-}));
+-
+ const mockSetLocale = vi.fn();
+ vi.mock("@contexts/LanguageContext", () => ({
+     useLanguageContext: () => ({ locale: "en", setLocale: mockSetLocale }),
+@@ -122,7 +121,7 @@ it("sets the document title", async () => {
+     });
+ 
+     expect(document.title).not.toBe("Sentinel Title");
+-    expect(document.title).toContain("Login");
++    expect(document.title).toBe("Login - Technis");
+ });
+ 
+ it("calls setLocale when language is changed", async () => {
+diff --git a/web/src/layouts/LoginLayout.tsx b/web/src/layouts/LoginLayout.tsx
+index 9781c09..d3f5e32 100644
+--- a/web/src/layouts/LoginLayout.tsx
++++ b/web/src/layouts/LoginLayout.tsx
+@@ -11,7 +11,6 @@ import AppBarLoginPortal from "@components/AppBarLoginPortal";
+ import Brand from "@components/Brand";
+ import PrivacyPolicyDrawer from "@components/PrivacyPolicyDrawer";
+ import TypographyWithTooltip from "@components/TypographyWithTooltip";
+-import { EncodedName } from "@constants/constants";
+ import { useLanguageContext } from "@contexts/LanguageContext";
+ import { Language } from "@models/LocaleInformation";
+ import { UserInfo } from "@models/UserInfo";
+@@ -78,21 +77,21 @@ const LoginLayout = function (props: Props) {
+     }, [fetchLocaleInformation]);
+ 
+     useEffect(() => {
+-        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) });
++        document.title = translate("Login - {{authelia}}", { authelia: "Technis" });
+     }, [translate]);
+ 
+     const containerMaxWidth = props.maxWidth === false ? "" : (maxWidthMap[props.maxWidth ?? "xs"] ?? "max-w-xs");
+ 
+     return (
+-        <div>
++        <div className="technis-auth-shell">
+             <AppBarLoginPortal
+                 userInfo={props.userInfo}
+                 onLocaleChange={handleChangeLanguage}
+                 localeList={localeList}
+                 localeCurrent={locale}
+             />
+-            <div id={props.id} className="flex min-h-[90vh] items-center justify-center text-center">
+-                <div className={cn("mx-auto w-full px-8", containerMaxWidth)}>
++            <main id={props.id} className="technis-auth-main">
++                <div className={cn("technis-auth-panel mx-auto w-full px-8", containerMaxWidth)}>
+                     <div className="flex flex-col items-stretch">
+                         <div className="w-full p-2">{logo}</div>
+                         {props.title ? (
+@@ -118,7 +117,7 @@ const LoginLayout = function (props: Props) {
+                     </div>
+                 </div>
+                 <PrivacyPolicyDrawer />
+-            </div>
++            </main>
+         </div>
+     );
+ };
+diff --git a/web/src/layouts/MinimalLayout.test.tsx b/web/src/layouts/MinimalLayout.test.tsx
+index 0e8d4cc..75210df 100644
+--- a/web/src/layouts/MinimalLayout.test.tsx
++++ b/web/src/layouts/MinimalLayout.test.tsx
+@@ -7,7 +7,10 @@ import { act, render, screen } from "@testing-library/react";
+ import MinimalLayout from "@layouts/MinimalLayout";
+ 
+ vi.mock("react-i18next", () => ({
+-    useTranslation: () => ({ t: (key: string) => key }),
++    useTranslation: () => ({
++        t: (key: string, options?: { authelia?: string }) =>
++            key.replace("{{authelia}}", options?.authelia ?? "Authelia"),
++    }),
+ }));
+ 
+ vi.mock("@assets/images/user.svg?react", () => ({
+@@ -26,10 +29,6 @@ vi.mock("@components/TypographyWithTooltip", () => ({
+     default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
+ }));
+ 
+-vi.mock("@constants/constants", () => ({
+-    EncodedName: [81, 88, 86, 48, 97, 71, 86, 115, 97, 87, 69, 61],
+-}));
+-
+ vi.mock("@utils/Configuration", () => ({
+     getLogoOverride: vi.fn(() => false),
+ }));
+@@ -91,5 +90,5 @@ it("sets the document title", async () => {
+         render(<MinimalLayout />);
+     });
+ 
+-    expect(document.title).toContain("Login");
++    expect(document.title).toBe("Login - Technis");
+ });
+diff --git a/web/src/layouts/MinimalLayout.tsx b/web/src/layouts/MinimalLayout.tsx
+index 60f7faf..0949528 100644
+--- a/web/src/layouts/MinimalLayout.tsx
++++ b/web/src/layouts/MinimalLayout.tsx
+@@ -10,7 +10,6 @@ import UserSvg from "@assets/images/user.svg?react";
+ import AppBarLoginPortal from "@components/AppBarLoginPortal";
+ import PrivacyPolicyDrawer from "@components/PrivacyPolicyDrawer";
+ import TypographyWithTooltip from "@components/TypographyWithTooltip";
+-import { EncodedName } from "@constants/constants";
+ import { UserInfo } from "@models/UserInfo";
+ import { getLogoOverride } from "@utils/Configuration";
+ 
+@@ -36,14 +35,14 @@ const MinimalLayout = function (props: Props) {
+     );
+ 
+     useEffect(() => {
+-        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) });
++        document.title = translate("Login - {{authelia}}", { authelia: "Technis" });
+     }, [translate]);
+ 
+     return (
+-        <div>
++        <div className="technis-auth-shell">
+             <AppBarLoginPortal userInfo={props.userInfo} />
+-            <div id={props.id} className="flex min-h-[90vh] items-center justify-center text-center">
+-                <div className="mx-auto w-full max-w-[444px] px-8">
++            <main id={props.id} className="technis-auth-main">
++                <div className="technis-auth-panel mx-auto w-full max-w-[444px] px-8">
+                     <div className="flex flex-col items-stretch">
+                         <div className="w-full p-2">{logo}</div>
+                         {props.title ? (
+@@ -55,7 +54,7 @@ const MinimalLayout = function (props: Props) {
+                     </div>
+                 </div>
+                 <PrivacyPolicyDrawer />
+-            </div>
++            </main>
+         </div>
+     );
+ };
+diff --git a/web/src/layouts/SettingsLayout.test.tsx b/web/src/layouts/SettingsLayout.test.tsx
+index 3a00b78..46b1194 100644
+--- a/web/src/layouts/SettingsLayout.test.tsx
++++ b/web/src/layouts/SettingsLayout.test.tsx
+@@ -9,11 +9,10 @@ import SettingsLayout from "@layouts/SettingsLayout";
+ const mockNavigate = vi.fn();
+ 
+ vi.mock("react-i18next", () => ({
+-    useTranslation: () => ({ t: (key: string) => key }),
+-}));
+-
+-vi.mock("@constants/constants", () => ({
+-    EncodedName: [81, 88, 86, 48, 97, 71, 86, 115, 97, 87, 69, 61],
++    useTranslation: () => ({
++        t: (key: string, options?: { authelia?: string }) =>
++            key.replace("{{authelia}}", options?.authelia ?? "Authelia"),
++    }),
+ }));
+ 
+ vi.mock("@constants/Routes", () => ({
+@@ -72,7 +71,7 @@ it("sets the document title", async () => {
+         render(<SettingsLayout />);
+     });
+ 
+-    expect(document.title).toContain("Settings");
++    expect(document.title).toBe("Settings - Technis");
+ });
+ 
+ it("navigates when a nav item is clicked", async () => {
+diff --git a/web/src/layouts/SettingsLayout.tsx b/web/src/layouts/SettingsLayout.tsx
+index 0fe1944..3c96d6c 100644
+--- a/web/src/layouts/SettingsLayout.tsx
++++ b/web/src/layouts/SettingsLayout.tsx
+@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
+ import { Button } from "@components/UI/Button";
+ import { Separator } from "@components/UI/Separator";
+ import { Sheet, SheetContent, SheetTitle } from "@components/UI/Sheet";
+-import { EncodedName } from "@constants/constants";
+ import {
+     IndexRoute,
+     SecuritySubRoute,
+@@ -32,7 +31,7 @@ const SettingsLayout = function (props: Props) {
+     const [drawerOpen, setDrawerOpen] = useState(false);
+ 
+     useEffect(() => {
+-        document.title = translate("Settings - {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) });
++        document.title = translate("Settings - {{authelia}}", { authelia: "Technis" });
+     }, [translate]);
+ 
+     const drawerWidth = props.drawerWidth ?? defaultDrawerWidth;
+@@ -51,7 +50,7 @@ const SettingsLayout = function (props: Props) {
+ 
+     return (
+         <div className="flex">
+-            <nav className="fixed top-0 z-50 w-full bg-primary text-primary-foreground">
++            <nav className="fixed top-0 z-50 w-full border-b border-border bg-card text-foreground">
+                 <div className="flex items-center px-4 py-3">
+                     <Button
+                         id="settings-menu"
+@@ -59,7 +58,7 @@ const SettingsLayout = function (props: Props) {
+                         size="icon"
+                         aria-label="open drawer"
+                         onClick={handleToggleDrawer}
+-                        className="mr-4 text-primary-foreground hover:bg-primary-foreground/10"
++                        className="mr-4 text-foreground hover:bg-accent"
+                     >
+                         <Menu className="size-6" />
+                     </Button>
+diff --git a/web/src/technis.css b/web/src/technis.css
+new file mode 100644
+index 0000000..3a78717
+--- /dev/null
++++ b/web/src/technis.css
+@@ -0,0 +1,126 @@
++@font-face {
++    font-family: "Inter";
++    src: url("/static/media/inter-latin.woff2") format("woff2");
++    font-style: normal;
++    font-weight: 100 900;
++    font-display: swap;
++}
++
++:root,
++[data-theme="light"] {
++    --background: #ffffff;
++    --foreground: #101828;
++    --card: #ffffff;
++    --card-foreground: #101828;
++    --popover: #ffffff;
++    --popover-foreground: #101828;
++    --primary: #007595;
++    --primary-foreground: #ffffff;
++    --secondary: #e7f9fc;
++    --secondary-foreground: #123542;
++    --muted: #f4f7f9;
++    --muted-foreground: #475467;
++    --accent: #e7f9fc;
++    --accent-foreground: #123542;
++    --border: #d9e2e8;
++    --input: #a9bac5;
++    --ring: #007595;
++    --radius: 0;
++    --custom-icon: #007595;
++    --custom-loading-bar: #007595;
++    --divider: #d9e2e8;
++}
++
++[data-theme="dark"],
++[data-theme="grey"],
++[data-theme="oled"] {
++    --background: #030712;
++    --foreground: #f8fafc;
++    --card: #0b1220;
++    --card-foreground: #f8fafc;
++    --popover: #0b1220;
++    --popover-foreground: #f8fafc;
++    --primary: #00d3f2;
++    --primary-foreground: #06202a;
++    --secondary: #102a39;
++    --secondary-foreground: #e6f9fc;
++    --muted: #162131;
++    --muted-foreground: #b5c4d0;
++    --accent: #153043;
++    --accent-foreground: #f8fafc;
++    --border: #263648;
++    --input: #456075;
++    --ring: #00d3f2;
++    --radius: 0;
++    --custom-icon: #00d3f2;
++    --custom-loading-bar: #00d3f2;
++    --divider: #263648;
++}
++
++body {
++    background-image:
++        linear-gradient(to right, rgb(0 211 242 / 0.035) 1px, transparent 1px),
++        linear-gradient(to bottom, rgb(0 211 242 / 0.035) 1px, transparent 1px);
++    background-size: 40px 40px;
++}
++
++.technis-auth-shell {
++    min-height: 100vh;
++}
++
++.technis-auth-header {
++    border-bottom: 1px solid var(--border);
++    background: var(--card);
++}
++
++.technis-auth-main {
++    display: flex;
++    min-height: calc(100vh - 4rem);
++    align-items: center;
++    justify-content: center;
++    padding: 2rem 1rem;
++    text-align: center;
++}
++
++.technis-auth-panel {
++    border: 1px solid var(--border);
++    background: var(--card);
++    padding-top: 2rem;
++    padding-bottom: 2rem;
++    box-shadow: 0 24px 64px rgb(0 0 0 / 0.12);
++}
++
++[data-theme="dark"] .technis-auth-panel,
++[data-theme="grey"] .technis-auth-panel,
++[data-theme="oled"] .technis-auth-panel {
++    box-shadow: 0 24px 64px rgb(0 0 0 / 0.35);
++}
++
++button[data-slot="button"] {
++    text-transform: none;
++}
++
++:is(a, button, input):focus-visible {
++    outline: 2px solid var(--ring);
++    outline-offset: 2px;
++}
++
++@media (max-width: 480px) {
++    .technis-auth-main {
++        align-items: flex-start;
++        padding: 1rem;
++    }
++
++    .technis-auth-panel {
++        padding: 1.5rem;
++    }
++}
++
++@media (prefers-reduced-motion: reduce) {
++    .technis-auth-shell *,
++    .technis-auth-shell *::before,
++    .technis-auth-shell *::after {
++        animation-duration: 0.01ms !important;
++        transition-duration: 0.01ms !important;
++    }
++}
