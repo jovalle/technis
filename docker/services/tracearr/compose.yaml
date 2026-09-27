@@ -43,7 +43,7 @@ services:
         - wget -q --spider http://127.0.0.1:3000/health || exit 1
       timeout: 10s
     hostname: tracearr
-    image: ghcr.io/connorgallopo/tracearr:2.5.0
+    image: ghcr.io/connorgallopo/tracearr:latest
     labels:
       # Public dash.techn.is reaches tracearr through the Cloudflare tunnel, not Traefik.
       - traefik.http.routers.tracearr.rule=Host(`tracearr.techn.is`)

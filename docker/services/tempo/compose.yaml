@@ -19,7 +19,8 @@ services:
       - 4317
       - 4318
     hostname: tempo
-    image: grafana/tempo:2.8.2
+    # ponytail: pinned to 2.x because Tempo 3 drops the ingester block in tempo.yaml; migrate the config before moving to latest.
+    image: grafana/tempo:2.10.8
     labels:
       - observability.metrics.address=tempo:3200
       - traefik.enable=false
