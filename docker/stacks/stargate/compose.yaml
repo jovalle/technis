@@ -1,10 +1,16 @@
 include:
   - path:
-      - ../../services/authelia/compose.yaml
-      - services/authelia/compose.yaml
+      - ../../services/alloy/compose.yaml
+      - services/alloy/compose.yaml
     env_file: &env
       - ../../.env
       - .env
+  - path:
+      - ../../services/authelia/compose.yaml
+      - services/authelia/compose.yaml
+    env_file: *env
+  - path: ../../services/cadvisor/compose.yaml
+    env_file: *env
   - path: ../../services/cloudflared/compose.yaml
     env_file: *env
   - path: ../../services/ddclient/compose.yaml

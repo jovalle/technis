@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kashalls/kromgo/main/config.schema.json
+metrics:
+  - name: cluster_min_uptime
+    query: round(min((time() - node_boot_time_seconds)) / 86400, 0.1)
+    suffix: " days"
+    colors:
+      - { color: red, min: 0, max: 0.5 }
+      - { color: orange, min: 0.6, max: 6 }
+      - { color: green, min: 7, max: 9999 }
+  - name: cluster_cpu_usage
+    query: round(avg(1 - avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: green, min: 0, max: 35 }
+      - { color: orange, min: 36, max: 75 }
+      - { color: red, min: 76, max: 9999 }
+  - name: cluster_memory_usage
+    query: round(avg((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: green, min: 0, max: 35 }
+      - { color: orange, min: 36, max: 75 }
+      - { color: red, min: 76, max: 9999 }
+  - name: cluster_disk_usage
+    query: round(avg(1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100, 0.1)
+    suffix: "%"
+    colors:
+      - { color: green, min: 0, max: 70 }
+      - { color: orange, min: 71, max: 85 }
+      - { color: red, min: 86, max: 9999 }
+  - name: docker_containers_running
+    query: count(container_last_seen{name!=""} > (time() - 120))

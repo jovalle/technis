@@ -1,5 +1,11 @@
 services:
   traefik:
+    labels:
+      - observability.metrics.address=traefik:8082
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.entrypoints=metrics
+      - traefik.http.routers.prometheus.rule=PathPrefix(`/metrics`)
+      - traefik.http.routers.prometheus.service=prometheus@internal
     depends_on:
       docker-socket-proxy:
         condition: service_healthy

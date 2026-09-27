@@ -70,6 +70,7 @@ services:
     hostname: redis-exporter
     image: oliver006/redis_exporter:latest
     labels:
+      - observability.metrics.address=redis-exporter:9121
       - traefik.enable=false
     read_only: true
     restart: unless-stopped
