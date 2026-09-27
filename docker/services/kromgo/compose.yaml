@@ -17,7 +17,8 @@ services:
     image: ghcr.io/kashalls/kromgo@sha256:965ecc92d68dc1a4a969397855367bbc70da03227a941ea607b73bb7e0b78fd6
     labels:
       - traefik.enable=true
-      - traefik.http.routers.kromgo.rule=Host(`stat.techn.is`)
+      # Public stat.techn.is reaches kromgo through the Cloudflare tunnel, not Traefik.
+      - traefik.http.routers.kromgo.rule=Host(`kromgo.techn.is`)
       - traefik.http.routers.kromgo.service=kromgo
       - traefik.http.services.kromgo.loadbalancer.server.port=8080
     read_only: true

@@ -45,7 +45,8 @@ services:
     hostname: tracearr
     image: ghcr.io/connorgallopo/tracearr:2.5.0
     labels:
-      - traefik.http.routers.tracearr.rule=Host(`tracearr.techn.is`) || Host(`dash.techn.is`)
+      # Public dash.techn.is reaches tracearr through the Cloudflare tunnel, not Traefik.
+      - traefik.http.routers.tracearr.rule=Host(`tracearr.techn.is`)
       - traefik.http.routers.tracearr.service=tracearr
       - traefik.http.services.tracearr.loadbalancer.server.port=3000
     restart: unless-stopped

@@ -2,6 +2,7 @@ services:
   gatus:
     labels:
       - traefik.enable=true
-      - traefik.http.routers.gatus.rule=Host(`status.techn.is`)
+      # Public status.techn.is reaches gatus through the Cloudflare tunnel, not Traefik.
+      - traefik.http.routers.gatus.rule=Host(`gatus.techn.is`)
       - traefik.http.routers.gatus.service=gatus
       - traefik.http.services.gatus.loadbalancer.server.port=8080
