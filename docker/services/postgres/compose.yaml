@@ -1,13 +1,5 @@
 services:
   postgres:
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-    build:
-      context: .
     cap_drop:
       - ALL
     command:
@@ -38,10 +30,12 @@ services:
           cpus: 0.5
           memory: 512M
     environment:
-      - PGDATA=${POSTGRES_PGDATA:?POSTGRES_PGDATA is required}
+      - NO_TS_TUNE=true
       - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB is required}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=en_US.utf8
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - TIMESCALEDB_TELEMETRY=off
       - TZ=${TZ:-America/New_York}
     healthcheck:
       interval: 10s
@@ -52,7 +46,7 @@ services:
         - pg_isready -U postgres
       timeout: 5s
     hostname: postgres
-    image: technis/postgres:pg17-timescaledb2.28.3
+    image: timescale/timescaledb-ha:pg18.6-ts2.30.1
     labels:
       - traefik.enable=false
     restart: unless-stopped
@@ -62,4 +56,4 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
     volumes:
-      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres:/var/lib/postgresql/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres/pg18:/home/postgres/pgdata
