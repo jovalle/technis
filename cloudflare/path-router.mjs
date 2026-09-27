@@ -183,16 +183,14 @@ function handleOptions(request, url) {
 }
 
 async function formatPlexInitiateResponse(response, request, url) {
-  let text = await response.text();
-  text = text.replaceAll(
-    "context%5Bdevice%5D%5Bproduct%5D=Tracearr",
-    "context%5Bdevice%5D%5Bproduct%5D=Technis"
-  );
-  text = text.replaceAll(
-    "context[device][product]=Tracearr",
-    "context[device][product]=Technis"
-  );
-  const transformed = new Response(text, response);
+  if (!response.ok) return handleCors(response, request, url);
+
+  const payload = await response.json();
+  const [base, query] = payload.authUrl.split("#?");
+  const params = new URLSearchParams(query);
+  params.delete("forwardUrl");
+  payload.authUrl = `${base}#?${params}`;
+  const transformed = new Response(JSON.stringify(payload), response);
   return handleCors(transformed, request, url);
 }
 
