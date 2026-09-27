@@ -104,6 +104,14 @@ endpoints:
     conditions:
       - "[STATUS] == 401"
       - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Watch
+    url: https://watch.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Requests
     url: https://seerr.techn.is/api/v1/status
     interval: 1m
