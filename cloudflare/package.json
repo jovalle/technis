@@ -1,0 +1,9 @@
+{
+  "name": "technis-path-router",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.15",
+  "devDependencies": {
+    "wrangler": "^4.141.0"
+  }
+}
