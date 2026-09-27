@@ -2,6 +2,8 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set positional-arguments
 
 subprojects := "docs web"
+# Subprojects plus the Worker, which has dependencies and lint but no fmt or test recipes.
+packages := subprojects + " cloudflare"
 tools := "git just node npm bun curl unzip python3 magick pre-commit mint wrangler"
 # pre-commit hooks that rewrite files; `lint` skips them and `fmt` runs only them.
 fixers := "trailing-whitespace end-of-file-fixer mixed-line-ending shfmt prettier"
@@ -19,7 +21,7 @@ doctor:
     for tool in {{ tools }}; do command -v "$tool" >/dev/null || missing+=("$tool"); done
     if (( ${#missing[@]} )); then
         echo "missing: ${missing[*]}" >&2
-        echo "install with: brew install just node oven-sh/bun/bun imagemagick pre-commit && npm install --global mint wrangler" >&2
+        echo "install with: brew install just node oven-sh/bun/bun imagemagick pre-commit cloudflare-wrangler && npm install --global mint" >&2
         exit 1
     fi
     echo "all tools present"
@@ -28,17 +30,17 @@ doctor:
 setup: doctor
     git submodule status | awk '/^-/ { print $2 }' | while read -r dir; do git submodule update --init -- "$dir"; done
     pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
-    for p in {{ subprojects }}; do (cd "$p" && {{ just_executable() }} install); done
+    for p in {{ packages }}; do (cd "$p" && {{ just_executable() }} install); done
 
 # Update pre-commit hook revisions and project dependencies.
 update:
     pre-commit autoupdate
-    for p in {{ subprojects }}; do (cd "$p" && {{ just_executable() }} update); done
+    for p in {{ packages }}; do (cd "$p" && {{ just_executable() }} update); done
 
 # Run every non-mutating check across the repository and subprojects.
 lint: images-check
     SKIP="{{ replace(fixers, ' ', ',') }}" pre-commit run --all-files
-    for p in {{ subprojects }}; do (cd "$p" && {{ just_executable() }} lint); done
+    for p in {{ packages }}; do (cd "$p" && {{ just_executable() }} lint); done
 
 # Apply every formatter across the repository and subprojects.
 fmt:
@@ -74,3 +76,7 @@ docs *args:
 # Run a web recipe, e.g. `just web deploy`.
 web *args:
     cd web && {{ just_executable() }} "$@"
+
+# Run a Cloudflare Worker recipe, e.g. `just cf deploy`.
+cf *args:
+    cd cloudflare && {{ just_executable() }} "$@"
