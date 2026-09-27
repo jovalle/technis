@@ -15,8 +15,6 @@ include:
       - ../../services/docker-socket-proxy/compose.yaml
       - services/docker-socket-proxy/compose.yaml
     env_file: *env
-  - path: ../../services/external-dns/compose.yaml
-    env_file: *env
   - path:
       - ../../services/gluetun/compose.yaml
       - services/gluetun/compose.yaml
