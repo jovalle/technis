@@ -1,0 +1,594 @@
+#!/usr/bin/env bash
+# tctl: Docker Compose across the Technis stacks, plus workstation setup and checks.
+set -Eeuo pipefail
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+stacks_dir=$root/docker/stacks
+ssh_snippet=$root/tools/tctl/ssh_config
+
+# Output follows jsh: cyan activity, dim notes, green ✓, yellow !, red ✗.
+# Decoration goes to stderr; tables and command output stay on stdout.
+tty1=0 tty2=0
+[[ -t 1 ]] && tty1=1
+[[ -t 2 ]] && tty2=1
+color_on() {
+  [[ ${JSH_PLAIN_OUTPUT:-0} != 1 && ${TERM:-} != dumb && -z ${NO_COLOR+x} ]] || return 1
+  case ${JSH_COLOR:-auto} in
+    always) return 0 ;;
+    never) return 1 ;;
+    *) [[ ($1 == 1 && $tty1 == 1) || ($1 == 2 && $tty2 == 1) ]] ;;
+  esac
+}
+sgr() { if color_on "$1"; then printf '\033[%sm' "$2"; fi; }
+E_B=$(sgr 2 1) E_D=$(sgr 2 '2;37') E_C=$(sgr 2 36) E_G=$(sgr 2 32) E_Y=$(sgr 2 33) E_R=$(sgr 2 31) E_X=$(sgr 2 0)
+O_B=$(sgr 1 1) O_D=$(sgr 1 '2;37') O_C=$(sgr 1 36) O_G=$(sgr 1 32) O_Y=$(sgr 1 33) O_R=$(sgr 1 31) O_X=$(sgr 1 0)
+
+say() { printf '%s\n' "$*" >&2; }
+info() { say "${E_C}$*${E_X}"; }
+muted() { say "${E_D}$*${E_X}"; }
+blank() { printf '\n' >&2; }
+die() {
+  say "${E_R}✗ $*${E_X}"
+  exit 1
+}
+# row STATE SUBJECT [DETAIL]; STATE is info, ok, warn, fail, or skip.
+row() {
+  local mark color
+  case $1 in
+    info) mark='→' color=$E_C ;;
+    ok) mark='✓' color=$E_G ;;
+    warn) mark='!' color=$E_Y ;;
+    fail) mark='✗' color=$E_R ;;
+    *) mark='–' color=$E_D ;;
+  esac
+  say "${color}${mark}${E_X} ${E_B}$2${E_X}${3:+ ${E_D}$3${E_X}}"
+}
+
+has() { command -v "$1" >/dev/null 2>&1; }
+in_list() {
+  local needle=$1 x
+  shift
+  for x in "$@"; do [[ $x == "$needle" ]] && return 0; done
+  return 1
+}
+plural() { if (($1 == 1)); then printf '%s %s' "$1" "$2"; else printf '%s %ss' "$1" "$2"; fi; }
+
+now_ms() {
+  if [[ -n ${EPOCHREALTIME:-} ]]; then
+    local t=${EPOCHREALTIME/[.,]/}
+    printf '%s\n' $((t / 1000))
+  elif has perl; then
+    perl -MTime::HiRes=time -e 'printf "%d\n", time * 1000'
+  else
+    printf '%s\n' $(($(date +%s) * 1000))
+  fi
+}
+took() {
+  local ms=$(($(now_ms) - $1))
+  if ((ms < 1000)); then printf '[%dms]' "$ms"; else printf '[%d.%02ds]' $((ms / 1000)) $((ms % 1000 / 10)); fi
+}
+
+confirm() {
+  [[ ${assume_yes:-0} == 1 ]] && return 0
+  [[ -t 0 ]] || die "no terminal to confirm, pass --yes: $1"
+  local answer sep=' '
+  [[ $1 == *$'\n' ]] && sep=
+  printf '%s' "${E_Y}$1${sep}Type yes to continue:${E_X} " >&2
+  read -r answer
+  [[ $answer == yes ]]
+}
+
+usage() {
+  local s list=
+  for s in $(stacks); do list+="${list:+, }$s"; done
+  cat <<EOF
+${O_B}tctl${O_X} ${O_D}Docker Compose across the Technis stacks${O_X}
+
+${O_B}Usage:${O_X} tctl ${O_C}[-s stack]... [--yes]${O_X} <command> ${O_D}[...args]${O_X}
+
+${O_B}Options:${O_X}
+  ${O_C}-s, --stack${O_X} ${O_D}<name>${O_X}   target stack, repeatable or comma-separated ${O_D}($list)${O_X}
+  ${O_C}-y, --yes${O_X}            skip the confirmation for changes on several stacks
+  ${O_C}-h, --help${O_X}           show this help
+
+${O_B}Commands:${O_X}
+  ${O_C}<compose command>${O_X}    any docker compose command, on every stack by default
+  ${O_C}upgrade${O_X} ${O_D}[service]...${O_X}  pull, then up -d, so floating tags pick up new images
+  ${O_C}ctx${O_X}                  create the per-stack Docker contexts ${O_D}(ssh://<stack>)${O_X}
+  ${O_C}doctor${O_X}               read-only checks for tools, SSH, contexts, env files, and models
+  ${O_C}bootstrap${O_X}            install missing tools and configure this workstation
+  ${O_C}sync${O_X} ${O_D}[-n] <service>...${O_X} copy service files/ to one stack host ${O_D}(needs -s)${O_X}
+
+${O_B}Targeting:${O_X}
+  Service names narrow the stacks to those that define them. Read-only commands
+  run everywhere; changes on several stacks ask first; ${O_Y}down${O_X} and ${O_Y}rm${O_X} take one
+  stack; ${O_Y}exec${O_X}, ${O_Y}run${O_X}, ${O_Y}cp${O_X}, ${O_Y}attach${O_X}, ${O_Y}logs -f${O_X}, and streaming ${O_Y}stats${O_X} need exactly one.
+
+${O_B}Examples:${O_X}
+  ${O_D}\$${O_X} t ps                        ${O_D}# every container, one table${O_X}
+  ${O_D}\$${O_X} t logs --tail 50 tracearr   ${O_D}# finds the stack that runs tracearr${O_X}
+  ${O_D}\$${O_X} t -s nexus up -d immich
+  ${O_D}\$${O_X} t upgrade watchtower        ${O_D}# pull and recreate where it runs${O_X}
+EOF
+}
+
+stacks() {
+  local f
+  for f in "$stacks_dir"/*/compose.yaml; do
+    [[ -f $f ]] && basename "$(dirname "$f")"
+  done
+}
+
+# Isolate every call from direnv state left by whichever directory the shell is in.
+compose() {
+  local stack=$1
+  shift
+  local dir=$stacks_dir/$stack
+  env -u DOCKER_HOST -u DOCKER_CONTEXT -u COMPOSE_FILE -u COMPOSE_PROJECT_NAME -u COMPOSE_PROFILES \
+    COMPOSE_ENV_FILES="$dir/.env" \
+    docker --context "$stack" compose --project-directory "$dir" -f "$dir/compose.yaml" "$@"
+}
+
+endpoint() { docker context inspect -f '{{.Endpoints.docker.Host}}' "$1" 2>/dev/null; }
+
+# Echo the command Bun-style: dim prompt, bold program, highlighted verb, flags, and services.
+show_cmd() {
+  local out="${E_D}\$${E_X} ${E_B}compose${E_X}" a first=1 q
+  for a in "$@"; do
+    q=$a
+    [[ $a =~ ^[A-Za-z0-9_./:=@%+,-]+$ ]] || q=$(printf '%q' "$a")
+    if ((first)); then
+      out+=" ${E_B}${E_C}$q${E_X}"
+      first=0
+    elif [[ $a == -* ]]; then
+      out+=" ${E_D}$q${E_X}"
+    elif in_list "$a" ${svc_tokens[@]+"${svc_tokens[@]}"}; then
+      out+=" ${E_G}$q${E_X}"
+    else
+      out+=" $q"
+    fi
+  done
+  say "$out"
+}
+
+cmd_ctx() {
+  local s want have
+  for s in $(stacks); do
+    want=ssh://$s
+    have=$(endpoint "$s" || true)
+    if [[ $have == "$want" ]]; then
+      row ok "$s" "$want"
+    elif [[ -z $have ]]; then
+      docker context create "$s" --description "Technis $s stack" --docker "host=$want" >/dev/null 2>&1
+      row ok "$s" "$want (created)"
+    else
+      die "context $s points at $have, expected $want; fix it with: docker context update $s --docker host=$want"
+    fi
+  done
+}
+
+env_keys() { sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1/p' "$1" | sort -u; }
+
+# check_env EXAMPLE; missing keys only warn because the compose model check is authoritative.
+check_env() {
+  local example=$1 real=${1%.example} missing
+  if [[ ! -f $real ]]; then
+    row fail "${real#"$root"/}" "missing (secrets arrive via Syncthing)"
+    return 1
+  fi
+  missing=$(comm -23 <(env_keys "$example") <(env_keys "$real") | tr '\n' ' ')
+  if [[ -n $missing ]]; then
+    row warn "${real#"$root"/}" "lacks keys from the example: ${missing% }"
+  else
+    row ok "${real#"$root"/}"
+  fi
+}
+
+cmd_doctor() {
+  local fails=0 t s v start
+  start=$(now_ms)
+  info "Tools"
+  for t in bash docker ssh git jq direnv rsync nc; do
+    if has "$t"; then row ok "$t"; else
+      row fail "$t" "not installed"
+      fails=$((fails + 1))
+    fi
+  done
+  for t in mise pre-commit; do
+    if has "$t"; then row ok "$t"; else row warn "$t" "not installed"; fi
+  done
+  if has docker; then
+    if v=$(docker compose version --short 2>/dev/null); then row ok "docker compose" "$v"; else
+      row fail "docker compose" "plugin missing"
+      fails=$((fails + 1))
+    fi
+  fi
+  if has rsync && ! rsync --version 2>/dev/null | head -1 | grep -q 'version 3\.'; then
+    row warn rsync "not 3.x; tctl sync needs GNU rsync"
+  fi
+
+  blank
+  info "Workstation"
+  if grep -qsF "Include $ssh_snippet" "$HOME/.ssh/config"; then row ok "ssh config" "includes tools/tctl/ssh_config"; else
+    row fail "ssh config" "lacks: Include $ssh_snippet"
+    fails=$((fails + 1))
+  fi
+  if [[ -f $HOME/.ssh/technis ]]; then row ok "ssh key" "present at ~/.ssh/technis"; else
+    row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
+  fi
+  check_env "$root/docker/.env.example" || fails=$((fails + 1))
+
+  for s in $(stacks); do
+    blank
+    info "$s"
+    if [[ $(endpoint "$s" || true) == "ssh://$s" ]]; then row ok context "ssh://$s"; else
+      row fail context "missing or wrong (run: tctl ctx)"
+      fails=$((fails + 1))
+      continue
+    fi
+    if ssh -o BatchMode=yes -o ConnectTimeout=5 "$s" true 2>/dev/null; then
+      row ok ssh "$(ssh -G "$s" | awk '/^hostname /{print $2}')"
+    else
+      row fail ssh "unreachable (key, host key, or network)"
+      fails=$((fails + 1))
+      continue
+    fi
+    if v=$(docker --context "$s" version --format '{{.Server.Version}}' 2>/dev/null); then row ok engine "Docker $v"; else
+      row fail engine "unreachable"
+      fails=$((fails + 1))
+    fi
+    [[ ! -f $stacks_dir/$s/.env.example ]] || check_env "$stacks_dir/$s/.env.example" || fails=$((fails + 1))
+    if compose "$s" config --quiet 2>/dev/null; then row ok "compose model" "valid"; else
+      row fail "compose model" "invalid (run: tctl -s $s config --quiet)"
+      fails=$((fails + 1))
+    fi
+  done
+  blank
+  ((fails == 0)) || die "doctor: $(plural "$fails" check) failed $(took "$start")"
+  row ok doctor "all checks passed $(took "$start")"
+}
+
+bootstrap_tools() {
+  local pairs="direnv:direnv docker:docker git:git jq:jq mise:mise pre-commit:pre-commit nc:netcat" p need=()
+  info "Tools"
+  for p in $pairs; do has "${p%%:*}" || need+=("${p#*:}"); done
+  rsync --version 2>/dev/null | head -1 | grep -q 'version 3\.' || need+=(rsync)
+  if ((${#need[@]})); then
+    has brew || die "Homebrew is required to install: ${need[*]}. Install it from https://brew.sh, then rerun tctl bootstrap."
+    if confirm "Install with Homebrew: ${need[*]}."; then brew install "${need[@]}"; else row skip "tools" "skipped: ${need[*]}"; fi
+  else
+    row ok tools "all present"
+  fi
+  if ! docker compose version >/dev/null 2>&1; then
+    has brew || die "docker compose plugin missing and Homebrew unavailable"
+    confirm "Install the docker compose plugin with Homebrew." || return 0
+    brew install docker-compose
+    local cfg=$HOME/.docker/config.json dir
+    dir=$(brew --prefix)/lib/docker/cli-plugins
+    mkdir -p "$HOME/.docker"
+    [[ -f $cfg ]] || echo '{}' >"$cfg"
+    jq --arg d "$dir" '.cliPluginsExtraDirs = ((.cliPluginsExtraDirs // []) + [$d] | unique)' "$cfg" >"$cfg.tmp" && mv -f "$cfg.tmp" "$cfg"
+    row ok "docker compose" "plugin installed"
+  fi
+}
+
+bootstrap_ssh() {
+  local cfg=$HOME/.ssh/config line="Include $ssh_snippet"
+  mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+  if grep -qsF "$line" "$cfg"; then
+    row ok "ssh config" "includes tools/tctl/ssh_config"
+  elif confirm "Prepend '$line' to ~/.ssh/config (a backup is kept)."; then
+    touch "$cfg"
+    cp -p "$cfg" "$cfg.tctl-$(date +%Y%m%d%H%M%S).bak"
+    {
+      printf '%s\n\n' "$line"
+      cat "$cfg"
+    } >"$cfg.tmp" && chmod 600 "$cfg.tmp" && mv -f "$cfg.tmp" "$cfg"
+    row ok "ssh config" "Include added"
+  else
+    row skip "ssh config" "skipped"
+  fi
+  [[ -f $HOME/.ssh/technis ]] || row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
+}
+
+bootstrap_shell() {
+  local shell_name rc
+  shell_name=$(basename "${SHELL:-bash}")
+  case $shell_name in
+    zsh) rc=$HOME/.zshrc ;;
+    bash) rc=$HOME/.bashrc ;;
+    *)
+      row warn shell "unknown shell $shell_name; add the direnv and mise hooks yourself"
+      return 0
+      ;;
+  esac
+  grep -qs 'direnv hook' "$rc" || row warn shell "add to ${rc/#$HOME/~}: eval \"\$(direnv hook $shell_name)\""
+  grep -qs 'mise activate' "$rc" || row warn shell "add to ${rc/#$HOME/~}: eval \"\$(mise activate $shell_name)\""
+  if grep -qsE "^[[:space:]]*alias t=" "$rc"; then
+    row warn shell "${rc/#$HOME/~} defines alias t, which hides the repo's t -> tctl"
+  fi
+}
+
+cmd_bootstrap() {
+  local start s sub
+  start=$(now_ms)
+  [[ $(uname -s) == Darwin || $(uname -s) == Linux ]] || die "unsupported OS: $(uname -s)"
+  bootstrap_tools
+  if has mise && confirm "Trust and install the pinned tools in .mise.toml."; then
+    mise trust "$root/.mise.toml" && (cd "$root" && mise install)
+    row ok mise "tools installed"
+  fi
+  blank
+  info "SSH and Docker contexts"
+  bootstrap_ssh
+  cmd_ctx
+  blank
+  info "Repository"
+  if has direnv && confirm "Allow direnv for the repo and stack directories."; then
+    direnv allow "$root"
+    for s in $(stacks); do direnv allow "$stacks_dir/$s"; done
+    row ok direnv "allowed"
+  fi
+  if [[ -d $root/.git ]]; then
+    # Only uninitialized submodules; updating checked-out ones would discard local branch state.
+    for sub in $(git -C "$root" submodule status | awk '/^-/{print $2}'); do
+      git -C "$root" submodule update --init -- "$sub"
+      row ok submodule "$sub initialized"
+    done
+    has pre-commit && (cd "$root" && pre-commit install >/dev/null) && row ok pre-commit "hooks installed"
+  else
+    row warn repository "no .git here (Syncthing copy?); clone the repo for submodules and hooks"
+  fi
+  bootstrap_shell
+  blank
+  row ok bootstrap "done $(took "$start")"
+  blank
+  cmd_doctor
+}
+
+cmd_sync() {
+  ((${#targets[@]} == 1)) || die "sync needs exactly one -s stack"
+  local script=$root/scripts/docker/sync
+  [[ -x $script ]] || die "missing $script"
+  if [[ ${1:-} == -n ]]; then
+    shift
+    exec "$script" -n "${targets[0]}" "$@"
+  fi
+  exec "$script" "${targets[0]}" "$@"
+}
+
+readonly_verbs=(ps ls images top port version volumes)
+single_verbs=(exec run cp attach events watch)
+one_stack_verbs=(down rm)
+config_ok_flags=(--quiet -q --services --hash --images --volumes --profiles --networks)
+
+# Map service names in the arguments to the stacks that define them.
+narrow_by_service() {
+  local verb=$1
+  shift
+  local tokens=() a s svc matched=()
+  for a in "$@"; do
+    [[ $a == -* ]] && continue
+    [[ $verb == cp ]] && a=${a%%:*}
+    tokens+=("$a")
+  done
+  ((${#tokens[@]})) || return 0
+  for s in "${targets[@]}"; do
+    local hit=0
+    for svc in $(compose "$s" config --services 2>/dev/null); do
+      if in_list "$svc" "${tokens[@]}"; then
+        hit=1
+        in_list "$svc" ${svc_tokens[@]+"${svc_tokens[@]}"} || svc_tokens+=("$svc")
+      fi
+    done
+    ((hit)) && matched+=("$s")
+  done
+  ((${#matched[@]})) && targets=("${matched[@]}")
+  return 0
+}
+
+status_color() {
+  case $1/$2 in
+    running/unhealthy | exited/* | dead/*) printf '%s' "$O_R" ;;
+    running/starting | restarting/* | paused/* | created/* | removing/*) printf '%s' "$O_Y" ;;
+    running/*) printf '%s' "$O_G" ;;
+    *) printf '%s' "$O_D" ;;
+  esac
+}
+
+# One table for every targeted stack; fetched in parallel, colored by state and health.
+ps_table() {
+  local start tmp s rc failed=() rows=() line
+  start=$(now_ms)
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/tctl.XXXXXX")
+  for s in "${targets[@]}"; do
+    (
+      if compose "$s" ps --format json "$@" >"$tmp/$s.json" 2>"$tmp/$s.err"; then echo 0; else echo $?; fi >"$tmp/$s.rc"
+    ) &
+  done
+  wait
+  for s in "${targets[@]}"; do
+    rc=$(cat "$tmp/$s.rc")
+    if [[ $rc != 0 ]]; then
+      failed+=("$s")
+      row fail "$s" "$(tr '\n' ' ' <"$tmp/$s.err")"
+      continue
+    fi
+    while IFS= read -r line; do rows+=("$line"); done < <(
+      # "-" keeps empty health from collapsing adjacent tab-separated fields on read.
+      jq -r --arg s "$s" '(if type == "array" then .[] else . end)
+        | [$s, .Service, .State, ((.Health // "") | if . == "" then "-" else . end), .Status,
+           (.Image | sub("@sha256:[0-9a-f]+$"; ""))] | @tsv' "$tmp/$s.json"
+    )
+  done
+  rm -rf "$tmp"
+
+  local w1=5 w2=7 w3=6 stack svc state health status image n=0 bad=() warn_n=0
+  for line in ${rows[@]+"${rows[@]}"}; do
+    IFS=$'\t' read -r stack svc state health status image <<<"$line"
+    ((${#stack} > w1)) && w1=${#stack}
+    ((${#svc} > w2)) && w2=${#svc}
+    ((${#status} > w3)) && w3=${#status}
+  done
+  if ((${#rows[@]})); then
+    printf '%s%-*s  %-*s  %-*s  %s%s\n' "$O_D" "$w1" STACK "$w2" SERVICE "$w3" STATUS IMAGE "$O_X"
+    while IFS= read -r line; do
+      IFS=$'\t' read -r stack svc state health status image <<<"$line"
+      printf '%s%-*s%s  %s%-*s%s  %s%-*s%s  %s%s%s\n' \
+        "$O_C" "$w1" "$stack" "$O_X" "$O_B" "$w2" "$svc" "$O_X" \
+        "$(status_color "$state" "$health")" "$w3" "$status" "$O_X" "$O_D" "$image" "$O_X"
+      n=$((n + 1))
+      case $state/$health in
+        running/unhealthy | exited/* | dead/*) bad+=("$stack/$svc") ;;
+        running/starting | restarting/*) warn_n=$((warn_n + 1)) ;;
+      esac
+    done < <(printf '%s\n' "${rows[@]}" | sort -t $'\t' -k1,1 -k2,2)
+  fi
+
+  local ok_n=$((${#targets[@]} - ${#failed[@]}))
+  blank
+  ((${#bad[@]} == 0)) || row warn "$(plural ${#bad[@]} container) not healthy" "${bad[*]}"
+  ((warn_n == 0)) || row warn "$(plural "$warn_n" container) starting"
+  ((${#failed[@]} == 0)) || die "$(plural ${#failed[@]} stack) failed: ${failed[*]} $(took "$start")"
+  row ok "$(plural "$n" container) on $(plural "$ok_n" stack)" "$(took "$start")"
+}
+
+# up alone reuses a cached image, so upgrade pulls first.
+stack_run() {
+  local s=$1 verb=$2
+  shift 2
+  if [[ $verb == upgrade ]]; then
+    compose "$s" pull "$@" && compose "$s" up -d "$@"
+  else
+    compose "$s" "$verb" "$@"
+  fi
+}
+
+run_compose() {
+  local verb=$1 kind=change a
+  shift
+  if [[ $verb == upgrade ]]; then
+    for a in "$@"; do [[ $a != -* ]] || die "upgrade takes service names only, got $a"; done
+  fi
+  if in_list "$verb" "${readonly_verbs[@]}"; then kind=safe; fi
+  in_list "$verb" "${single_verbs[@]}" && kind=single
+  in_list "$verb" "${one_stack_verbs[@]}" && kind=one
+  case $verb in
+    logs) kind=safe && for a in "$@"; do [[ $a == -f || $a == --follow ]] && kind=single; done ;;
+    stats) kind=single && for a in "$@"; do [[ $a == --no-stream ]] && kind=safe; done ;;
+    config)
+      kind=blocked
+      for a in "$@"; do in_list "$a" "${config_ok_flags[@]}" && kind=safe; done
+      [[ $kind == safe ]] || die "config prints interpolated secrets; use --quiet, --services, --hash, or --images"
+      ;;
+  esac
+
+  [[ $explicit == 1 ]] || narrow_by_service "$verb" "$@"
+  local n=${#targets[@]} s
+  case $kind in
+    single) ((n == 1)) || die "$verb needs exactly one stack; matched: ${targets[*]} (use -s)" ;;
+    one) ((n == 1)) || die "$verb is limited to one stack; matched: ${targets[*]} (use -s)" ;;
+    change)
+      if ((n > 1)); then
+        local msg="Run compose $verb${*:+ $*} on $n stacks:"$'\n'
+        for s in "${targets[@]}"; do msg+="  $s"$'\n'; done
+        confirm "$msg" || die "cancelled"
+      fi
+      ;;
+  esac
+  for s in "${targets[@]}"; do
+    [[ -n $(endpoint "$s" || true) ]] || die "no Docker context '$s'; run: tctl ctx"
+  done
+
+  if [[ $verb == ps ]]; then
+    local plain=0
+    for a in "$@"; do [[ $a == -q || $a == --quiet || $a == --format || $a == --format=* ]] && plain=1; done
+    ((plain)) || {
+      ps_table "$@"
+      return
+    }
+  fi
+
+  if [[ $verb == upgrade ]]; then
+    show_cmd pull "$@"
+    show_cmd up -d "$@"
+  else
+    show_cmd "$verb" "$@"
+  fi
+  if [[ $kind == single ]]; then
+    row info "${targets[0]}" "$(endpoint "${targets[0]}")"
+    compose "${targets[0]}" "$verb" "$@"
+    return
+  fi
+
+  local start stack_start failed=() rc first=1
+  start=$(now_ms)
+  for s in "${targets[@]}"; do
+    ((first)) || blank
+    first=0
+    row info "$s" "$(endpoint "$s")"
+    stack_start=$(now_ms)
+    if stack_run "$s" "$verb" "$@"; then :; else
+      rc=$?
+      row fail "$s" "exit $rc $(took "$stack_start")"
+      failed+=("$s")
+    fi
+  done
+  ((n == 1)) || blank
+  ((${#failed[@]} == 0)) || die "${#failed[@]} of $(plural "$n" stack) failed: ${failed[*]} $(took "$start")"
+  if ((n == 1)); then row ok "${targets[0]}" "$(took "$start")"; else row ok "$(plural "$n" stack)" "$(took "$start")"; fi
+}
+
+main() {
+  targets=()
+  svc_tokens=()
+  explicit=0
+  assume_yes=0
+  local s all=()
+  for s in $(stacks); do all+=("$s"); done
+  while (($#)); do
+    case $1 in
+      -s | --stack)
+        [[ -n ${2:-} ]] || die "$1 needs a stack name"
+        for s in ${2//,/ }; do
+          in_list "$s" "${all[@]}" || die "unknown stack '$s' (known: ${all[*]})"
+          in_list "$s" ${targets[@]+"${targets[@]}"} || targets+=("$s")
+        done
+        explicit=1
+        shift 2
+        ;;
+      -y | --yes)
+        assume_yes=1
+        shift
+        ;;
+      -h | --help | help)
+        usage
+        return 0
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*) die "unknown option $1 (tctl options go before the command)" ;;
+      *) break ;;
+    esac
+  done
+  (($#)) || {
+    usage >&2
+    exit 2
+  }
+  ((${#targets[@]})) || targets=("${all[@]}")
+  has docker || [[ $1 == bootstrap ]] || die "docker CLI not found; run: tctl bootstrap"
+
+  local verb=$1
+  shift
+  case $verb in
+    ctx) cmd_ctx ;;
+    doctor) cmd_doctor ;;
+    bootstrap) cmd_bootstrap ;;
+    sync) cmd_sync "$@" ;;
+    *) run_compose "$verb" "$@" ;;
+  esac
+}
+
+main "$@"
