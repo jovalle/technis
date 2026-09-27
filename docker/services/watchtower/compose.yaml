@@ -26,7 +26,7 @@ services:
         - wget -q --spider http://127.0.0.1:9001/ || exit 1
       timeout: 10s
     hostname: watchtower
-    image: ghcr.io/jovalle/watchtower:1.8.0
+    image: ghcr.io/jovalle/watchtower:latest
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

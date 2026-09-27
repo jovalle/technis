@@ -12,7 +12,7 @@ services:
     environment:
       - GATUS_CONFIG_PATH=/config/gatus.yaml
     hostname: gatus
-    image: twinproduction/gatus:v5.36.0@sha256:c5f210d095fa78e6efaa20ffeb14803f2ba4f10615e16a6d12087697149617f0
+    image: ghcr.io/twin/gatus:latest
     labels:
       - observability.metrics.address=gatus:8080
       - traefik.enable=false

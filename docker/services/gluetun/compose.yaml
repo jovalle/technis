@@ -50,7 +50,8 @@ services:
           nslookup github.com 127.0.0.1 >/dev/null 2>&1
       timeout: 10s
     hostname: gluetun
-    image: ghcr.io/qdm12/gluetun:latest
+    # gluetun builds latest from every master commit; v3 tracks tagged releases.
+    image: ghcr.io/qdm12/gluetun:v3
     labels:
       - traefik.enable=false
     restart: unless-stopped

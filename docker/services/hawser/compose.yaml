@@ -24,7 +24,7 @@ services:
       - STACKS_DIR=${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/hawser/stacks
       - TOKEN=${HAWSER_TOKEN:?HAWSER_TOKEN is required}
     hostname: hawser
-    image: ghcr.io/finsys/hawser:0.2.49@sha256:6322eafea118a26aee4f1b12bb42b34bb841bda85e38a8a6d24c1cc86bffb6ec
+    image: ghcr.io/finsys/hawser:latest
     labels:
       - dockhand.notify=false
       - dockhand.update=false

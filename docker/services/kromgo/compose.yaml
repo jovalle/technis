@@ -14,7 +14,7 @@ services:
     environment:
       - PROMETHEUS_URL=http://vmauth:8427
     hostname: kromgo
-    image: ghcr.io/kashalls/kromgo@sha256:965ecc92d68dc1a4a969397855367bbc70da03227a941ea607b73bb7e0b78fd6
+    image: ghcr.io/kashalls/kromgo:latest
     labels:
       - traefik.enable=true
       # Public stat.techn.is reaches kromgo through the Cloudflare tunnel, not Traefik.

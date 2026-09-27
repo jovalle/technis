@@ -24,7 +24,7 @@ services:
       test: [CMD, /victoria-logs-prod, -version]
       timeout: 10s
     hostname: victorialogs
-    image: victoriametrics/victoria-logs:v1.52.0@sha256:47b820890d64c4575a2a0a46415dcd8a4fd59a0f1fcd6a377693d7aea639442e
+    image: victoriametrics/victoria-logs:latest
     labels:
       - observability.metrics.address=victorialogs:9428
       - traefik.enable=false

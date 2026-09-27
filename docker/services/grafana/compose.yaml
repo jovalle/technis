@@ -35,7 +35,7 @@ services:
         [CMD-SHELL, wget -q --spider http://127.0.0.1:3000/api/health || exit 1]
       timeout: 10s
     hostname: grafana
-    image: grafana/grafana:12.2.0
+    image: grafana/grafana:latest
     labels:
       - observability.metrics.address=grafana:3000
       - traefik.enable=true
