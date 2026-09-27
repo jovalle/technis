@@ -46,7 +46,8 @@ services:
         - pg_isready -U postgres
       timeout: 5s
     hostname: postgres
-    image: timescale/timescaledb-ha:pg18.6-ts2.30.1
+    # Float within PG18 only; a major bump needs pg_upgrade on the data directory.
+    image: timescale/timescaledb-ha:pg18
     labels:
       - traefik.enable=false
     restart: unless-stopped

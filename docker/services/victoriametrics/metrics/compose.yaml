@@ -25,7 +25,7 @@ services:
       test: [CMD, wget, -q, --spider, http://127.0.0.1:8428/health]
       timeout: 10s
     hostname: victoriametrics
-    image: victoriametrics/victoria-metrics:v1.151.0@sha256:6d164540a04f49ba4e696cbdb70f9fee78be1e94b8f2a1292743a0b1ab8275bd
+    image: victoriametrics/victoria-metrics:latest
     labels:
       - observability.metrics.address=victoriametrics:8428
       - traefik.enable=false

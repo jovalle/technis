@@ -24,7 +24,7 @@ services:
       test: [CMD, wget, -q, --spider, http://127.0.0.1:9093/-/ready]
       timeout: 10s
     hostname: alertmanager
-    image: prom/alertmanager:v0.34.0@sha256:690c7b525f4367aa91f73e2f91c632206d32e97c6384bdbf2fb7a861b420340d
+    image: prom/alertmanager:latest
     labels:
       - observability.metrics.address=alertmanager:9093
       - traefik.enable=false
