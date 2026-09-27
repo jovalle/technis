@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="360" viewBox="120 92 1360 360" role="img" aria-labelledby="l-title">
+  <title id="l-title">TECHNIS — Impossible T logo and wordmark</title>
+  <defs>
+    <linearGradient id="l-rear-top" gradientUnits="userSpaceOnUse" x1="649" y1="181" x2="664" y2="316">
+      <stop offset="0" stop-color="#e1fdfd"/>
+      <stop offset="0.25" stop-color="#b3fcfd"/>
+      <stop offset="0.5" stop-color="#7ef6fd"/>
+      <stop offset="0.75" stop-color="#49edfb"/>
+      <stop offset="1" stop-color="#16e0f4"/>
+    </linearGradient>
+    <linearGradient id="l-rear-side" gradientUnits="userSpaceOnUse" x1="625" y1="298" x2="792" y2="366">
+      <stop offset="0" stop-color="#001a25"/>
+      <stop offset="0.25" stop-color="#012435"/>
+      <stop offset="0.5" stop-color="#013e5b"/>
+      <stop offset="0.75" stop-color="#0090b8"/>
+      <stop offset="1" stop-color="#01f3ff"/>
+    </linearGradient>
+    <linearGradient id="l-cap" gradientUnits="userSpaceOnUse" x1="263" y1="237" x2="184" y2="270">
+      <stop offset="0" stop-color="#022838"/>
+      <stop offset="0.25" stop-color="#011b26"/>
+      <stop offset="0.5" stop-color="#012636"/>
+      <stop offset="0.75" stop-color="#014562"/>
+      <stop offset="1" stop-color="#0285b2"/>
+    </linearGradient>
+    <linearGradient id="l-cross" gradientUnits="userSpaceOnUse" x1="241" y1="227" x2="542" y2="433">
+      <stop offset="0" stop-color="#01394a"/>
+      <stop offset="0.25" stop-color="#01536d"/>
+      <stop offset="0.5" stop-color="#016787"/>
+      <stop offset="0.75" stop-color="#013244"/>
+      <stop offset="1" stop-color="#024150"/>
+    </linearGradient>
+    <linearGradient id="l-inner" gradientUnits="userSpaceOnUse" x1="399" y1="431" x2="582" y2="815">
+      <stop offset="0" stop-color="#00151c"/>
+      <stop offset="0.25" stop-color="#011f2e"/>
+      <stop offset="0.5" stop-color="#014c71"/>
+      <stop offset="0.75" stop-color="#00b4da"/>
+      <stop offset="1" stop-color="#16ffff"/>
+    </linearGradient>
+    <linearGradient id="l-left-arm" gradientUnits="userSpaceOnUse" x1="253" y1="230" x2="322" y2="469">
+      <stop offset="0" stop-color="#05dcef"/>
+      <stop offset="0.25" stop-color="#00e3f4"/>
+      <stop offset="0.5" stop-color="#1cf1fd"/>
+      <stop offset="0.75" stop-color="#6ff8fd"/>
+      <stop offset="1" stop-color="#c2fdfd"/>
+    </linearGradient>
+    <linearGradient id="l-left-stem" gradientUnits="userSpaceOnUse" x1="312" y1="536" x2="527" y2="680">
+      <stop offset="0" stop-color="#cefefd"/>
+      <stop offset="0.25" stop-color="#8afafd"/>
+      <stop offset="0.5" stop-color="#20e9f9"/>
+      <stop offset="0.75" stop-color="#00e1f6"/>
+      <stop offset="1" stop-color="#08f6ff"/>
+    </linearGradient>
+    <linearGradient id="l-right-stem" gradientUnits="userSpaceOnUse" x1="486" y1="378" x2="664" y2="781">
+      <stop offset="0" stop-color="#45f8ff"/>
+      <stop offset="0.25" stop-color="#00cbe6"/>
+      <stop offset="0.5" stop-color="#016990"/>
+      <stop offset="0.75" stop-color="#01263d"/>
+      <stop offset="1" stop-color="#003265"/>
+    </linearGradient>
+    <linearGradient id="l-top" gradientUnits="userSpaceOnUse" x1="276" y1="171" x2="593" y2="358">
+      <stop offset="0" stop-color="#1bedfa"/>
+      <stop offset="0.25" stop-color="#35f1fd"/>
+      <stop offset="0.5" stop-color="#9afbfd"/>
+      <stop offset="0.75" stop-color="#99fbfd"/>
+      <stop offset="1" stop-color="#2ef0fd"/>
+    </linearGradient>
+    <linearGradient id="l-edge" x1="0" y1="0" x2="0.7" y2="1">
+      <stop stop-color="#e0ffff"/>
+      <stop offset=".52" stop-color="#9cffff"/>
+      <stop offset="1" stop-color="#00bcf4"/>
+    </linearGradient>
+    <filter id="l-glow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="2" seed="7" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="grain"/>
+      <feComposite in="grain" in2="SourceGraphic" operator="arithmetic" k1=".10" k2="0" k3=".95" k4="0" result="metal"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="halo"/>
+      <feComponentTransfer in="halo" result="soft">
+        <feFuncA type="linear" slope=".4"/>
+      </feComponentTransfer>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="rim"/>
+      <feMerge><feMergeNode in="soft"/><feMergeNode in="rim"/><feMergeNode in="metal"/></feMerge>
+    </filter>
+    <g id="l-shape" filter="url(#l-glow)">
+      <path d="M506,274 702,175 802,222 615,321Z" fill="url(#l-rear-top)"/>
+      <path d="M615,321 802,222 802,343 615,442Z" fill="url(#l-rear-side)"/>
+      <path d="M176,252 252,211 252,294Z" fill="url(#l-cap)"/>
+      <path d="M252,211 530,364 530,450 252,294Z" fill="url(#l-cross)"/>
+      <path d="M451,406 530,450 530,840 451,794Z" fill="url(#l-inner)"/>
+      <path d="M176,252 451,406 366,456 176,349Z" fill="url(#l-left-arm)"/>
+      <path d="M366,456 451,406 451,794 366,745Z" fill="url(#l-left-stem)"/>
+      <path d="M530,364 615,321 615,770 530,840Z" fill="url(#l-right-stem)"/>
+      <path d="M252,211 312,177 506,274 615,321 530,364Z" fill="url(#l-top)"/>
+      <g fill="none" stroke="url(#l-edge)" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M176 252L312 177L506 274L702 175L802 222V343L615 442V770L530 840L366 745V456L176 349Z"/>
+        <path d="M176 252L451 406L366 456M252 211L530 364L615 321L802 222M530 364V840"/>
+      </g>
+      <path d="M530 364V840M366 456V745" fill="none" stroke="#d0ffff" stroke-width="1.4"/>
+      <path d="M615 321V770M451 406L530 450" fill="none" stroke="#3eeaff" stroke-width="1.2"/>
+      <path d="M451 406V794" fill="none" stroke="#87ffff" stroke-opacity=".35"/>
+      <path d="M252 211V294" fill="none" stroke="#058aa3" stroke-opacity=".55"/>
+    </g>
+    <linearGradient id="l-face" x1="0" y1="0" x2=".85" y2="1">
+      <stop stop-color="#a5ffff"/>
+      <stop offset=".2" stop-color="#28eff8"/>
+      <stop offset=".57" stop-color="#00d6e9"/>
+      <stop offset="1" stop-color="#0094c7"/>
+    </linearGradient>
+    <linearGradient id="l-vertical" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#4efbff"/>
+      <stop offset=".38" stop-color="#00d9e9"/>
+      <stop offset="1" stop-color="#008cbe"/>
+    </linearGradient>
+    <linearGradient id="l-dark" x1="0" y1="0" x2=".7" y2="1">
+      <stop stop-color="#15d9ed"/>
+      <stop offset=".5" stop-color="#008cb0"/>
+      <stop offset="1" stop-color="#004d85"/>
+    </linearGradient>
+    <linearGradient id="l-letter-edge" x1="0" y1="0" x2=".7" y2="1">
+      <stop stop-color="#edffff"/>
+      <stop offset=".45" stop-color="#96ffff"/>
+      <stop offset="1" stop-color="#16dcf7"/>
+    </linearGradient>
+    <filter id="l-letter-glow" x="-15%" y="-50%" width="130%" height="200%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="2" seed="4" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="grain"/>
+      <feComposite in="grain" in2="SourceGraphic" operator="arithmetic" k1=".08" k2="0" k3=".96" k4="0" result="metal"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+      <feComponentTransfer in="blur" result="bloom"><feFuncA type="linear" slope=".7"/></feComponentTransfer>
+      <feMerge><feMergeNode in="bloom"/><feMergeNode in="metal"/></feMerge>
+    </filter>
+    <g id="l-post">
+      <path d="M0 0H30V119H0Z" fill="url(#l-vertical)"/>
+      <path d="M16 15L30 0V119L16 104Z" fill="url(#l-dark)" opacity=".52"/>
+      <path d="M0 0H30L16 15Z" fill="#b3ffff"/>
+      <path d="M0 119L16 104L30 119Z" fill="#35e3f5"/>
+      <path d="M0 0H30V119H0Z" fill="none" stroke="url(#l-letter-edge)" stroke-width="1.1"/>
+      <path d="M16 15V104" fill="none" stroke="#47eafa" stroke-width=".6"/>
+    </g>
+  </defs>
+  <use href="#l-shape" transform="translate(74 46) scale(.462 .446)"/>
+  <g filter="url(#l-letter-glow)" stroke-linejoin="round">
+    <!-- T -->
+    <path d="M532 227H570V318L552 332L532 318Z" fill="url(#l-vertical)"/>
+    <path d="M552 227L570 241V318L552 332Z" fill="url(#l-dark)"/>
+    <path d="M532 227H570V241L552 227L532 243Z" fill="#047b9d"/>
+    <path d="M532 227V318L552 332L570 318V227M552 227V332" fill="none" stroke="url(#l-letter-edge)" stroke-width="1.1"/>
+    <path d="M481 201H624L607 227H499Z" fill="url(#l-face)" stroke="url(#l-letter-edge)" stroke-width="1.4"/>
+
+    <!-- E -->
+    <g fill="url(#l-face)" stroke="url(#l-letter-edge)" stroke-width="1.2">
+      <path d="M664 199H770L752 225H647Z"/>
+      <path d="M648 247H759V271H648Z"/>
+      <path d="M648 294H752L771 318H648Z"/>
+    </g>
+    <path d="M648 247H668L648 268ZM759 247L746 259L759 271ZM648 294H669L648 315Z" fill="#a1ffff" opacity=".32"/>
+
+    <!-- C -->
+    <path d="M822 199H922L904 225H836L827 234V284L836 293H904L922 318H822L800 295V225Z" fill="url(#l-face)"/>
+    <path d="M822 199L836 225L827 234L800 225ZM800 295L827 284L836 293L822 318Z" fill="#56eff8" opacity=".68"/>
+    <path d="M800 225L827 234V284L800 295Z" fill="url(#l-vertical)"/>
+    <path d="M822 199H922L904 225H836L827 234V284L836 293H904L922 318H822L800 295V225Z" fill="none" stroke="url(#l-letter-edge)" stroke-width="1.4"/>
+
+    <!-- H -->
+    <use href="#l-post" x="950" y="199"/>
+    <use href="#l-post" x="1043" y="199"/>
+    <path d="M980 246H1043L1058 260L1043 273H980L966 260Z" fill="url(#l-face)"/>
+    <path d="M966 260H1058L1043 273H980Z" fill="#04cce5"/>
+    <path d="M980 246H1043M980 273H1043" fill="none" stroke="#b0ffff" stroke-width="1"/>
+
+    <!-- N -->
+    <use href="#l-post" x="1102" y="199"/>
+    <use href="#l-post" x="1202" y="199"/>
+    <path d="M1102 199H1131L1232 318H1203Z" fill="url(#l-face)" stroke="url(#l-letter-edge)" stroke-width="1.1"/>
+
+    <!-- I -->
+    <use href="#l-post" transform="translate(1265 198) scale(1.067 1.0084)"/>
+
+    <!-- S -->
+    <path d="M1346 197H1445L1426 221H1361L1352 230V237L1360 245H1426L1448 270V294L1426 318H1322L1340 293H1414L1422 285V278L1414 269H1345L1324 247V222Z" fill="url(#l-face)"/>
+    <path d="M1346 197L1361 221L1352 230V237L1324 247V222Z" fill="#58f1fa" opacity=".45"/>
+    <path d="M1324 247L1352 237L1360 245L1345 269Z" fill="#00b4d8"/>
+    <path d="M1426 245L1448 270L1422 278L1414 269Z" fill="#21daf1"/>
+    <path d="M1448 270V294L1422 285V278Z" fill="url(#l-dark)"/>
+    <path d="M1422 285L1448 294L1426 318L1414 293Z" fill="url(#l-dark)"/>
+    <path d="M1346 197H1445L1426 221H1361L1352 230V237L1360 245H1426L1448 270V294L1426 318H1322L1340 293H1414L1422 285V278L1414 269H1345L1324 247V222Z" fill="none" stroke="url(#l-letter-edge)" stroke-width="1.3"/>
+  </g>
+</svg>

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="776" height="776" viewBox="101 119 776 776" role="img" aria-labelledby="t-title">
+  <title id="t-title">Technis — Impossible T</title>
+  <defs>
+    <linearGradient id="t-rear-top" gradientUnits="userSpaceOnUse" x1="649" y1="181" x2="664" y2="316">
+      <stop offset="0" stop-color="#e1fdfd"/>
+      <stop offset="0.25" stop-color="#b3fcfd"/>
+      <stop offset="0.5" stop-color="#7ef6fd"/>
+      <stop offset="0.75" stop-color="#49edfb"/>
+      <stop offset="1" stop-color="#16e0f4"/>
+    </linearGradient>
+    <linearGradient id="t-rear-side" gradientUnits="userSpaceOnUse" x1="625" y1="298" x2="792" y2="366">
+      <stop offset="0" stop-color="#001a25"/>
+      <stop offset="0.25" stop-color="#012435"/>
+      <stop offset="0.5" stop-color="#013e5b"/>
+      <stop offset="0.75" stop-color="#0090b8"/>
+      <stop offset="1" stop-color="#01f3ff"/>
+    </linearGradient>
+    <linearGradient id="t-cap" gradientUnits="userSpaceOnUse" x1="263" y1="237" x2="184" y2="270">
+      <stop offset="0" stop-color="#022838"/>
+      <stop offset="0.25" stop-color="#011b26"/>
+      <stop offset="0.5" stop-color="#012636"/>
+      <stop offset="0.75" stop-color="#014562"/>
+      <stop offset="1" stop-color="#0285b2"/>
+    </linearGradient>
+    <linearGradient id="t-cross" gradientUnits="userSpaceOnUse" x1="241" y1="227" x2="542" y2="433">
+      <stop offset="0" stop-color="#01394a"/>
+      <stop offset="0.25" stop-color="#01536d"/>
+      <stop offset="0.5" stop-color="#016787"/>
+      <stop offset="0.75" stop-color="#013244"/>
+      <stop offset="1" stop-color="#024150"/>
+    </linearGradient>
+    <linearGradient id="t-inner" gradientUnits="userSpaceOnUse" x1="399" y1="431" x2="582" y2="815">
+      <stop offset="0" stop-color="#00151c"/>
+      <stop offset="0.25" stop-color="#011f2e"/>
+      <stop offset="0.5" stop-color="#014c71"/>
+      <stop offset="0.75" stop-color="#00b4da"/>
+      <stop offset="1" stop-color="#16ffff"/>
+    </linearGradient>
+    <linearGradient id="t-left-arm" gradientUnits="userSpaceOnUse" x1="253" y1="230" x2="322" y2="469">
+      <stop offset="0" stop-color="#05dcef"/>
+      <stop offset="0.25" stop-color="#00e3f4"/>
+      <stop offset="0.5" stop-color="#1cf1fd"/>
+      <stop offset="0.75" stop-color="#6ff8fd"/>
+      <stop offset="1" stop-color="#c2fdfd"/>
+    </linearGradient>
+    <linearGradient id="t-left-stem" gradientUnits="userSpaceOnUse" x1="312" y1="536" x2="527" y2="680">
+      <stop offset="0" stop-color="#cefefd"/>
+      <stop offset="0.25" stop-color="#8afafd"/>
+      <stop offset="0.5" stop-color="#20e9f9"/>
+      <stop offset="0.75" stop-color="#00e1f6"/>
+      <stop offset="1" stop-color="#08f6ff"/>
+    </linearGradient>
+    <linearGradient id="t-right-stem" gradientUnits="userSpaceOnUse" x1="486" y1="378" x2="664" y2="781">
+      <stop offset="0" stop-color="#45f8ff"/>
+      <stop offset="0.25" stop-color="#00cbe6"/>
+      <stop offset="0.5" stop-color="#016990"/>
+      <stop offset="0.75" stop-color="#01263d"/>
+      <stop offset="1" stop-color="#003265"/>
+    </linearGradient>
+    <linearGradient id="t-top" gradientUnits="userSpaceOnUse" x1="276" y1="171" x2="593" y2="358">
+      <stop offset="0" stop-color="#1bedfa"/>
+      <stop offset="0.25" stop-color="#35f1fd"/>
+      <stop offset="0.5" stop-color="#9afbfd"/>
+      <stop offset="0.75" stop-color="#99fbfd"/>
+      <stop offset="1" stop-color="#2ef0fd"/>
+    </linearGradient>
+    <linearGradient id="t-edge" x1="0" y1="0" x2="0.7" y2="1">
+      <stop stop-color="#e0ffff"/>
+      <stop offset=".52" stop-color="#9cffff"/>
+      <stop offset="1" stop-color="#00bcf4"/>
+    </linearGradient>
+    <filter id="t-glow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="2" seed="7" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="grain"/>
+      <feComposite in="grain" in2="SourceGraphic" operator="arithmetic" k1=".10" k2="0" k3=".95" k4="0" result="metal"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="halo"/>
+      <feComponentTransfer in="halo" result="soft">
+        <feFuncA type="linear" slope=".4"/>
+      </feComponentTransfer>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="rim"/>
+      <feMerge><feMergeNode in="soft"/><feMergeNode in="rim"/><feMergeNode in="metal"/></feMerge>
+    </filter>
+    <g id="t-shape" filter="url(#t-glow)">
+      <path d="M506,274 702,175 802,222 615,321Z" fill="url(#t-rear-top)"/>
+      <path d="M615,321 802,222 802,343 615,442Z" fill="url(#t-rear-side)"/>
+      <path d="M176,252 252,211 252,294Z" fill="url(#t-cap)"/>
+      <path d="M252,211 530,364 530,450 252,294Z" fill="url(#t-cross)"/>
+      <path d="M451,406 530,450 530,840 451,794Z" fill="url(#t-inner)"/>
+      <path d="M176,252 451,406 366,456 176,349Z" fill="url(#t-left-arm)"/>
+      <path d="M366,456 451,406 451,794 366,745Z" fill="url(#t-left-stem)"/>
+      <path d="M530,364 615,321 615,770 530,840Z" fill="url(#t-right-stem)"/>
+      <path d="M252,211 312,177 506,274 615,321 530,364Z" fill="url(#t-top)"/>
+      <g fill="none" stroke="url(#t-edge)" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M176 252L312 177L506 274L702 175L802 222V343L615 442V770L530 840L366 745V456L176 349Z"/>
+        <path d="M176 252L451 406L366 456M252 211L530 364L615 321L802 222M530 364V840"/>
+      </g>
+      <path d="M530 364V840M366 456V745" fill="none" stroke="#d0ffff" stroke-width="1.4"/>
+      <path d="M615 321V770M451 406L530 450" fill="none" stroke="#3eeaff" stroke-width="1.2"/>
+      <path d="M451 406V794" fill="none" stroke="#87ffff" stroke-opacity=".35"/>
+      <path d="M252 211V294" fill="none" stroke="#058aa3" stroke-opacity=".55"/>
+    </g>
+  </defs>
+  <use href="#t-shape"/>
+</svg>
