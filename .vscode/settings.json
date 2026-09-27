@@ -25,6 +25,7 @@
     "talosconfig": "yaml"
   },
   "files.trimTrailingWhitespace": true,
+  "github.copilot.chat.tools.viewImage.enabled": false,
   "material-icon-theme.files.associations": {
     "*-lock*": "lock",
     "*.env*": "environment",
