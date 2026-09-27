@@ -1,6 +1,5 @@
 # Generic
 /target/
-/bin/tctl
 /bin/.prepare.*
 .DS_Store
 *.log
