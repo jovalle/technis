@@ -42,9 +42,8 @@ services:
     hostname: immich
     image: ghcr.io/immich-app/immich-server:release
     labels:
-      - traefik.http.routers.immich.rule=Host(`photos.ovall.es`)
-      - traefik.http.routers.immich.tls=true
-      - traefik.http.routers.immich.tls.certresolver=letsencrypt
+      # Public photos.techn.is reaches immich through the Cloudflare tunnel, not Traefik.
+      - traefik.http.routers.immich.rule=Host(`immich.techn.is`)
       - traefik.http.services.immich.loadbalancer.server.port=2283
     ports:
       - host_ip: 192.168.1.3

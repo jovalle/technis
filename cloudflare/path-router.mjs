@@ -5,7 +5,10 @@ import TECHNIS_WORDMARK_SVG from "../assets/technis.svg";
 const SECONDARY_DOMAIN = "techn.is";
 
 const place = (svg, x, y, w, h) =>
-  svg.replace(/ width="\d+" height="\d+"/, ` x="${x}" y="${y}" width="${w}" height="${h}"`);
+  svg.replace(
+    / width="\d+" height="\d+"/,
+    ` x="${x}" y="${y}" width="${w}" height="${h}"`
+  );
 // Icon over wordmark, same proportions as the Tracearr login header (88px icon, 20px gap, 240x41 wordmark).
 const TECHNIS_STACKED_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="149" viewBox="0 0 240 149" role="img" aria-label="Technis">
 ${place(TECHNIS_ICON_SVG, 76, 0, 88, 88)}
@@ -196,6 +199,24 @@ async function formatPlexInitiateResponse(response, request, url) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Immich moved from photos.ovall.es; 308 keeps API methods and bodies intact.
+    if (url.hostname === "photos.ovall.es") {
+      url.hostname = `photos.${SECONDARY_DOMAIN}`;
+      return Response.redirect(url.toString(), 308);
+    }
+
+    // Public Immich allows OAuth only; LAN password login goes to immich.techn.is, which skips Cloudflare.
+    if (
+      url.hostname === `photos.${SECONDARY_DOMAIN}` &&
+      url.pathname === "/api/auth/login"
+    ) {
+      if (request.method !== "POST") return fetch(request);
+      return Response.json(
+        { message: "Password login is available only on the local network" },
+        { status: 403 }
+      );
+    }
 
     // 0. Intercept Logo & Favicon asset requests across all routed domains
     const assetName = url.pathname.slice(url.pathname.lastIndexOf("/"));
