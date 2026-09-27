@@ -1,0 +1,37 @@
+services:
+  # Public {w,wt,watch}.techn.is reach watchtower through the nexus Cloudflare tunnel, not Traefik.
+  watchtower:
+    cap_drop:
+      - ALL
+    container_name: watchtower
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+        reservations:
+          cpus: 0.1
+          memory: 128M
+    environment:
+      - OMDB_API_KEY=${WATCHTOWER_OMDB_API_KEY:-}
+      - SECURE_COOKIES=true
+      - TMDB_API_KEY=${WATCHTOWER_TMDB_API_KEY:-}
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:9001/ || exit 1
+      timeout: 10s
+    hostname: watchtower
+    image: ghcr.io/jovalle/watchtower:1.8.0
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    user: 1001:1001
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/watchtower:/data

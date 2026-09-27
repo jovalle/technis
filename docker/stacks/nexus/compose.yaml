@@ -95,6 +95,8 @@ include:
     env_file: *env
   - path: ../../services/victoriametrics/metrics/compose.yaml
     env_file: *env
+  - path: ../../services/watchtower/compose.yaml
+    env_file: *env
   - path: ../../services/wizarr/compose.yaml
     env_file: *env
 
