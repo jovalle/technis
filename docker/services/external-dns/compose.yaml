@@ -34,7 +34,7 @@ services:
       - STATE_PATH=/data/state.json
       - SYNC_MODE=${EXTERNAL_DNS_SYNC_MODE:-watch}
       - TECHNITIUM_URL=http://100.100.1.2:5380
-      - TECHNITIUM_ZONES=techn.is,photos.ovall.es,homelab,nexus,mothership,stargate,go
+      - TECHNITIUM_ZONES=techn.is,homelab,nexus,mothership,stargate,go
     hostname: external-dns
     image: ghcr.io/jovalle/external-dns@sha256:cfe6330238f318de565f11fda13271eac9aa0006f419242c598cdd540af32d79
     labels:
