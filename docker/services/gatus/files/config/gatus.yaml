@@ -1,0 +1,149 @@
+---
+metrics: true
+storage:
+  path: /data/data.db
+  type: sqlite
+ui:
+  # Gatus loads app.css after this, so selectors must outrank its rules; tokens mirror web/app/globals.css.
+  custom-css: |
+    html:root {
+      --background: 0 0% 100%; --foreground: 224 71.4% 4.1%;
+      --card: 0 0% 100%; --card-foreground: 224 71.4% 4.1%;
+      --popover: 0 0% 100%; --popover-foreground: 224 71.4% 4.1%;
+      --primary: 192.9 100% 29.2%; --primary-foreground: 183 100% 96.3%;
+      --secondary: 220 14.3% 95.9%; --secondary-foreground: 221 42.9% 11%;
+      --muted: 220 14.3% 95.9%; --muted-foreground: 220 10.2% 46.3%;
+      --accent: 220 14.3% 95.9%; --accent-foreground: 221 42.9% 11%;
+      --destructive: 357 100% 45.3%; --destructive-foreground: 0 0% 100%;
+      --border: 220 13% 91%; --input: 220 13% 91%; --ring: 192.9 100% 29.2%;
+      --radius: 0rem;
+    }
+    html:root.dark {
+      --background: 224 71.4% 4.1%; --foreground: 210 20% 98%;
+      --card: 220 42.9% 11%; --card-foreground: 210 20% 98%;
+      --popover: 220 42.9% 11%; --popover-foreground: 210 20% 98%;
+      --primary: 189.6 100% 42.9%; --primary-foreground: 196.9 86.5% 14.5%;
+      --secondary: 215.6 31% 17.1%; --secondary-foreground: 210 20% 98%;
+      --muted: 215.6 31% 17.1%; --muted-foreground: 218.2 12.1% 64.3%;
+      --accent: 215.6 31% 17.1%; --accent-foreground: 210 20% 98%;
+      --destructive: 358.8 100% 69.6%; --destructive-foreground: 224 71.4% 4.1%;
+      --border: 223 20% 13.7%; --input: 226 13.7% 18.6%; --ring: 189.6 100% 42.9%;
+    }
+    header .w-12.h-12 { width: auto; aspect-ratio: 34 / 9; }
+    header h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    #global footer { display: none; }
+    /* Only the dashboard heading has a subheading paragraph; endpoint-page names keep the default style. */
+    html.dark .dashboard-container h1:has(+ p) {
+      background: linear-gradient(135deg, #00e0e0, #007bff);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+  default-sort-by: name
+  favicon:
+    default: https://www.techn.is/favicon.ico
+    size16x16: https://www.techn.is/favicon.ico
+    size32x32: https://www.techn.is/favicon.ico
+  header: Technis
+  link: https://techn.is
+  logo: https://www.techn.is/logo.svg
+  title: Status | Technis
+web:
+  port: 8080
+endpoints:
+  - name: Website
+    url: https://www.techn.is
+    interval: 1m
+    client: &public-client
+      ignore-redirect: true
+      timeout: 10s
+    ui: &private-result
+      hide-conditions: true
+      hide-errors: true
+      hide-hostname: true
+      hide-port: true
+      hide-url: true
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Documentation
+    url: https://docs.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Authentication
+    url: https://auth.techn.is/api/health
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Status
+    url: https://status.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Connectivity
+    url: https://www.cloudflare.com
+    interval: 30s
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Media
+    url: https://plex.techn.is
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 401"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Requests
+    url: https://seerr.techn.is/api/v1/status
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Photos
+    url: https://photos.ovall.es/api/server/ping
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Invites
+    url: https://wizarr.techn.is/health
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == ok"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Media Dashboard
+    url: https://tracearr.techn.is/health
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == ok"
+      - "[CERTIFICATE_EXPIRATION] > 72h"
+  - name: Radio
+    url: https://azuracast.techn.is/api/status
+    interval: 1m
+    client: *public-client
+    ui: *private-result
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].online == true"
+      - "[CERTIFICATE_EXPIRATION] > 72h"

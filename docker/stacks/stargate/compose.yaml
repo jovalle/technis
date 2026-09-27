@@ -29,6 +29,10 @@ include:
     env_file: *env
   - path: ../../services/netdata/compose.yaml
     env_file: *env
+  - path:
+      - ../../services/gatus/compose.yaml
+      - services/gatus/compose.yaml
+    env_file: *env
   - path: ../../services/tailscale/compose.yaml
     env_file: *env
   - path:
