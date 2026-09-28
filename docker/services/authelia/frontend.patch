@@ -27,6 +27,27 @@ index ebbe9f5..ce5ad62 100644
      </head>
  
      <body
+diff --git a/web/src/components/AppBarItemAccountSettings.tsx b/web/src/components/AppBarItemAccountSettings.tsx
+index bc49ca9..e8f31f3 100644
+--- a/web/src/components/AppBarItemAccountSettings.tsx
++++ b/web/src/components/AppBarItemAccountSettings.tsx
+@@ -54,6 +54,7 @@ const AppBarItemAccountSettings = function (props: Props) {
+                                     render={
+                                         <button
+                                             id="account-menu"
++                                            aria-label={translate("Account Settings")}
+                                             className="ml-4 rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
+                                         >
+                                             <Avatar className="size-8">
+@@ -69,7 +70,7 @@ const AppBarItemAccountSettings = function (props: Props) {
+                         <TooltipContent>{translate("Account Settings")}</TooltipContent>
+                     </Tooltip>
+                 </TooltipProvider>
+-                <DropdownMenuContent align="end" sideOffset={8}>
++                <DropdownMenuContent align="end" sideOffset={8} className="technis-auth-menu">
+                     <DropdownMenuItem id="account-menu-settings" onClick={handleSettingsClick}>
+                         <Settings className="size-4" />
+                         {translate("Settings")}
 diff --git a/web/src/index.css b/web/src/index.css
 index cdd0566..2911df4 100644
 --- a/web/src/index.css
@@ -532,10 +553,10 @@ index 0fe1944..cae3061 100644
  };
 diff --git a/web/src/technis.css b/web/src/technis.css
 new file mode 100644
-index 0000000..0f6d0bc
+index 0000000..a79e973
 --- /dev/null
 +++ b/web/src/technis.css
-@@ -0,0 +1,130 @@
+@@ -0,0 +1,169 @@
 +@font-face {
 +    font-family: "Inter";
 +    src: url("/static/media/inter-latin.woff2") format("woff2");
@@ -632,6 +653,45 @@ index 0000000..0f6d0bc
 +    align-items: center;
 +}
 +
++.technis-auth-status {
++    display: flex;
++    align-items: center;
++    gap: 1rem;
++    margin-top: 1.5rem;
++    padding: 1.125rem 1.25rem;
++    border-left: 2px solid var(--primary);
++    background: linear-gradient(90deg, rgb(0 211 242 / 0.1), rgb(0 211 242 / 0.02));
++    color: var(--foreground);
++    text-align: left;
++}
++
++.technis-auth-status-icon {
++    display: grid;
++    width: 3rem;
++    height: 3rem;
++    flex: none;
++    place-items: center;
++    background: var(--accent);
++    color: var(--primary);
++    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
++}
++
++.technis-auth-status p {
++    margin: 0;
++    font-size: 1.125rem;
++    font-weight: 600;
++    letter-spacing: -0.02em;
++}
++
++.technis-auth-menu [data-slot="dropdown-menu-item"] {
++    min-height: 2.75rem;
++    color: var(--popover-foreground);
++}
++
++.technis-auth-menu [data-slot="dropdown-menu-item"] svg {
++    color: var(--primary);
++}
++
 +[data-theme="dark"] .technis-auth-panel,
 +[data-theme="grey"] .technis-auth-panel,
 +[data-theme="oled"] .technis-auth-panel {
@@ -666,6 +726,56 @@ index 0000000..0f6d0bc
 +        transition-duration: 0.01ms !important;
 +    }
 +}
+diff --git a/web/src/views/LoginPortal/Authenticated.test.tsx b/web/src/views/LoginPortal/Authenticated.test.tsx
+index 3fd439f..e84c53d 100644
+--- a/web/src/views/LoginPortal/Authenticated.test.tsx
++++ b/web/src/views/LoginPortal/Authenticated.test.tsx
+@@ -10,14 +10,10 @@ vi.mock("react-i18next", () => ({
+     useTranslation: () => ({ t: (key: string) => key }),
+ }));
+ 
+-vi.mock("@components/SuccessIcon", () => ({
+-    default: () => <div data-testid="success-icon" />,
+-}));
+-
+-it("renders the authenticated stage with success icon", () => {
++it("renders the authenticated stage with Technis status treatment", () => {
+     render(<Authenticated />);
+-    expect(screen.getByText("Authenticated")).toBeInTheDocument();
+-    expect(screen.getByTestId("success-icon")).toBeInTheDocument();
++    expect(screen.getByRole("status")).toHaveTextContent("Authenticated");
++    expect(screen.getByRole("status").querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+ });
+ 
+ it("carries the identifier the suites wait for", () => {
+diff --git a/web/src/views/LoginPortal/Authenticated.tsx b/web/src/views/LoginPortal/Authenticated.tsx
+index dc0c66d..985bc84 100644
+--- a/web/src/views/LoginPortal/Authenticated.tsx
++++ b/web/src/views/LoginPortal/Authenticated.tsx
+@@ -2,18 +2,17 @@
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ 
++import { Check } from "lucide-react";
+ import { useTranslation } from "react-i18next";
+ 
+-import SuccessIcon from "@components/SuccessIcon";
+-
+ const Authenticated = function () {
+     const { t: translate } = useTranslation();
+ 
+     return (
+-        <div id="authenticated-stage" className="flex flex-col items-center">
+-            <div className="mb-4">
+-                <SuccessIcon />
+-            </div>
++        <div id="authenticated-stage" role="status" className="technis-auth-status">
++            <span className="technis-auth-status-icon">
++                <Check aria-hidden="true" className="size-6" strokeWidth={2.5} />
++            </span>
+             <p>{translate("Authenticated")}</p>
+         </div>
+     );
 diff --git a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
 index 503a118..3281c7e 100644
 --- a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
@@ -694,7 +804,7 @@ index 503a118..3281c7e 100644
  });
  
 diff --git a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx
-index 4e3d89d..97b8f28 100644
+index 4e3d89d..027f9cf 100644
 --- a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx
 +++ b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx
 @@ -4,7 +4,6 @@
@@ -705,16 +815,22 @@ index 4e3d89d..97b8f28 100644
  import MinimalLayout from "@layouts/MinimalLayout";
  import { UserInfo } from "@models/UserInfo";
  import Authenticated from "@views/LoginPortal/Authenticated";
-@@ -23,9 +22,6 @@ const AuthenticatedView = function (props: Props) {
+@@ -22,14 +21,7 @@ const AuthenticatedView = function (props: Props) {
+             title={`${translate("Hi")} ${props.userInfo.display_name}`}
              userInfo={props.userInfo}
          >
-             <div className="flex flex-col items-center justify-center">
+-            <div className="flex flex-col items-center justify-center">
 -                <div className="w-full">
 -                    <LogoutButton />
 -                </div>
-                 <div className="my-4 w-full rounded-[10px] border border-border p-8">
-                     <Authenticated />
-                 </div>
+-                <div className="my-4 w-full rounded-[10px] border border-border p-8">
+-                    <Authenticated />
+-                </div>
+-            </div>
++            <Authenticated />
+         </MinimalLayout>
+     );
+ };
 diff --git a/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx b/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx
 index f58170f..c5cab91 100644
 --- a/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx
