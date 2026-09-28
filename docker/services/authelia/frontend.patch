@@ -83,10 +83,16 @@ index cdd0566..2911df4 100644
 +    --radius-xl: 0;
  }
 diff --git a/web/src/layouts/LoginLayout.test.tsx b/web/src/layouts/LoginLayout.test.tsx
-index d93c0fd..2e8ae5e 100644
+index d93c0fd..4166304 100644
 --- a/web/src/layouts/LoginLayout.test.tsx
 +++ b/web/src/layouts/LoginLayout.test.tsx
-@@ -7,35 +7,30 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+@@ -2,86 +2,71 @@
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ 
+-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { act, render, screen } from "@testing-library/react";
+ 
  import LoginLayout from "@layouts/LoginLayout";
  
  vi.mock("react-i18next", () => ({
@@ -99,10 +105,8 @@ index d93c0fd..2e8ae5e 100644
  
 -vi.mock("@assets/images/user.svg?react", () => ({
 -    default: (props: any) => <svg data-testid="user-svg" {...props} />,
-+vi.mock("@components/AppBarItemAccountSettings", () => ({
-+    default: (props: any) => (props.userInfo ? <button data-testid="account-menu">Account</button> : null),
- }));
- 
+-}));
+-
 -vi.mock("@components/AppBarLoginPortal", () => ({
 -    default: (props: any) => (
 -        <div data-testid="app-bar" data-locale={props.localeCurrent}>
@@ -113,37 +117,45 @@ index d93c0fd..2e8ae5e 100644
 -
 -vi.mock("@components/Brand", () => ({
 -    default: () => <div data-testid="brand" />,
-+vi.mock("@components/AppBarItemLanguage", () => ({
-+    default: (props: any) => <button data-testid="change-locale" onClick={() => props.onChange?.("fr")} />,
++vi.mock("@components/AppBarItemAccountSettings", () => ({
++    default: (props: any) => (props.userInfo ? <button data-testid="account-menu">Account</button> : null),
  }));
  
  vi.mock("@components/PrivacyPolicyDrawer", () => ({
      default: () => <div data-testid="privacy-policy" />,
  }));
  
--vi.mock("@components/TypographyWithTooltip", () => ({
--    default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
 +vi.mock("@components/PrivacyPolicyLink", () => ({
 +    default: () => <a href="/privacy">Privacy Policy</a>,
++}));
++
+ vi.mock("@components/TypographyWithTooltip", () => ({
+     default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
  }));
  
 -vi.mock("@constants/constants", () => ({
 -    EncodedName: [81, 88, 86, 48, 97, 71, 86, 115, 97, 87, 69, 61],
-+vi.mock("@components/TypographyWithTooltip", () => ({
-+    default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
- }));
- 
- const mockSetLocale = vi.fn();
-@@ -48,7 +43,7 @@ vi.mock("@services/LocaleInformation", () => ({
- }));
- 
+-}));
+-
+-const mockSetLocale = vi.fn();
+-vi.mock("@contexts/LanguageContext", () => ({
+-    useLanguageContext: () => ({ locale: "en", setLocale: mockSetLocale }),
+-}));
+-
+-vi.mock("@services/LocaleInformation", () => ({
+-    getLocaleInformation: vi.fn().mockResolvedValue({ languages: [{ display: "English", locale: "en" }] }),
+-}));
+-
  vi.mock("@utils/Configuration", () => ({
 -    getLogoOverride: vi.fn(() => false),
 +    getPrivacyPolicyEnabled: vi.fn(() => false),
  }));
  
- beforeEach(() => {
-@@ -59,29 +54,35 @@ afterEach(() => {
+-beforeEach(() => {
+-    mockSetLocale.mockReset();
+-});
+-
+ afterEach(() => {
      vi.restoreAllMocks();
  });
  
@@ -157,6 +169,7 @@ index d93c0fd..2e8ae5e 100644
 -    expect(screen.getByTestId("app-bar")).toBeInTheDocument();
 -    expect(screen.getByTestId("brand")).toBeInTheDocument();
 +    expect(screen.getByAltText("Technis")).toBeInTheDocument();
++    expect(screen.queryByRole("button", { name: /language/i })).not.toBeInTheDocument();
 +    expect(screen.queryByRole("banner")).not.toBeInTheDocument();
 +    expect(screen.queryByText(/Powered by/)).not.toBeInTheDocument();
      expect(screen.getByTestId("privacy-policy")).toBeInTheDocument();
@@ -190,20 +203,48 @@ index d93c0fd..2e8ae5e 100644
  });
  
  it("renders title and subtitle when provided", async () => {
-@@ -122,7 +123,7 @@ it("sets the document title", async () => {
+@@ -122,30 +107,5 @@ it("sets the document title", async () => {
      });
  
      expect(document.title).not.toBe("Sentinel Title");
 -    expect(document.title).toContain("Login");
+-});
+-
+-it("calls setLocale when language is changed", async () => {
+-    await act(async () => {
+-        render(<LoginLayout />);
+-    });
+-
+-    await act(async () => {
+-        fireEvent.click(screen.getByTestId("change-locale"));
+-    });
+-
+-    expect(mockSetLocale).toHaveBeenCalledWith("fr");
+-});
+-
+-it("logs error when locale fetch fails", async () => {
+-    vi.spyOn(console, "error").mockImplementation(() => {});
+-
+-    const { getLocaleInformation } = await import("@services/LocaleInformation");
+-    vi.mocked(getLocaleInformation).mockRejectedValueOnce(new Error("fetch failed"));
+-
+-    render(<LoginLayout />);
+-
+-    await waitFor(() => {
+-        expect(console.error).toHaveBeenCalledWith("could not get locale list:", expect.any(Error));
+-    });
 +    expect(document.title).toBe("Login - Technis");
  });
- 
- it("calls setLocale when language is changed", async () => {
 diff --git a/web/src/layouts/LoginLayout.tsx b/web/src/layouts/LoginLayout.tsx
-index 9781c09..8d8ae28 100644
+index 9781c09..86979a0 100644
 --- a/web/src/layouts/LoginLayout.tsx
 +++ b/web/src/layouts/LoginLayout.tsx
-@@ -6,17 +6,16 @@ import { ReactNode, useCallback, useEffect, useState } from "react";
+@@ -2,21 +2,16 @@
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ 
+-import { ReactNode, useCallback, useEffect, useState } from "react";
++import { ReactNode, useEffect } from "react";
  
  import { useTranslation } from "react-i18next";
  
@@ -211,24 +252,27 @@ index 9781c09..8d8ae28 100644
 -import AppBarLoginPortal from "@components/AppBarLoginPortal";
 -import Brand from "@components/Brand";
 +import AppBarItemAccountSettings from "@components/AppBarItemAccountSettings";
-+import AppBarItemLanguage from "@components/AppBarItemLanguage";
  import PrivacyPolicyDrawer from "@components/PrivacyPolicyDrawer";
 +import PrivacyPolicyLink from "@components/PrivacyPolicyLink";
  import TypographyWithTooltip from "@components/TypographyWithTooltip";
 -import { EncodedName } from "@constants/constants";
- import { useLanguageContext } from "@contexts/LanguageContext";
- import { Language } from "@models/LocaleInformation";
+-import { useLanguageContext } from "@contexts/LanguageContext";
+-import { Language } from "@models/LocaleInformation";
  import { UserInfo } from "@models/UserInfo";
- import { getLocaleInformation } from "@services/LocaleInformation";
+-import { getLocaleInformation } from "@services/LocaleInformation";
 -import { getLogoOverride } from "@utils/Configuration";
 +import { getPrivacyPolicyEnabled } from "@utils/Configuration";
  import { cn } from "@utils/Styles";
  
  const maxWidthMap: Record<string, string> = {
-@@ -44,17 +43,6 @@ const LoginLayout = function (props: Props) {
+@@ -40,61 +35,30 @@ export interface Props {
  
-     const [localeList, setLocaleList] = useState<Language[]>([]);
- 
+ const LoginLayout = function (props: Props) {
+     const { t: translate } = useTranslation();
+-    const { locale, setLocale } = useLanguageContext();
+-
+-    const [localeList, setLocaleList] = useState<Language[]>([]);
+-
 -    const logo = getLogoOverride() ? (
 -        <img
 -            src="./static/media/logo.png"
@@ -240,13 +284,29 @@ index 9781c09..8d8ae28 100644
 -        <UserSvg className="mx-auto my-2 w-16" style={{ fill: "var(--custom-icon)" }} />
 -    );
 -
-     const handleChangeLanguage = (locale: string) => {
-         setLocale(locale);
-     };
-@@ -78,23 +66,31 @@ const LoginLayout = function (props: Props) {
-     }, [fetchLocaleInformation]);
+-    const handleChangeLanguage = (locale: string) => {
+-        setLocale(locale);
+-    };
+-
+-    const fetchLocaleInformation = useCallback(async () => {
+-        try {
+-            const data = await getLocaleInformation();
+-            setLocaleList(data.languages);
+-
+-            return data;
+-        } catch (err) {
+-            console.error("could not get locale list:", err);
+-        }
+-    }, []);
  
      useEffect(() => {
+-        const fetchData = async () => {
+-            await fetchLocaleInformation();
+-        };
+-        void fetchData();
+-    }, [fetchLocaleInformation]);
+-
+-    useEffect(() => {
 -        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) });
 +        document.title = translate("Login - {{authelia}}", { authelia: "Technis" });
      }, [translate]);
@@ -266,14 +326,11 @@ index 9781c09..8d8ae28 100644
 +        <div className="technis-auth-shell">
 +            <main id={props.id} className="technis-auth-main">
 +                <div className={cn("technis-auth-panel mx-auto w-full px-8", containerMaxWidth)}>
-+                    <div className="technis-auth-controls">
-+                        <AppBarItemLanguage
-+                            localeCurrent={locale}
-+                            localeList={localeList}
-+                            onChange={handleChangeLanguage}
-+                        />
-+                        <AppBarItemAccountSettings userInfo={props.userInfo} />
-+                    </div>
++                    {props.userInfo ? (
++                        <div className="technis-auth-controls">
++                            <AppBarItemAccountSettings userInfo={props.userInfo} />
++                        </div>
++                    ) : null}
                      <div className="flex flex-col items-stretch">
 -                        <div className="w-full p-2">{logo}</div>
 +                        <div className="w-full p-2">
@@ -286,7 +343,7 @@ index 9781c09..8d8ae28 100644
                          {props.title ? (
                              <div className="w-full">
                                  <TypographyWithTooltip
-@@ -114,11 +110,13 @@ const LoginLayout = function (props: Props) {
+@@ -114,11 +78,13 @@ const LoginLayout = function (props: Props) {
                              </div>
                          ) : null}
                          <div className="mt-2 py-2">{props.children}</div>
