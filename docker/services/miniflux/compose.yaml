@@ -1,0 +1,59 @@
+services:
+  miniflux:
+    cap_drop:
+      - ALL
+    container_name: miniflux
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 512M
+        reservations:
+          cpus: 0.05
+          memory: 64M
+    environment:
+      - ADMIN_PASSWORD=${MINIFLUX_ADMIN_PASSWORD:?MINIFLUX_ADMIN_PASSWORD is required}
+      - ADMIN_USERNAME=${MINIFLUX_ADMIN_USERNAME:?MINIFLUX_ADMIN_USERNAME is required}
+      # Set by Cloudflare Access on news.4j.do and by Traefik on the LAN; must equal ADMIN_USERNAME.
+      - AUTH_PROXY_HEADER=Cf-Access-Authenticated-User-Email
+      - BASE_URL=https://miniflux.techn.is
+      # Skipped when the admin user already exists.
+      - CREATE_ADMIN=${MINIFLUX_CREATE_ADMIN:-1}
+      - DATABASE_URL=${MINIFLUX_DATABASE_URL:?MINIFLUX_DATABASE_URL is required}
+      - DISABLE_LOCAL_AUTH=1
+      - LISTEN_ADDR=0.0.0.0:8080
+      - RUN_MIGRATIONS=${MINIFLUX_RUN_MIGRATIONS:-1}
+      # Includes Traefik and cloudflared-1 (which only forwards Access-verified requests).
+      # Any nexus_default container can assert the header; acceptable only while miniflux has no auth.
+      - TRUSTED_REVERSE_PROXY_NETWORKS=172.30.53.0/24
+      - TZ=${TZ:-America/New_York}
+    expose:
+      - "8080"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - /usr/bin/miniflux
+        - -healthcheck
+        - auto
+      timeout: 10s
+    hostname: miniflux
+    image: ghcr.io/miniflux/miniflux:latest
+    labels:
+      # news.4j.do bypasses Traefik: nexus tunnel -> miniflux:8080 behind the Access app "Miniflux".
+      - traefik.http.middlewares.miniflux-user.headers.customrequestheaders.Cf-Access-Authenticated-User-Email=${MINIFLUX_ADMIN_USERNAME}
+      - traefik.http.routers.miniflux.middlewares=miniflux-user
+      - traefik.http.routers.miniflux.rule=Host(`miniflux.techn.is`)
+      - traefik.http.routers.miniflux.service=miniflux
+      - traefik.http.services.miniflux.loadbalancer.server.port=8080
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true

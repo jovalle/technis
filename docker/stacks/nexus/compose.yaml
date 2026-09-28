@@ -43,6 +43,8 @@ include:
     env_file: *env
   - path: ../../services/lidarr/compose.yaml
     env_file: *env
+  - path: ../../services/miniflux/compose.yaml
+    env_file: *env
   - path: ../../services/pgadmin/compose.yaml
     env_file: *env
   - path: ../../services/plex/compose.yaml
