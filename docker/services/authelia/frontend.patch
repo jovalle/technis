@@ -200,7 +200,7 @@ index d93c0fd..2e8ae5e 100644
  
  it("calls setLocale when language is changed", async () => {
 diff --git a/web/src/layouts/LoginLayout.tsx b/web/src/layouts/LoginLayout.tsx
-index 9781c09..84ada23 100644
+index 9781c09..8d8ae28 100644
 --- a/web/src/layouts/LoginLayout.tsx
 +++ b/web/src/layouts/LoginLayout.tsx
 @@ -6,17 +6,16 @@ import { ReactNode, useCallback, useEffect, useState } from "react";
@@ -280,7 +280,7 @@ index 9781c09..84ada23 100644
 +                            <img
 +                                src="/static/media/technis-logo.svg"
 +                                alt="Technis"
-+                                className="mx-auto my-2 h-12 w-auto"
++                                className="mx-auto my-2 h-14 w-auto"
 +                            />
 +                        </div>
                          {props.title ? (
@@ -379,7 +379,7 @@ index 0e8d4cc..7d690ea 100644
 +    expect(document.title).toBe("Login - Technis");
  });
 diff --git a/web/src/layouts/MinimalLayout.tsx b/web/src/layouts/MinimalLayout.tsx
-index 60f7faf..e708a74 100644
+index 60f7faf..785a2ff 100644
 --- a/web/src/layouts/MinimalLayout.tsx
 +++ b/web/src/layouts/MinimalLayout.tsx
 @@ -6,13 +6,10 @@ import { ReactNode, useEffect } from "react";
@@ -436,7 +436,7 @@ index 60f7faf..e708a74 100644
 +                            <img
 +                                src="/static/media/technis-logo.svg"
 +                                alt="Technis"
-+                                className="mx-auto my-2 h-12 w-auto"
++                                className="mx-auto my-2 h-14 w-auto"
 +                            />
 +                        </div>
                          {props.title ? (
@@ -553,10 +553,10 @@ index 0fe1944..cae3061 100644
  };
 diff --git a/web/src/technis.css b/web/src/technis.css
 new file mode 100644
-index 0000000..a79e973
+index 0000000..702895b
 --- /dev/null
 +++ b/web/src/technis.css
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,159 @@
 +@font-face {
 +    font-family: "Inter";
 +    src: url("/static/media/inter-latin.woff2") format("woff2");
@@ -654,33 +654,23 @@ index 0000000..a79e973
 +}
 +
 +.technis-auth-status {
-+    display: flex;
-+    align-items: center;
-+    gap: 1rem;
 +    margin-top: 1.5rem;
-+    padding: 1.125rem 1.25rem;
-+    border-left: 2px solid var(--primary);
-+    background: linear-gradient(90deg, rgb(0 211 242 / 0.1), rgb(0 211 242 / 0.02));
++    padding: 0.9rem 1rem;
++    border: 1px solid var(--primary);
++    background: linear-gradient(90deg, rgb(0 211 242 / 0.08), rgb(0 211 242 / 0.24), rgb(0 211 242 / 0.08));
++    box-shadow: 0 0 22px rgb(0 211 242 / 0.13), inset 0 0 18px rgb(0 211 242 / 0.1);
 +    color: var(--foreground);
-+    text-align: left;
-+}
-+
-+.technis-auth-status-icon {
-+    display: grid;
-+    width: 3rem;
-+    height: 3rem;
-+    flex: none;
-+    place-items: center;
-+    background: var(--accent);
-+    color: var(--primary);
-+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
++    text-align: center;
 +}
 +
 +.technis-auth-status p {
 +    margin: 0;
-+    font-size: 1.125rem;
-+    font-weight: 600;
-+    letter-spacing: -0.02em;
++    font-size: clamp(1.125rem, 4vw, 1.5rem);
++    font-weight: 700;
++    letter-spacing: 0.08em;
++    line-height: 1.2;
++    text-shadow: 0 0 12px rgb(0 211 242 / 0.45);
++    text-transform: uppercase;
 +}
 +
 +.technis-auth-menu [data-slot="dropdown-menu-item"] {
@@ -727,10 +717,10 @@ index 0000000..a79e973
 +    }
 +}
 diff --git a/web/src/views/LoginPortal/Authenticated.test.tsx b/web/src/views/LoginPortal/Authenticated.test.tsx
-index 3fd439f..e84c53d 100644
+index 3fd439f..b59a48d 100644
 --- a/web/src/views/LoginPortal/Authenticated.test.tsx
 +++ b/web/src/views/LoginPortal/Authenticated.test.tsx
-@@ -10,14 +10,10 @@ vi.mock("react-i18next", () => ({
+@@ -10,14 +10,9 @@ vi.mock("react-i18next", () => ({
      useTranslation: () => ({ t: (key: string) => key }),
  }));
  
@@ -739,24 +729,20 @@ index 3fd439f..e84c53d 100644
 -}));
 -
 -it("renders the authenticated stage with success icon", () => {
-+it("renders the authenticated stage with Technis status treatment", () => {
++it("renders the access granted stage", () => {
      render(<Authenticated />);
 -    expect(screen.getByText("Authenticated")).toBeInTheDocument();
 -    expect(screen.getByTestId("success-icon")).toBeInTheDocument();
-+    expect(screen.getByRole("status")).toHaveTextContent("Authenticated");
-+    expect(screen.getByRole("status").querySelector("svg")).toHaveAttribute("aria-hidden", "true");
++    expect(screen.getByRole("status")).toHaveTextContent("Access Granted");
  });
  
  it("carries the identifier the suites wait for", () => {
 diff --git a/web/src/views/LoginPortal/Authenticated.tsx b/web/src/views/LoginPortal/Authenticated.tsx
-index dc0c66d..985bc84 100644
+index dc0c66d..caaf351 100644
 --- a/web/src/views/LoginPortal/Authenticated.tsx
 +++ b/web/src/views/LoginPortal/Authenticated.tsx
-@@ -2,18 +2,17 @@
- //
- // SPDX-License-Identifier: Apache-2.0
+@@ -4,17 +4,12 @@
  
-+import { Check } from "lucide-react";
  import { useTranslation } from "react-i18next";
  
 -import SuccessIcon from "@components/SuccessIcon";
@@ -769,13 +755,12 @@ index dc0c66d..985bc84 100644
 -            <div className="mb-4">
 -                <SuccessIcon />
 -            </div>
+-            <p>{translate("Authenticated")}</p>
 +        <div id="authenticated-stage" role="status" className="technis-auth-status">
-+            <span className="technis-auth-status-icon">
-+                <Check aria-hidden="true" className="size-6" strokeWidth={2.5} />
-+            </span>
-             <p>{translate("Authenticated")}</p>
++            <p>{translate("Access Granted")}</p>
          </div>
      );
+ };
 diff --git a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
 index 503a118..3281c7e 100644
 --- a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
