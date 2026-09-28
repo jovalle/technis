@@ -1,3 +1,15 @@
+diff --git a/internal/server/handlers.go b/internal/server/handlers.go
+index 8509c7a..1c7a627 100644
+--- a/internal/server/handlers.go
++++ b/internal/server/handlers.go
+@@ -255,7 +255,6 @@ func handlerMain(config *schema.Configuration, providers middlewares.Providers)
+ 
+ 	delayerPassword := middlewares.NewTimingAttackDelay(10, time.Second).SetRecord(true)
+ 
+-	r.POST("/api/firstfactor", middlewareAPI(handlers.FirstFactorPasswordPOST(delayerPassword)))
+ 	r.POST("/api/firstfactor/reauthenticate", middleware1FA(handlers.FirstFactorReauthenticatePOST(delayerPassword)))
+ 	r.POST("/api/logout", middlewareAPI(handlers.LogoutPOST))
+ 
 diff --git a/web/index.html b/web/index.html
 index ebbe9f5..ce5ad62 100644
 --- a/web/index.html
@@ -15,90 +27,6 @@ index ebbe9f5..ce5ad62 100644
      </head>
  
      <body
-diff --git a/web/src/components/AppBarLoginPortal.tsx b/web/src/components/AppBarLoginPortal.tsx
-index ebf1b8b..ae9465f 100644
---- a/web/src/components/AppBarLoginPortal.tsx
-+++ b/web/src/components/AppBarLoginPortal.tsx
-@@ -16,8 +16,11 @@ export interface Props {
- 
- const AppBarLoginPortal = function (props: Props) {
-     return (
--        <header className="bg-transparent">
--            <div className="mx-auto flex items-center px-4 pb-4 pt-2">
-+        <header className="technis-auth-header">
-+            <div className="mx-auto flex h-16 max-w-6xl items-center px-4">
-+                <a href="https://www.techn.is" aria-label="Technis home">
-+                    <img src="/static/media/technis-logo.svg" alt="Technis" className="h-8 w-auto" />
-+                </a>
-                 <div className="grow" />
-                 <AppBarItemLanguage
-                     localeCurrent={props.localeCurrent}
-diff --git a/web/src/components/Brand.test.tsx b/web/src/components/Brand.test.tsx
-index 3640147..2394359 100644
---- a/web/src/components/Brand.test.tsx
-+++ b/web/src/components/Brand.test.tsx
-@@ -6,16 +6,6 @@ import { render, screen } from "@testing-library/react";
- 
- import Brand from "@components/Brand";
- 
--vi.mock("@constants/constants", () => ({
--    EncodedName: Array.from("Authelia".split("").map((c) => c.charCodeAt(0))),
--    EncodedURL: Array.from("https://www.authelia.com".split("").map((c) => c.charCodeAt(0))),
--}));
--
--vi.stubGlobal(
--    "atob",
--    vi.fn((str) => str),
--);
--
- it("renders without crashing", () => {
-     render(<Brand />);
- });
-@@ -23,8 +13,8 @@ it("renders without crashing", () => {
- it("renders link with correct text", () => {
-     render(<Brand />);
-     const link = screen.getByRole("link");
--    expect(link).toHaveAttribute("href", "https://www.authelia.com");
--    expect(link).toHaveTextContent("Powered by Authelia");
-+    expect(link).toHaveAttribute("href", "https://www.techn.is");
-+    expect(link).toHaveTextContent("Powered by Technis");
- });
- 
- it("renders privacy policy when enabled", () => {
-diff --git a/web/src/components/Brand.tsx b/web/src/components/Brand.tsx
-index 85240b6..181a0c4 100644
---- a/web/src/components/Brand.tsx
-+++ b/web/src/components/Brand.tsx
-@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
- 
- import PrivacyPolicyLink from "@components/PrivacyPolicyLink";
- import { Separator } from "@components/UI/Separator";
--import { EncodedName, EncodedURL } from "@constants/constants";
- import { getPrivacyPolicyEnabled } from "@utils/Configuration";
- 
- export interface Props {}
-@@ -21,17 +20,17 @@ const Brand = function () {
-     return (
-         <div className="flex items-center justify-center gap-2 w-full">
-             <a
--                href={atob(String.fromCodePoint(...EncodedURL))}
-+                href="https://www.techn.is"
-                 target="_blank"
-                 rel="noopener noreferrer"
--                className="text-[#9e9e9e] text-[0.7rem] whitespace-nowrap hover:underline"
-+                className="text-muted-foreground text-xs whitespace-nowrap hover:text-foreground hover:underline"
-             >
--                {translate("Powered by {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) })}
-+                {translate("Powered by {{authelia}}", { authelia: "Technis" })}
-             </a>
-             {privacyEnabled ? (
-                 <Fragment>
-                     <Separator orientation="vertical" className="h-4" />
--                    <PrivacyPolicyLink className="text-[#9e9e9e] text-[0.7rem] whitespace-nowrap hover:underline" />
-+                    <PrivacyPolicyLink className="text-muted-foreground text-xs whitespace-nowrap hover:text-foreground hover:underline" />
-                 </Fragment>
-             ) : null}
-         </div>
 diff --git a/web/src/index.css b/web/src/index.css
 index cdd0566..2911df4 100644
 --- a/web/src/index.css
@@ -134,10 +62,10 @@ index cdd0566..2911df4 100644
 +    --radius-xl: 0;
  }
 diff --git a/web/src/layouts/LoginLayout.test.tsx b/web/src/layouts/LoginLayout.test.tsx
-index d93c0fd..073fc92 100644
+index d93c0fd..2e8ae5e 100644
 --- a/web/src/layouts/LoginLayout.test.tsx
 +++ b/web/src/layouts/LoginLayout.test.tsx
-@@ -7,7 +7,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+@@ -7,35 +7,30 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
  import LoginLayout from "@layouts/LoginLayout";
  
  vi.mock("react-i18next", () => ({
@@ -148,19 +76,100 @@ index d93c0fd..073fc92 100644
 +    }),
  }));
  
- vi.mock("@assets/images/user.svg?react", () => ({
-@@ -34,10 +37,6 @@ vi.mock("@components/TypographyWithTooltip", () => ({
-     default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
+-vi.mock("@assets/images/user.svg?react", () => ({
+-    default: (props: any) => <svg data-testid="user-svg" {...props} />,
++vi.mock("@components/AppBarItemAccountSettings", () => ({
++    default: (props: any) => (props.userInfo ? <button data-testid="account-menu">Account</button> : null),
+ }));
+ 
+-vi.mock("@components/AppBarLoginPortal", () => ({
+-    default: (props: any) => (
+-        <div data-testid="app-bar" data-locale={props.localeCurrent}>
+-            <button data-testid="change-locale" onClick={() => props.onLocaleChange?.("fr")} />
+-        </div>
+-    ),
+-}));
+-
+-vi.mock("@components/Brand", () => ({
+-    default: () => <div data-testid="brand" />,
++vi.mock("@components/AppBarItemLanguage", () => ({
++    default: (props: any) => <button data-testid="change-locale" onClick={() => props.onChange?.("fr")} />,
+ }));
+ 
+ vi.mock("@components/PrivacyPolicyDrawer", () => ({
+     default: () => <div data-testid="privacy-policy" />,
+ }));
+ 
+-vi.mock("@components/TypographyWithTooltip", () => ({
+-    default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
++vi.mock("@components/PrivacyPolicyLink", () => ({
++    default: () => <a href="/privacy">Privacy Policy</a>,
  }));
  
 -vi.mock("@constants/constants", () => ({
 -    EncodedName: [81, 88, 86, 48, 97, 71, 86, 115, 97, 87, 69, 61],
--}));
--
++vi.mock("@components/TypographyWithTooltip", () => ({
++    default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
+ }));
+ 
  const mockSetLocale = vi.fn();
- vi.mock("@contexts/LanguageContext", () => ({
-     useLanguageContext: () => ({ locale: "en", setLocale: mockSetLocale }),
-@@ -122,7 +121,7 @@ it("sets the document title", async () => {
+@@ -48,7 +43,7 @@ vi.mock("@services/LocaleInformation", () => ({
+ }));
+ 
+ vi.mock("@utils/Configuration", () => ({
+-    getLogoOverride: vi.fn(() => false),
++    getPrivacyPolicyEnabled: vi.fn(() => false),
+ }));
+ 
+ beforeEach(() => {
+@@ -59,29 +54,35 @@ afterEach(() => {
+     vi.restoreAllMocks();
+ });
+ 
+-it("renders with default SVG logo", async () => {
++it("renders Technis branding without a header or footer", async () => {
+     await act(async () => {
+         render(<LoginLayout />);
+     });
+ 
+-    expect(screen.getByTestId("user-svg")).toBeInTheDocument();
+-    expect(screen.getByTestId("app-bar")).toBeInTheDocument();
+-    expect(screen.getByTestId("brand")).toBeInTheDocument();
++    expect(screen.getByAltText("Technis")).toBeInTheDocument();
++    expect(screen.queryByRole("banner")).not.toBeInTheDocument();
++    expect(screen.queryByText(/Powered by/)).not.toBeInTheDocument();
+     expect(screen.getByTestId("privacy-policy")).toBeInTheDocument();
+ });
+ 
+-it("renders with image logo when override is enabled", async () => {
+-    const { getLogoOverride } = await import("@utils/Configuration");
+-    vi.mocked(getLogoOverride).mockReturnValue(true);
++it("shows the account menu for an authenticated user", async () => {
++    await act(async () => {
++        render(<LoginLayout userInfo={{ display_name: "Jay" } as any} />);
++    });
++
++    expect(screen.getByTestId("account-menu")).toBeInTheDocument();
++});
++
++it("keeps the privacy policy link when configured", async () => {
++    const { getPrivacyPolicyEnabled } = await import("@utils/Configuration");
++    vi.mocked(getPrivacyPolicyEnabled).mockReturnValue(true);
+ 
+     await act(async () => {
+         render(<LoginLayout />);
+     });
+ 
+-    expect(screen.getByAltText("Logo")).toBeInTheDocument();
+-    expect(screen.queryByTestId("user-svg")).not.toBeInTheDocument();
+-
+-    vi.mocked(getLogoOverride).mockReturnValue(false);
++    expect(screen.getByText("Privacy Policy")).toBeInTheDocument();
++    vi.mocked(getPrivacyPolicyEnabled).mockReturnValue(false);
+ });
+ 
+ it("renders title and subtitle when provided", async () => {
+@@ -122,7 +123,7 @@ it("sets the document title", async () => {
      });
  
      expect(document.title).not.toBe("Sentinel Title");
@@ -170,18 +179,50 @@ index d93c0fd..073fc92 100644
  
  it("calls setLocale when language is changed", async () => {
 diff --git a/web/src/layouts/LoginLayout.tsx b/web/src/layouts/LoginLayout.tsx
-index 9781c09..d3f5e32 100644
+index 9781c09..84ada23 100644
 --- a/web/src/layouts/LoginLayout.tsx
 +++ b/web/src/layouts/LoginLayout.tsx
-@@ -11,7 +11,6 @@ import AppBarLoginPortal from "@components/AppBarLoginPortal";
- import Brand from "@components/Brand";
+@@ -6,17 +6,16 @@ import { ReactNode, useCallback, useEffect, useState } from "react";
+ 
+ import { useTranslation } from "react-i18next";
+ 
+-import UserSvg from "@assets/images/user.svg?react";
+-import AppBarLoginPortal from "@components/AppBarLoginPortal";
+-import Brand from "@components/Brand";
++import AppBarItemAccountSettings from "@components/AppBarItemAccountSettings";
++import AppBarItemLanguage from "@components/AppBarItemLanguage";
  import PrivacyPolicyDrawer from "@components/PrivacyPolicyDrawer";
++import PrivacyPolicyLink from "@components/PrivacyPolicyLink";
  import TypographyWithTooltip from "@components/TypographyWithTooltip";
 -import { EncodedName } from "@constants/constants";
  import { useLanguageContext } from "@contexts/LanguageContext";
  import { Language } from "@models/LocaleInformation";
  import { UserInfo } from "@models/UserInfo";
-@@ -78,21 +77,21 @@ const LoginLayout = function (props: Props) {
+ import { getLocaleInformation } from "@services/LocaleInformation";
+-import { getLogoOverride } from "@utils/Configuration";
++import { getPrivacyPolicyEnabled } from "@utils/Configuration";
+ import { cn } from "@utils/Styles";
+ 
+ const maxWidthMap: Record<string, string> = {
+@@ -44,17 +43,6 @@ const LoginLayout = function (props: Props) {
+ 
+     const [localeList, setLocaleList] = useState<Language[]>([]);
+ 
+-    const logo = getLogoOverride() ? (
+-        <img
+-            src="./static/media/logo.png"
+-            alt="Logo"
+-            className="mx-auto my-2 w-16"
+-            style={{ fill: "var(--custom-icon)" }}
+-        />
+-    ) : (
+-        <UserSvg className="mx-auto my-2 w-16" style={{ fill: "var(--custom-icon)" }} />
+-    );
+-
+     const handleChangeLanguage = (locale: string) => {
+         setLocale(locale);
+     };
+@@ -78,23 +66,31 @@ const LoginLayout = function (props: Props) {
      }, [fetchLocaleInformation]);
  
      useEffect(() => {
@@ -193,21 +234,45 @@ index 9781c09..d3f5e32 100644
  
      return (
 -        <div>
-+        <div className="technis-auth-shell">
-             <AppBarLoginPortal
-                 userInfo={props.userInfo}
-                 onLocaleChange={handleChangeLanguage}
-                 localeList={localeList}
-                 localeCurrent={locale}
-             />
+-            <AppBarLoginPortal
+-                userInfo={props.userInfo}
+-                onLocaleChange={handleChangeLanguage}
+-                localeList={localeList}
+-                localeCurrent={locale}
+-            />
 -            <div id={props.id} className="flex min-h-[90vh] items-center justify-center text-center">
 -                <div className={cn("mx-auto w-full px-8", containerMaxWidth)}>
++        <div className="technis-auth-shell">
 +            <main id={props.id} className="technis-auth-main">
 +                <div className={cn("technis-auth-panel mx-auto w-full px-8", containerMaxWidth)}>
++                    <div className="technis-auth-controls">
++                        <AppBarItemLanguage
++                            localeCurrent={locale}
++                            localeList={localeList}
++                            onChange={handleChangeLanguage}
++                        />
++                        <AppBarItemAccountSettings userInfo={props.userInfo} />
++                    </div>
                      <div className="flex flex-col items-stretch">
-                         <div className="w-full p-2">{logo}</div>
+-                        <div className="w-full p-2">{logo}</div>
++                        <div className="w-full p-2">
++                            <img
++                                src="/static/media/technis-logo.svg"
++                                alt="Technis"
++                                className="mx-auto my-2 h-12 w-auto"
++                            />
++                        </div>
                          {props.title ? (
-@@ -118,7 +117,7 @@ const LoginLayout = function (props: Props) {
+                             <div className="w-full">
+                                 <TypographyWithTooltip
+@@ -114,11 +110,13 @@ const LoginLayout = function (props: Props) {
+                             </div>
+                         ) : null}
+                         <div className="mt-2 py-2">{props.children}</div>
+-                        <Brand />
++                        {getPrivacyPolicyEnabled() ? (
++                            <PrivacyPolicyLink className="text-xs text-muted-foreground hover:text-foreground hover:underline" />
++                        ) : null}
                      </div>
                  </div>
                  <PrivacyPolicyDrawer />
@@ -217,10 +282,10 @@ index 9781c09..d3f5e32 100644
      );
  };
 diff --git a/web/src/layouts/MinimalLayout.test.tsx b/web/src/layouts/MinimalLayout.test.tsx
-index 0e8d4cc..75210df 100644
+index 0e8d4cc..7d690ea 100644
 --- a/web/src/layouts/MinimalLayout.test.tsx
 +++ b/web/src/layouts/MinimalLayout.test.tsx
-@@ -7,7 +7,10 @@ import { act, render, screen } from "@testing-library/react";
+@@ -7,15 +7,14 @@ import { act, render, screen } from "@testing-library/react";
  import MinimalLayout from "@layouts/MinimalLayout";
  
  vi.mock("react-i18next", () => ({
@@ -231,8 +296,18 @@ index 0e8d4cc..75210df 100644
 +    }),
  }));
  
- vi.mock("@assets/images/user.svg?react", () => ({
-@@ -26,10 +29,6 @@ vi.mock("@components/TypographyWithTooltip", () => ({
+-vi.mock("@assets/images/user.svg?react", () => ({
+-    default: (props: any) => <svg data-testid="user-svg" {...props} />,
+-}));
+-
+-vi.mock("@components/AppBarLoginPortal", () => ({
+-    default: () => <div data-testid="app-bar" />,
++vi.mock("@components/AppBarItemAccountSettings", () => ({
++    default: (props: any) => (props.userInfo ? <button data-testid="account-menu">Account</button> : null),
+ }));
+ 
+ vi.mock("@components/PrivacyPolicyDrawer", () => ({
+@@ -26,36 +25,22 @@ vi.mock("@components/TypographyWithTooltip", () => ({
      default: (props: any) => <span data-testid={`typography-${props.variant}`}>{props.value}</span>,
  }));
  
@@ -240,10 +315,42 @@ index 0e8d4cc..75210df 100644
 -    EncodedName: [81, 88, 86, 48, 97, 71, 86, 115, 97, 87, 69, 61],
 -}));
 -
- vi.mock("@utils/Configuration", () => ({
-     getLogoOverride: vi.fn(() => false),
- }));
-@@ -91,5 +90,5 @@ it("sets the document title", async () => {
+-vi.mock("@utils/Configuration", () => ({
+-    getLogoOverride: vi.fn(() => false),
+-}));
+-
+-it("renders with default SVG logo", async () => {
++it("renders Technis branding without a header", async () => {
+     await act(async () => {
+         render(<MinimalLayout />);
+     });
+ 
+-    expect(screen.getByTestId("user-svg")).toBeInTheDocument();
+-    expect(screen.getByTestId("app-bar")).toBeInTheDocument();
++    expect(screen.getByAltText("Technis")).toBeInTheDocument();
++    expect(screen.queryByRole("banner")).not.toBeInTheDocument();
+     expect(screen.getByTestId("privacy-policy")).toBeInTheDocument();
+ });
+ 
+-it("renders with image logo when override is enabled", async () => {
+-    const { getLogoOverride } = await import("@utils/Configuration");
+-    vi.mocked(getLogoOverride).mockReturnValue(true);
+-
++it("shows the account menu for an authenticated user", async () => {
+     await act(async () => {
+-        render(<MinimalLayout />);
++        render(<MinimalLayout userInfo={{ display_name: "Jay" } as any} />);
+     });
+ 
+-    expect(screen.getByAltText("Logo")).toBeInTheDocument();
+-    expect(screen.queryByTestId("user-svg")).not.toBeInTheDocument();
+-
+-    vi.mocked(getLogoOverride).mockReturnValue(false);
++    expect(screen.getByTestId("account-menu")).toBeInTheDocument();
+ });
+ 
+ it("renders title when provided", async () => {
+@@ -91,5 +76,5 @@ it("sets the document title", async () => {
          render(<MinimalLayout />);
      });
  
@@ -251,20 +358,39 @@ index 0e8d4cc..75210df 100644
 +    expect(document.title).toBe("Login - Technis");
  });
 diff --git a/web/src/layouts/MinimalLayout.tsx b/web/src/layouts/MinimalLayout.tsx
-index 60f7faf..0949528 100644
+index 60f7faf..e708a74 100644
 --- a/web/src/layouts/MinimalLayout.tsx
 +++ b/web/src/layouts/MinimalLayout.tsx
-@@ -10,7 +10,6 @@ import UserSvg from "@assets/images/user.svg?react";
- import AppBarLoginPortal from "@components/AppBarLoginPortal";
+@@ -6,13 +6,10 @@ import { ReactNode, useEffect } from "react";
+ 
+ import { useTranslation } from "react-i18next";
+ 
+-import UserSvg from "@assets/images/user.svg?react";
+-import AppBarLoginPortal from "@components/AppBarLoginPortal";
++import AppBarItemAccountSettings from "@components/AppBarItemAccountSettings";
  import PrivacyPolicyDrawer from "@components/PrivacyPolicyDrawer";
  import TypographyWithTooltip from "@components/TypographyWithTooltip";
 -import { EncodedName } from "@constants/constants";
  import { UserInfo } from "@models/UserInfo";
- import { getLogoOverride } from "@utils/Configuration";
+-import { getLogoOverride } from "@utils/Configuration";
  
-@@ -36,14 +35,14 @@ const MinimalLayout = function (props: Props) {
-     );
+ export interface Props {
+     id?: string;
+@@ -24,28 +21,27 @@ export interface Props {
+ const MinimalLayout = function (props: Props) {
+     const { t: translate } = useTranslation();
  
+-    const logo = getLogoOverride() ? (
+-        <img
+-            src="./static/media/logo.png"
+-            alt="Logo"
+-            className="mx-auto my-2 w-16"
+-            style={{ fill: "var(--custom-icon)" }}
+-        />
+-    ) : (
+-        <UserSvg className="mx-auto my-2 w-16" style={{ fill: "var(--custom-icon)" }} />
+-    );
+-
      useEffect(() => {
 -        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) });
 +        document.title = translate("Login - {{authelia}}", { authelia: "Technis" });
@@ -272,16 +398,30 @@ index 60f7faf..0949528 100644
  
      return (
 -        <div>
-+        <div className="technis-auth-shell">
-             <AppBarLoginPortal userInfo={props.userInfo} />
+-            <AppBarLoginPortal userInfo={props.userInfo} />
 -            <div id={props.id} className="flex min-h-[90vh] items-center justify-center text-center">
 -                <div className="mx-auto w-full max-w-[444px] px-8">
++        <div className="technis-auth-shell">
 +            <main id={props.id} className="technis-auth-main">
 +                <div className="technis-auth-panel mx-auto w-full max-w-[444px] px-8">
++                    {props.userInfo ? (
++                        <div className="technis-auth-controls">
++                            <AppBarItemAccountSettings userInfo={props.userInfo} />
++                        </div>
++                    ) : null}
                      <div className="flex flex-col items-stretch">
-                         <div className="w-full p-2">{logo}</div>
+-                        <div className="w-full p-2">{logo}</div>
++                        <div className="w-full p-2">
++                            <img
++                                src="/static/media/technis-logo.svg"
++                                alt="Technis"
++                                className="mx-auto my-2 h-12 w-auto"
++                            />
++                        </div>
                          {props.title ? (
-@@ -55,7 +54,7 @@ const MinimalLayout = function (props: Props) {
+                             <div className="w-full">
+                                 <TypographyWithTooltip variant="h5" value={props.title} />
+@@ -55,7 +51,7 @@ const MinimalLayout = function (props: Props) {
                      </div>
                  </div>
                  <PrivacyPolicyDrawer />
@@ -291,7 +431,7 @@ index 60f7faf..0949528 100644
      );
  };
 diff --git a/web/src/layouts/SettingsLayout.test.tsx b/web/src/layouts/SettingsLayout.test.tsx
-index 3a00b78..46b1194 100644
+index 3a00b78..f03d8aa 100644
 --- a/web/src/layouts/SettingsLayout.test.tsx
 +++ b/web/src/layouts/SettingsLayout.test.tsx
 @@ -9,11 +9,10 @@ import SettingsLayout from "@layouts/SettingsLayout";
@@ -310,6 +450,15 @@ index 3a00b78..46b1194 100644
  }));
  
  vi.mock("@constants/Routes", () => ({
+@@ -37,7 +36,7 @@ it("renders with settings title and menu button", async () => {
+     });
+ 
+     expect(screen.getByLabelText("open drawer")).toBeInTheDocument();
+-    expect(screen.getAllByText("Settings").length).toBeGreaterThanOrEqual(1);
++    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+ });
+ 
+ it("renders children", async () => {
 @@ -72,7 +71,7 @@ it("sets the document title", async () => {
          render(<SettingsLayout />);
      });
@@ -320,7 +469,7 @@ index 3a00b78..46b1194 100644
  
  it("navigates when a nav item is clicked", async () => {
 diff --git a/web/src/layouts/SettingsLayout.tsx b/web/src/layouts/SettingsLayout.tsx
-index 0fe1944..3c96d6c 100644
+index 0fe1944..cae3061 100644
 --- a/web/src/layouts/SettingsLayout.tsx
 +++ b/web/src/layouts/SettingsLayout.tsx
 @@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
@@ -340,30 +489,53 @@ index 0fe1944..3c96d6c 100644
      }, [translate]);
  
      const drawerWidth = props.drawerWidth ?? defaultDrawerWidth;
-@@ -51,7 +50,7 @@ const SettingsLayout = function (props: Props) {
+@@ -51,21 +50,16 @@ const SettingsLayout = function (props: Props) {
  
      return (
          <div className="flex">
 -            <nav className="fixed top-0 z-50 w-full bg-primary text-primary-foreground">
-+            <nav className="fixed top-0 z-50 w-full border-b border-border bg-card text-foreground">
-                 <div className="flex items-center px-4 py-3">
-                     <Button
-                         id="settings-menu"
-@@ -59,7 +58,7 @@ const SettingsLayout = function (props: Props) {
-                         size="icon"
-                         aria-label="open drawer"
-                         onClick={handleToggleDrawer}
+-                <div className="flex items-center px-4 py-3">
+-                    <Button
+-                        id="settings-menu"
+-                        variant="ghost"
+-                        size="icon"
+-                        aria-label="open drawer"
+-                        onClick={handleToggleDrawer}
 -                        className="mr-4 text-primary-foreground hover:bg-primary-foreground/10"
-+                        className="mr-4 text-foreground hover:bg-accent"
-                     >
-                         <Menu className="size-6" />
-                     </Button>
+-                    >
+-                        <Menu className="size-6" />
+-                    </Button>
+-                    <h6 className={cn("grow text-lg font-medium", drawerOpen && "hidden")}>{translate("Settings")}</h6>
+-                </div>
+-            </nav>
++            <Button
++                id="settings-menu"
++                variant="ghost"
++                size="icon"
++                aria-label="open drawer"
++                onClick={handleToggleDrawer}
++                className="fixed left-4 top-4 z-50 border border-border bg-card text-foreground hover:bg-accent"
++            >
++                <Menu className="size-6" />
++            </Button>
+             <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                 <SheetContent side="left" className="p-0" style={{ width: drawerWidth }}>
+                     <div className="text-center">
+@@ -86,7 +80,7 @@ const SettingsLayout = function (props: Props) {
+                     </div>
+                 </SheetContent>
+             </Sheet>
+-            <main className="grow p-0 pt-14 sm:p-6 sm:pt-20">{props.children}</main>
++            <main className="grow p-6 pt-20">{props.children}</main>
+         </div>
+     );
+ };
 diff --git a/web/src/technis.css b/web/src/technis.css
 new file mode 100644
-index 0000000..3a78717
+index 0000000..0f6d0bc
 --- /dev/null
 +++ b/web/src/technis.css
-@@ -0,0 +1,126 @@
+@@ -0,0 +1,130 @@
 +@font-face {
 +    font-family: "Inter";
 +    src: url("/static/media/inter-latin.woff2") format("woff2");
@@ -434,14 +606,9 @@ index 0000000..3a78717
 +    min-height: 100vh;
 +}
 +
-+.technis-auth-header {
-+    border-bottom: 1px solid var(--border);
-+    background: var(--card);
-+}
-+
 +.technis-auth-main {
 +    display: flex;
-+    min-height: calc(100vh - 4rem);
++    min-height: 100vh;
 +    align-items: center;
 +    justify-content: center;
 +    padding: 2rem 1rem;
@@ -449,11 +616,20 @@ index 0000000..3a78717
 +}
 +
 +.technis-auth-panel {
++    position: relative;
 +    border: 1px solid var(--border);
 +    background: var(--card);
-+    padding-top: 2rem;
++    padding-top: 3.5rem;
 +    padding-bottom: 2rem;
 +    box-shadow: 0 24px 64px rgb(0 0 0 / 0.12);
++}
++
++.technis-auth-controls {
++    position: absolute;
++    top: 0.75rem;
++    right: 0.75rem;
++    display: flex;
++    align-items: center;
 +}
 +
 +[data-theme="dark"] .technis-auth-panel,
@@ -478,7 +654,7 @@ index 0000000..3a78717
 +    }
 +
 +    .technis-auth-panel {
-+        padding: 1.5rem;
++        padding: 3.25rem 1.5rem 1.5rem;
 +    }
 +}
 +
@@ -490,3 +666,1207 @@ index 0000000..3a78717
 +        transition-duration: 0.01ms !important;
 +    }
 +}
+diff --git a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
+index 503a118..3281c7e 100644
+--- a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
++++ b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.test.tsx
+@@ -10,10 +10,6 @@ vi.mock("react-i18next", () => ({
+     useTranslation: () => ({ t: (key: string) => key }),
+ }));
+ 
+-vi.mock("@components/LogoutButton", () => ({
+-    default: () => <button data-testid="logout-button">Logout</button>,
+-}));
+-
+ vi.mock("@layouts/MinimalLayout", () => ({
+     default: (props: any) => (
+         <div data-testid="minimal-layout" data-title={props.title} data-id={props.id}>
+@@ -31,9 +27,9 @@ it("renders with user display name in title", () => {
+     expect(screen.getByTestId("minimal-layout")).toHaveAttribute("data-title", "Hi John");
+ });
+ 
+-it("renders logout button and authenticated component", () => {
++it("renders the authenticated component without a separate logout button", () => {
+     render(<AuthenticatedView userInfo={{ display_name: "Jane", emails: [], groups: [], method: "totp" } as any} />);
+-    expect(screen.getByTestId("logout-button")).toBeInTheDocument();
++    expect(screen.queryByTestId("logout-button")).not.toBeInTheDocument();
+     expect(screen.getByTestId("authenticated")).toBeInTheDocument();
+ });
+ 
+diff --git a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx
+index 4e3d89d..97b8f28 100644
+--- a/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx
++++ b/web/src/views/LoginPortal/AuthenticatedView/AuthenticatedView.tsx
+@@ -4,7 +4,6 @@
+ 
+ import { useTranslation } from "react-i18next";
+ 
+-import LogoutButton from "@components/LogoutButton";
+ import MinimalLayout from "@layouts/MinimalLayout";
+ import { UserInfo } from "@models/UserInfo";
+ import Authenticated from "@views/LoginPortal/Authenticated";
+@@ -23,9 +22,6 @@ const AuthenticatedView = function (props: Props) {
+             userInfo={props.userInfo}
+         >
+             <div className="flex flex-col items-center justify-center">
+-                <div className="w-full">
+-                    <LogoutButton />
+-                </div>
+                 <div className="my-4 w-full rounded-[10px] border border-border p-8">
+                     <Authenticated />
+                 </div>
+diff --git a/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx b/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx
+index f58170f..c5cab91 100644
+--- a/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx
++++ b/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.test.tsx
+@@ -2,86 +2,45 @@
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ 
+-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { fireEvent, render, screen } from "@testing-library/react";
+ 
+-import { postFirstFactor } from "@services/Password";
+ import FirstFactorForm from "@views/LoginPortal/FirstFactor/FirstFactorForm";
+ 
+ const mocks = vi.hoisted(() => ({
+-    capsLockModified: null as boolean | null,
+     channelListeners: [] as ((authenticated: boolean) => void)[],
+     createErrorNotification: vi.fn(),
+-    navigate: vi.fn(),
+-    postMessage: vi.fn(),
+-    queryParams: {} as Record<string, null | string>,
+-    userCode: null as null | string,
++    postMessage: vi.fn().mockResolvedValue(undefined),
+ }));
+ 
+ vi.mock("react-i18next", () => ({
+     useTranslation: () => ({ t: (key: string) => key }),
+ }));
+ 
+-vi.mock("react-router", async () => {
+-    const actual = await vi.importActual("react-router");
+-    return { ...actual, useNavigate: () => mocks.navigate };
+-});
+-
+ vi.mock("broadcast-channel", () => {
+     class MockBroadcastChannel {
+         addEventListener = vi.fn((_name: string, handler: (authenticated: boolean) => void) => {
+             mocks.channelListeners.push(handler);
+         });
+-        removeEventListener = vi.fn((_name: string, handler: (authenticated: boolean) => void) => {
+-            mocks.channelListeners = mocks.channelListeners.filter((h) => h !== handler);
+-        });
++        removeEventListener = vi.fn();
+         postMessage = mocks.postMessage;
+     }
+     return { BroadcastChannel: MockBroadcastChannel };
+ });
+ 
+-vi.mock("@hooks/QueryParam", () => ({
+-    useQueryParam: (name: string) => mocks.queryParams[name] ?? null,
+-}));
+-
+-vi.mock("@hooks/Flow", () => ({
+-    useFlow: () => ({ flow: "flow", id: "flow-id", subflow: "subflow" }),
+-}));
+-
+-vi.mock("@hooks/OpenIDConnect", () => ({
+-    useUserCode: () => mocks.userCode,
+-}));
+-
+ vi.mock("@contexts/NotificationsContext", () => ({
+-    useNotifications: () => ({
+-        createErrorNotification: mocks.createErrorNotification,
+-    }),
++    useNotifications: () => ({ createErrorNotification: mocks.createErrorNotification }),
+ }));
+ 
+ vi.mock("@layouts/LoginLayout", () => ({
+-    default: (props: any) => <div data-testid="login-layout">{props.children}</div>,
+-}));
+-
+-vi.mock("@services/CapsLock", () => ({
+-    IsCapsLockModified: () => mocks.capsLockModified,
+-}));
+-
+-vi.mock("@services/Password", () => ({
+-    postFirstFactor: vi.fn(),
++    default: (props: any) => <main>{props.children}</main>,
+ }));
+ 
+ vi.mock("@views/LoginPortal/FirstFactor/PasskeyForm", () => ({
+     default: (props: any) => (
+-        <div
+-            data-testid="passkey-form"
+-            data-disabled={String(props.disabled)}
+-            data-remember-me={String(props.rememberMe)}
+-        >
+-            <button data-testid="passkey-start" onClick={() => props.onAuthenticationStart()} />
+-            <button data-testid="passkey-stop" onClick={() => props.onAuthenticationStop()} />
+-            <button
+-                data-testid="passkey-success"
+-                onClick={() => props.onAuthenticationSuccess("https://example.com")}
+-            />
++        <div>
++            <button data-testid="passkey-start" disabled={props.disabled} onClick={props.onAuthenticationStart} />
++            <button data-testid="passkey-stop" onClick={props.onAuthenticationStop} />
++            <button data-testid="passkey-success" onClick={() => props.onAuthenticationSuccess(undefined)} />
+             <button
+                 data-testid="passkey-error"
+                 onClick={() => props.onAuthenticationError(new Error("passkey failed"))}
+@@ -90,15 +49,13 @@ vi.mock("@views/LoginPortal/FirstFactor/PasskeyForm", () => ({
+     ),
+ }));
+ 
+-const postFirstFactorMock = vi.mocked(postFirstFactor);
+-
+ const defaultProps = {
+     disabled: false,
+     onAuthenticationStart: vi.fn(),
+     onAuthenticationStop: vi.fn(),
+     onAuthenticationSuccess: vi.fn(),
+     onChannelStateChange: vi.fn(),
+-    passkeyLogin: false,
++    passkeyLogin: true,
+     rememberMe: false,
+     resetPassword: false,
+     resetPasswordCustomURL: "",
+@@ -117,557 +74,42 @@ function renderForm(props: Partial<typeof defaultProps> = {}) {
+     return { ...render(<FirstFactorForm {...merged} />), props: merged };
+ }
+ 
+-function getUsername() {
+-    return screen.getByLabelText(/Username/) as HTMLInputElement;
+-}
+-
+-function getPassword() {
+-    return screen.getByLabelText(/Password/) as HTMLInputElement;
+-}
+-
+-function fillCredentials(username = "john", password = "secret") {
+-    fireEvent.change(getUsername(), { target: { value: username } });
+-    fireEvent.change(getPassword(), { target: { value: password } });
+-}
+-
+ beforeEach(() => {
+     vi.clearAllMocks();
+-    mocks.capsLockModified = null;
+     mocks.channelListeners = [];
+-    mocks.queryParams = {};
+-    mocks.userCode = null;
+-    postFirstFactorMock.mockReset();
+ });
+ 
+-describe("rendering", () => {
+-    it("renders login form with username, password, and sign in button", () => {
+-        renderForm();
+-        expect(screen.getByText(/Username/)).toBeInTheDocument();
+-        expect(screen.getByText(/Password/)).toBeInTheDocument();
+-        expect(screen.getByText("Sign in")).toBeInTheDocument();
+-    });
+-
+-    it("renders remember me checkbox when enabled", () => {
+-        renderForm({ rememberMe: true });
+-        expect(screen.getByText("Remember me")).toBeInTheDocument();
+-    });
+-
+-    it("does not render remember me checkbox when disabled", () => {
+-        renderForm({ rememberMe: false });
+-        expect(screen.queryByText("Remember me")).not.toBeInTheDocument();
+-    });
+-
+-    it("renders passkey form when passkey login is enabled", () => {
+-        renderForm({ passkeyLogin: true });
+-        expect(screen.getByTestId("passkey-form")).toBeInTheDocument();
+-    });
+-
+-    it("renders reset password link when enabled", () => {
+-        renderForm({ resetPassword: true });
+-        expect(screen.getByText("Reset password?")).toBeInTheDocument();
+-    });
+-
+-    it("does not render reset password link when disabled", () => {
+-        renderForm({ resetPassword: false });
+-        expect(screen.queryByText("Reset password?")).not.toBeInTheDocument();
+-    });
+-
+-    it("disables the inputs and the sign in button when disabled", () => {
+-        renderForm({ disabled: true });
+-        expect(getUsername()).toBeDisabled();
+-        expect(getPassword()).toBeDisabled();
+-        expect(screen.getByRole("button", { name: /Sign in/ })).toBeDisabled();
+-    });
+-
+-    it("focuses the username field on mount", async () => {
+-        renderForm();
+-        await waitFor(() => expect(getUsername()).toHaveFocus());
+-    });
++it("shows only passkey sign-in", () => {
++    renderForm();
++    expect(screen.getByTestId("passkey-start")).toBeInTheDocument();
++    expect(screen.queryByLabelText(/Username|Password/)).not.toBeInTheDocument();
++    expect(screen.queryByText("Sign in")).not.toBeInTheDocument();
+ });
+ 
+-describe("validation", () => {
+-    it("flags both fields when signing in with an empty form", async () => {
+-        const { props } = renderForm();
+-
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() => expect(getUsername()).toHaveAttribute("aria-invalid", "true"));
+-        expect(getPassword()).toHaveAttribute("aria-invalid", "true");
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-        expect(props.onAuthenticationStart).not.toHaveBeenCalled();
+-    });
+-
+-    it("flags only the password when the username is filled", async () => {
+-        renderForm();
+-
+-        fireEvent.change(getUsername(), { target: { value: "john" } });
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() => expect(getPassword()).toHaveAttribute("aria-invalid", "true"));
+-        expect(getUsername()).not.toHaveAttribute("aria-invalid", "true");
+-    });
+-
+-    it("flags only the username when the password is filled", async () => {
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "secret" } });
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() => expect(getUsername()).toHaveAttribute("aria-invalid", "true"));
+-        expect(getPassword()).not.toHaveAttribute("aria-invalid", "true");
+-    });
+-
+-    it("clears the username error when the field is focused", async () => {
+-        renderForm();
+-
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-        await waitFor(() => expect(getUsername()).toHaveAttribute("aria-invalid", "true"));
+-
+-        fireEvent.focus(getUsername());
+-        await waitFor(() => expect(getUsername()).not.toHaveAttribute("aria-invalid", "true"));
+-    });
+-
+-    it("clears the password error when the field is focused", async () => {
+-        renderForm();
+-
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-        await waitFor(() => expect(getPassword()).toHaveAttribute("aria-invalid", "true"));
+-
+-        fireEvent.focus(getPassword());
+-        await waitFor(() => expect(getPassword()).not.toHaveAttribute("aria-invalid", "true"));
+-    });
++it("disables passkey sign-in while authentication is active", () => {
++    renderForm({ disabled: true });
++    expect(screen.getByTestId("passkey-start")).toBeDisabled();
+ });
+ 
+-describe("sign in", () => {
+-    it("posts the credentials and reports success", async () => {
+-        postFirstFactorMock.mockResolvedValue({ redirect: "https://example.com/after" } as any);
+-
+-        const { props } = renderForm();
+-
+-        fillCredentials();
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() => expect(props.onAuthenticationSuccess).toHaveBeenCalledWith("https://example.com/after"));
+-        expect(props.onAuthenticationStart).toHaveBeenCalled();
+-        expect(mocks.postMessage).toHaveBeenCalledWith(true);
+-        expect(postFirstFactorMock).toHaveBeenCalledWith(
+-            "john",
+-            "secret",
+-            false,
+-            null,
+-            null,
+-            "flow-id",
+-            "flow",
+-            "subflow",
+-            null,
+-        );
+-    });
+-
+-    it("reports success with an undefined redirect when the response is empty", async () => {
+-        postFirstFactorMock.mockResolvedValue(undefined as any);
+-
+-        const { props } = renderForm();
+-
+-        fillCredentials();
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() => expect(props.onAuthenticationSuccess).toHaveBeenCalledWith(undefined));
+-    });
+-
+-    it("forwards the redirection URL, request method and user code", async () => {
+-        mocks.queryParams = { rd: "https://app.example.com", rm: "GET" };
+-        mocks.userCode = "ABCD-EFGH";
+-        postFirstFactorMock.mockResolvedValue(undefined as any);
+-
+-        renderForm();
+-
+-        fillCredentials();
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() =>
+-            expect(postFirstFactorMock).toHaveBeenCalledWith(
+-                "john",
+-                "secret",
+-                false,
+-                "https://app.example.com",
+-                "GET",
+-                "flow-id",
+-                "flow",
+-                "subflow",
+-                "ABCD-EFGH",
+-            ),
+-        );
+-    });
+-
+-    it("passes the remember me selection through", async () => {
+-        postFirstFactorMock.mockResolvedValue(undefined as any);
+-
+-        renderForm({ rememberMe: true });
+-
+-        fireEvent.click(screen.getByRole("checkbox"));
+-        fillCredentials();
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() => expect(postFirstFactorMock).toHaveBeenCalled());
+-        expect(postFirstFactorMock.mock.calls[0][2]).toBe(true);
+-    });
+-
+-    it("notifies, clears the password and refocuses it on failure", async () => {
+-        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+-        postFirstFactorMock.mockRejectedValue(new Error("bad credentials"));
+-
+-        const { props } = renderForm();
+-
+-        await waitFor(() => expect(getUsername()).toHaveFocus());
+-
+-        fillCredentials();
+-        fireEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+-
+-        await waitFor(() =>
+-            expect(mocks.createErrorNotification).toHaveBeenCalledWith("Incorrect username or password"),
+-        );
+-        expect(props.onAuthenticationStop).toHaveBeenCalled();
+-        expect(props.onAuthenticationSuccess).not.toHaveBeenCalled();
+-        await waitFor(() => expect(getPassword()).toHaveValue(""));
+-        expect(getPassword()).toHaveFocus();
+-
+-        consoleError.mockRestore();
+-    });
+-
+-    it("ignores repeated submissions while a sign in is in flight", async () => {
+-        let resolve: (value: unknown) => void = () => {};
+-        postFirstFactorMock.mockReturnValue(new Promise((r) => (resolve = r)) as any);
+-
+-        renderForm();
+-
+-        fillCredentials();
+-        const button = screen.getByRole("button", { name: /Sign in/ });
+-        fireEvent.click(button);
+-
+-        await waitFor(() => expect(button).toBeDisabled());
+-
+-        fireEvent.keyDown(getPassword(), { key: "Enter" });
+-
+-        expect(postFirstFactorMock).toHaveBeenCalledTimes(1);
+-
+-        resolve(undefined);
+-        await waitFor(() => expect(button).not.toBeDisabled());
+-    });
++it("forwards passkey success and updates other tabs", () => {
++    const { props } = renderForm();
++    fireEvent.click(screen.getByTestId("passkey-start"));
++    fireEvent.click(screen.getByTestId("passkey-success"));
++    expect(props.onAuthenticationStart).toHaveBeenCalled();
++    expect(props.onAuthenticationSuccess).toHaveBeenCalledWith(undefined);
++    expect(mocks.postMessage).toHaveBeenCalledWith(true);
+ });
+ 
+-describe("keyboard handling", () => {
+-    it("flags the username when Enter is pressed on an empty username", async () => {
+-        renderForm();
+-
+-        fireEvent.keyDown(getUsername(), { key: "Enter" });
+-
+-        await waitFor(() => expect(getUsername()).toHaveAttribute("aria-invalid", "true"));
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
+-
+-    it("moves focus to the password when Enter is pressed with only a username", async () => {
+-        renderForm();
+-
+-        fireEvent.change(getUsername(), { target: { value: "john" } });
+-        fireEvent.keyDown(getUsername(), { key: "Enter" });
+-
+-        await waitFor(() => expect(getPassword()).toHaveFocus());
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
+-
+-    it("signs in when Enter is pressed on the username with both fields filled", async () => {
+-        postFirstFactorMock.mockResolvedValue(undefined as any);
+-
+-        renderForm();
+-
+-        fillCredentials();
+-        fireEvent.keyDown(getUsername(), { key: "Enter" });
+-
+-        await waitFor(() => expect(postFirstFactorMock).toHaveBeenCalled());
+-    });
+-
+-    it("ignores non-Enter keys on the username", () => {
+-        renderForm();
+-
+-        fireEvent.change(getUsername(), { target: { value: "john" } });
+-        fireEvent.keyDown(getUsername(), { key: "a" });
+-
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
+-
+-    it("signs in when Enter is pressed on the password", async () => {
+-        postFirstFactorMock.mockResolvedValue(undefined as any);
+-
+-        renderForm();
+-
+-        fillCredentials();
+-        fireEvent.keyDown(getPassword(), { key: "Enter" });
+-
+-        await waitFor(() => expect(postFirstFactorMock).toHaveBeenCalled());
+-    });
+-
+-    it("refocuses the username when Enter is pressed on the password without a username", async () => {
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "secret" } });
+-        fireEvent.keyDown(getPassword(), { key: "Enter" });
+-
+-        await waitFor(() => expect(getUsername()).toHaveFocus());
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
+-
+-    it("keeps focus on the password when Enter is pressed with an empty password", async () => {
+-        renderForm();
+-
+-        fireEvent.change(getUsername(), { target: { value: "john" } });
+-        fireEvent.keyDown(getPassword(), { key: "Enter" });
+-
+-        await waitFor(() => expect(getPassword()).toHaveFocus());
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
+-
+-    it("ignores non-Enter keys on the password", () => {
+-        renderForm();
+-
+-        fillCredentials();
+-        fireEvent.keyDown(getPassword(), { key: "Shift" });
+-
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
+-
+-    it("signs in when Enter is pressed on the remember me checkbox", async () => {
+-        postFirstFactorMock.mockResolvedValue(undefined as any);
+-
+-        renderForm({ rememberMe: true });
+-
+-        fillCredentials();
+-        fireEvent.keyDown(screen.getByRole("checkbox"), { key: "Enter" });
+-
+-        await waitFor(() => expect(postFirstFactorMock).toHaveBeenCalled());
+-    });
+-
+-    it("refocuses the username when Enter is pressed on remember me without a username", async () => {
+-        renderForm({ rememberMe: true });
+-
+-        fireEvent.change(getPassword(), { target: { value: "secret" } });
+-        fireEvent.keyDown(screen.getByRole("checkbox"), { key: "Enter" });
+-
+-        await waitFor(() => expect(getUsername()).toHaveFocus());
+-    });
+-
+-    it("focuses the password when Enter is pressed on remember me without a password", async () => {
+-        renderForm({ rememberMe: true });
+-
+-        fireEvent.change(getUsername(), { target: { value: "john" } });
+-        fireEvent.keyDown(screen.getByRole("checkbox"), { key: "Enter" });
+-
+-        await waitFor(() => expect(getPassword()).toHaveFocus());
+-    });
+-
+-    it("ignores non-Enter keys on the remember me checkbox", () => {
+-        renderForm({ rememberMe: true });
+-
+-        fillCredentials();
+-        fireEvent.keyDown(screen.getByRole("checkbox"), { key: "a" });
+-
+-        expect(postFirstFactorMock).not.toHaveBeenCalled();
+-    });
++it("shows passkey errors and responds to other tabs", () => {
++    const { props } = renderForm();
++    fireEvent.click(screen.getByTestId("passkey-error"));
++    expect(mocks.createErrorNotification).toHaveBeenCalledWith("passkey failed");
++    mocks.channelListeners[0](true);
++    expect(props.onChannelStateChange).toHaveBeenCalled();
+ });
+ 
+-describe("caps lock detection", () => {
+-    it("warns when the password was entered with caps lock", async () => {
+-        mocks.capsLockModified = true;
+-
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "SECRET" } });
+-        fireEvent.keyUp(getPassword(), { key: "T" });
+-
+-        expect(await screen.findByText("The password was entered with Caps Lock")).toBeInTheDocument();
+-    });
+-
+-    it("warns when the password was only partially entered with caps lock", async () => {
+-        mocks.capsLockModified = true;
+-
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "SECRET" } });
+-        fireEvent.keyUp(getPassword(), { key: "T" });
+-        await screen.findByText("The password was entered with Caps Lock");
+-
+-        mocks.capsLockModified = false;
+-        fireEvent.keyUp(getPassword(), { key: "t" });
+-
+-        expect(await screen.findByText("The password was partially entered with Caps Lock")).toBeInTheDocument();
+-    });
+-
+-    it("does not warn when caps lock state cannot be determined", () => {
+-        mocks.capsLockModified = null;
+-
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "SECRET" } });
+-        fireEvent.keyUp(getPassword(), { key: "T" });
+-
+-        expect(screen.queryByText("The password was entered with Caps Lock")).not.toBeInTheDocument();
+-    });
+-
+-    it("resets the warning once the password is cleared", async () => {
+-        mocks.capsLockModified = true;
+-
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "SECRET" } });
+-        fireEvent.keyUp(getPassword(), { key: "T" });
+-        await screen.findByText("The password was entered with Caps Lock");
+-
+-        fireEvent.change(getPassword(), { target: { value: "" } });
+-        fireEvent.keyUp(getPassword(), { key: "Backspace" });
+-
+-        await waitFor(() =>
+-            expect(screen.queryByText("The password was entered with Caps Lock")).not.toBeInTheDocument(),
+-        );
+-    });
+-
+-    it("re-evaluates caps lock on a single character password", async () => {
+-        mocks.capsLockModified = true;
+-
+-        renderForm();
+-
+-        fireEvent.change(getPassword(), { target: { value: "S" } });
+-        fireEvent.keyUp(getPassword(), { key: "S" });
+-
+-        expect(await screen.findByText("The password was entered with Caps Lock")).toBeInTheDocument();
+-    });
+-});
+-
+-describe("password visibility toggle", () => {
+-    it("reveals the password on click and hides it again on a second click", async () => {
+-        renderForm();
+-
+-        const toggle = screen.getByLabelText("Toggle password visibility");
+-        expect(getPassword()).toHaveAttribute("type", "password");
+-
+-        fireEvent.click(toggle);
+-        await waitFor(() => expect(getPassword()).toHaveAttribute("type", "text"));
+-        expect(toggle).toHaveAttribute("aria-pressed", "true");
+-
+-        fireEvent.click(toggle);
+-        await waitFor(() => expect(getPassword()).toHaveAttribute("type", "password"));
+-        expect(toggle).toHaveAttribute("aria-pressed", "false");
+-    });
+-});
+-
+-describe("reset password", () => {
+-    it("navigates to the reset password route", () => {
+-        renderForm({ resetPassword: true });
+-
+-        fireEvent.click(screen.getByText("Reset password?"));
+-
+-        expect(mocks.navigate).toHaveBeenCalledWith("/reset-password/step1");
+-    });
+-
+-    it("opens the custom reset password URL when configured", () => {
+-        const open = vi.spyOn(window, "open").mockImplementation(() => null);
+-
+-        renderForm({ resetPassword: true, resetPasswordCustomURL: "https://reset.example.com" });
+-
+-        fireEvent.click(screen.getByText("Reset password?"));
+-
+-        expect(open).toHaveBeenCalledWith("https://reset.example.com");
+-        expect(mocks.navigate).not.toHaveBeenCalled();
+-
+-        open.mockRestore();
+-    });
+-});
+-
+-describe("remember me", () => {
+-    it("toggles the checkbox on and off", async () => {
+-        renderForm({ rememberMe: true });
+-
+-        const checkbox = screen.getByRole("checkbox");
+-        expect(checkbox).toHaveAttribute("aria-checked", "false");
+-
+-        fireEvent.click(checkbox);
+-        await waitFor(() => expect(checkbox).toHaveAttribute("aria-checked", "true"));
+-
+-        fireEvent.click(checkbox);
+-        await waitFor(() => expect(checkbox).toHaveAttribute("aria-checked", "false"));
+-    });
+-});
+-
+-describe("login broadcast channel", () => {
+-    it("notifies the parent when another tab authenticates", () => {
+-        const { props } = renderForm();
+-
+-        mocks.channelListeners.forEach((handler) => handler(true));
+-
+-        expect(props.onChannelStateChange).toHaveBeenCalled();
+-    });
+-
+-    it("ignores unauthenticated channel messages", () => {
+-        const { props } = renderForm();
+-
+-        mocks.channelListeners.forEach((handler) => handler(false));
+-
+-        expect(props.onChannelStateChange).not.toHaveBeenCalled();
+-    });
+-
+-    it("removes the listener on unmount", () => {
+-        const { unmount } = renderForm();
+-
+-        expect(mocks.channelListeners).toHaveLength(1);
+-
+-        unmount();
+-
+-        expect(mocks.channelListeners).toHaveLength(0);
+-    });
+-});
+-
+-describe("passkey integration", () => {
+-    it("clears the credentials and starts loading when passkey authentication starts", async () => {
+-        const { props } = renderForm({ passkeyLogin: true });
+-
+-        fillCredentials();
+-        fireEvent.click(screen.getByTestId("passkey-start"));
+-
+-        await waitFor(() => expect(getUsername()).toHaveValue(""));
+-        expect(getPassword()).toHaveValue("");
+-        expect(props.onAuthenticationStart).toHaveBeenCalled();
+-        expect(screen.getByTestId("passkey-form")).toHaveAttribute("data-disabled", "true");
+-    });
+-
+-    it("stops loading when passkey authentication stops", async () => {
+-        const { props } = renderForm({ passkeyLogin: true });
+-
+-        fireEvent.click(screen.getByTestId("passkey-start"));
+-        await waitFor(() => expect(screen.getByTestId("passkey-form")).toHaveAttribute("data-disabled", "true"));
+-
+-        fireEvent.click(screen.getByTestId("passkey-stop"));
+-
+-        await waitFor(() => expect(screen.getByTestId("passkey-form")).toHaveAttribute("data-disabled", "false"));
+-        expect(props.onAuthenticationStop).toHaveBeenCalled();
+-    });
+-
+-    it("forwards passkey authentication success", async () => {
+-        const { props } = renderForm({ passkeyLogin: true });
+-
+-        fireEvent.click(screen.getByTestId("passkey-success"));
+-
+-        await waitFor(() => expect(props.onAuthenticationSuccess).toHaveBeenCalledWith("https://example.com"));
+-    });
+-
+-    it("surfaces passkey authentication errors as notifications", () => {
+-        renderForm({ passkeyLogin: true });
+-
+-        fireEvent.click(screen.getByTestId("passkey-error"));
+-
+-        expect(mocks.createErrorNotification).toHaveBeenCalledWith("passkey failed");
+-    });
+-
+-    it("passes remember me through to the passkey form", () => {
+-        renderForm({ passkeyLogin: true, rememberMe: true });
+-
+-        expect(screen.getByTestId("passkey-form")).toHaveAttribute("data-remember-me", "true");
+-    });
++it("explains when passkeys are unavailable", () => {
++    renderForm({ passkeyLogin: false });
++    expect(screen.getByRole("alert")).toHaveTextContent("Passkey sign in is unavailable");
++    expect(screen.queryByTestId("passkey-start")).not.toBeInTheDocument();
+ });
+diff --git a/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.tsx b/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.tsx
+index 0b7ff65..df628d1 100644
+--- a/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.tsx
++++ b/web/src/views/LoginPortal/FirstFactor/FirstFactorForm.tsx
+@@ -2,29 +2,13 @@
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ 
+-import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
++import { useEffect, useMemo } from "react";
+ 
+ import { BroadcastChannel } from "broadcast-channel";
+ import { useTranslation } from "react-i18next";
+-import { useNavigate } from "react-router";
+ 
+-import { Alert, AlertTitle } from "@components/UI/Alert";
+-import { Button } from "@components/UI/Button";
+-import { Checkbox } from "@components/UI/Checkbox";
+-import { FloatingInput } from "@components/UI/FloatingInput";
+-import { Label } from "@components/UI/Label";
+-import { PasswordVisibilityToggle } from "@components/UI/PasswordVisibilityToggle";
+-import { Spinner } from "@components/UI/Spinner";
+-import { ResetPasswordStep1Route } from "@constants/Routes";
+-import { RedirectionURL, RequestMethod } from "@constants/SearchParams";
+ import { useNotifications } from "@contexts/NotificationsContext";
+-import { useFlow } from "@hooks/Flow";
+-import { useUserCode } from "@hooks/OpenIDConnect";
+-import { usePasswordVisibility } from "@hooks/PasswordVisibility";
+-import { useQueryParam } from "@hooks/QueryParam";
+ import LoginLayout from "@layouts/LoginLayout";
+-import { IsCapsLockModified } from "@services/CapsLock";
+-import { postFirstFactor } from "@services/Password";
+ import PasskeyForm from "@views/LoginPortal/FirstFactor/PasskeyForm";
+ 
+ export interface Props {
+@@ -42,326 +26,36 @@ export interface Props {
+ 
+ const FirstFactorForm = function (props: Props) {
+     const { t: translate } = useTranslation();
+-
+-    const navigate = useNavigate();
+-    const redirectionURL = useQueryParam(RedirectionURL);
+-    const requestMethod = useQueryParam(RequestMethod);
+-    const { flow, id: flowID, subflow } = useFlow();
+-    const userCode = useUserCode();
+     const { createErrorNotification } = useNotifications();
+-    const { showPassword, toggleProps } = usePasswordVisibility();
+-
+     const loginChannel = useMemo(() => new BroadcastChannel<boolean>("login"), []);
+-
+-    const [rememberMe, setRememberMe] = useState(false);
+-    const [username, setUsername] = useState("");
+-    const [usernameError, setUsernameError] = useState(false);
+-    const [password, setPassword] = useState("");
+-    const [passwordCapsLock, setPasswordCapsLock] = useState(false);
+-    const [passwordCapsLockPartial, setPasswordCapsLockPartial] = useState(false);
+-    const [passwordError, setPasswordError] = useState(false);
+-    const [loading, setLoading] = useState(false);
+-
+-    const usernameRef = useRef<HTMLInputElement | null>(null);
+-    const passwordRef = useRef<HTMLInputElement | null>(null);
+-
+-    const focusUsername = useCallback(() => {
+-        if (usernameRef.current === null) return;
+-
+-        usernameRef.current.focus();
+-    }, [usernameRef]);
+-
+-    const focusPassword = useCallback(() => {
+-        if (passwordRef.current === null) return;
+-
+-        passwordRef.current.focus();
+-    }, [passwordRef]);
+-
+-    useEffect(() => {
+-        const timeout = setTimeout(() => focusUsername(), 10);
+-        return () => clearTimeout(timeout);
+-    }, [focusUsername]);
++    const onChannelStateChange = props.onChannelStateChange;
+ 
+     useEffect(() => {
+         const handleMessage = (authenticated: boolean) => {
+-            if (authenticated) {
+-                props.onChannelStateChange();
+-            }
++            if (authenticated) onChannelStateChange();
+         };
+ 
+         loginChannel.addEventListener("message", handleMessage);
+-
+-        return () => {
+-            loginChannel.removeEventListener("message", handleMessage);
+-        };
+-    }, [loginChannel, redirectionURL, props]);
+-
+-    const disabled = props.disabled;
+-
+-    const handleRememberMeChange = () => {
+-        setRememberMe(!rememberMe);
+-    };
+-
+-    const handleSignIn = useCallback(async () => {
+-        if (loading) {
+-            return;
+-        }
+-
+-        if (username === "" || password === "") {
+-            if (username === "") {
+-                setUsernameError(true);
+-            }
+-
+-            if (password === "") {
+-                setPasswordError(true);
+-            }
+-            return;
+-        }
+-
+-        setLoading(true);
+-
+-        props.onAuthenticationStart();
+-
+-        try {
+-            const res = await postFirstFactor(
+-                username,
+-                password,
+-                rememberMe,
+-                redirectionURL,
+-                requestMethod,
+-                flowID,
+-                flow,
+-                subflow,
+-                userCode,
+-            );
+-
+-            setLoading(false);
+-
+-            await loginChannel.postMessage(true);
+-            props.onAuthenticationSuccess(res ? res.redirect : undefined);
+-        } catch (err) {
+-            console.error(err);
+-            createErrorNotification(translate("Incorrect username or password"));
+-            setLoading(false);
+-            props.onAuthenticationStop();
+-            setPassword("");
+-            focusPassword();
+-        }
+-    }, [
+-        loading,
+-        username,
+-        password,
+-        props,
+-        rememberMe,
+-        redirectionURL,
+-        requestMethod,
+-        flowID,
+-        flow,
+-        subflow,
+-        userCode,
+-        loginChannel,
+-        createErrorNotification,
+-        translate,
+-        focusPassword,
+-    ]);
+-
+-    const handleResetPasswordClick = () => {
+-        if (props.resetPassword) {
+-            if (props.resetPasswordCustomURL) {
+-                window.open(props.resetPasswordCustomURL);
+-            } else {
+-                navigate(ResetPasswordStep1Route);
+-            }
+-        }
+-    };
+-
+-    const handleUsernameKeyDown = useCallback(
+-        (event: KeyboardEvent<HTMLInputElement>) => {
+-            if (event.key === "Enter") {
+-                if (!username.length) {
+-                    setUsernameError(true);
+-                } else if (username.length && password.length) {
+-                    handleSignIn().catch(console.error);
+-                } else {
+-                    setUsernameError(false);
+-                    focusPassword();
+-                }
+-                event.preventDefault();
+-            }
+-        },
+-        [focusPassword, handleSignIn, password.length, username.length],
+-    );
+-
+-    const handlePasswordKeyDown = useCallback(
+-        (event: KeyboardEvent<HTMLInputElement>) => {
+-            if (event.key === "Enter") {
+-                if (!username.length) {
+-                    focusUsername();
+-                } else if (!password.length) {
+-                    focusPassword();
+-                }
+-                handleSignIn().catch(console.error);
+-                event.preventDefault();
+-            }
+-        },
+-        [focusPassword, focusUsername, handleSignIn, password.length, username.length],
+-    );
+-
+-    const handlePasswordKeyUp = useCallback(
+-        (event: KeyboardEvent<HTMLInputElement>) => {
+-            if (password.length <= 1) {
+-                setPasswordCapsLock(false);
+-                setPasswordCapsLockPartial(false);
+-
+-                if (password.length === 0) {
+-                    return;
+-                }
+-            }
+-
+-            const modified = IsCapsLockModified(event);
+-
+-            if (modified === null) return;
+-
+-            if (modified) {
+-                setPasswordCapsLock(true);
+-            } else {
+-                setPasswordCapsLockPartial(true);
+-            }
+-        },
+-        [password.length],
+-    );
+-
+-    const handleRememberMeKeyDown = useCallback(
+-        (event: KeyboardEvent<HTMLElement>) => {
+-            if (event.key === "Enter") {
+-                if (!username.length) {
+-                    focusUsername();
+-                } else if (!password.length) {
+-                    focusPassword();
+-                }
+-                handleSignIn().catch(console.error);
+-            }
+-        },
+-        [focusPassword, focusUsername, handleSignIn, password.length, username.length],
+-    );
++        return () => loginChannel.removeEventListener("message", handleMessage);
++    }, [loginChannel, onChannelStateChange]);
+ 
+     return (
+-        <LoginLayout id="first-factor-stage" title={translate("Sign in")}>
+-            <form id={"form-login"} onSubmit={(e) => e.preventDefault()}>
+-                <div className="grid grid-cols-1 gap-5">
+-                    <div className="w-full">
+-                        <FloatingInput
+-                            ref={usernameRef}
+-                            id="username-textfield"
+-                            label={`${translate("Username")} *`}
+-                            required
+-                            value={username}
+-                            error={usernameError}
+-                            disabled={disabled}
+-                            onChange={(v) => setUsername(v.target.value)}
+-                            onFocus={() => setUsernameError(false)}
+-                            autoCapitalize="none"
+-                            autoComplete="username"
+-                            onKeyDown={handleUsernameKeyDown}
+-                        />
+-                    </div>
+-                    <div className="relative w-full">
+-                        <FloatingInput
+-                            ref={passwordRef}
+-                            id="password-textfield"
+-                            label={`${translate("Password")} *`}
+-                            required
+-                            disabled={disabled}
+-                            value={password}
+-                            error={passwordError}
+-                            className="pr-10"
+-                            onChange={(v) => setPassword(v.target.value)}
+-                            onFocus={() => setPasswordError(false)}
+-                            type={showPassword ? "text" : "password"}
+-                            autoComplete="current-password"
+-                            onKeyDown={handlePasswordKeyDown}
+-                            onKeyUp={handlePasswordKeyUp}
+-                        />
+-                        <PasswordVisibilityToggle
+-                            label={translate("Toggle password visibility")}
+-                            showPassword={showPassword}
+-                            {...toggleProps}
+-                        />
+-                    </div>
+-                    {passwordCapsLock ? (
+-                        <div className="w-full px-4">
+-                            <Alert variant="warning">
+-                                <AlertTitle>{translate("Warning")}</AlertTitle>
+-                                {passwordCapsLockPartial
+-                                    ? translate("The password was partially entered with Caps Lock")
+-                                    : translate("The password was entered with Caps Lock")}
+-                            </Alert>
+-                        </div>
+-                    ) : null}
+-                    {props.rememberMe ? (
+-                        <div className="-my-2 flex w-full flex-row">
+-                            <div className="flex flex-grow items-center gap-2">
+-                                <Checkbox
+-                                    id="remember-checkbox"
+-                                    disabled={disabled}
+-                                    checked={rememberMe}
+-                                    onCheckedChange={handleRememberMeChange}
+-                                    onKeyDown={handleRememberMeKeyDown}
+-                                />
+-                                <Label htmlFor="remember-checkbox" className="text-base">
+-                                    {translate("Remember me")}
+-                                </Label>
+-                            </div>
+-                        </div>
+-                    ) : null}
+-                    <div className="w-full">
+-                        <Button
+-                            id="sign-in-button"
+-                            type="submit"
+-                            variant="default"
+-                            className="w-full"
+-                            disabled={disabled || loading}
+-                            onClick={handleSignIn}
+-                        >
+-                            {translate("Sign in")}
+-                            {loading ? <Spinner size={20} className="ml-2 h-5 w-5" /> : null}
+-                        </Button>
+-                    </div>
+-                    {props.passkeyLogin ? (
+-                        <PasskeyForm
+-                            disabled={disabled || loading}
+-                            rememberMe={props.rememberMe}
+-                            onAuthenticationError={(err) => createErrorNotification(err.message)}
+-                            onAuthenticationStart={() => {
+-                                setUsername("");
+-                                setPassword("");
+-                                setLoading(true);
+-                                props.onAuthenticationStart();
+-                            }}
+-                            onAuthenticationStop={() => {
+-                                setLoading(false);
+-                                props.onAuthenticationStop();
+-                            }}
+-                            onAuthenticationSuccess={(url) => {
+-                                setLoading(false);
+-                                props.onAuthenticationSuccess(url);
+-                            }}
+-                        />
+-                    ) : null}
+-                    {props.resetPassword ? (
+-                        <div className="-my-2 flex w-full flex-row justify-end">
+-                            <button
+-                                id="reset-password-button"
+-                                type="button"
+-                                className="cursor-pointer py-[13.5px] text-base text-primary underline-offset-4 hover:underline"
+-                                onClick={handleResetPasswordClick}
+-                            >
+-                                {translate("Reset password?")}
+-                            </button>
+-                        </div>
+-                    ) : null}
+-                </div>
+-            </form>
++        <LoginLayout id="first-factor-stage">
++            {props.passkeyLogin ? (
++                <PasskeyForm
++                    disabled={props.disabled}
++                    rememberMe={props.rememberMe}
++                    onAuthenticationError={(err) => createErrorNotification(err.message)}
++                    onAuthenticationStart={props.onAuthenticationStart}
++                    onAuthenticationStop={props.onAuthenticationStop}
++                    onAuthenticationSuccess={(url) => {
++                        void loginChannel.postMessage(true).catch(console.error);
++                        props.onAuthenticationSuccess(url);
++                    }}
++                />
++            ) : (
++                <p role="alert">{translate("Passkey sign in is unavailable. Contact your administrator.")}</p>
++            )}
+         </LoginLayout>
+     );
+ };
+diff --git a/web/src/views/LoginPortal/FirstFactor/PasskeyForm.test.tsx b/web/src/views/LoginPortal/FirstFactor/PasskeyForm.test.tsx
+index 2225273..1d65bca 100644
+--- a/web/src/views/LoginPortal/FirstFactor/PasskeyForm.test.tsx
++++ b/web/src/views/LoginPortal/FirstFactor/PasskeyForm.test.tsx
+@@ -87,7 +87,7 @@ describe("rendering", () => {
+     it("renders passkey sign in button", () => {
+         renderForm();
+         expect(screen.getByText("Sign in with a passkey")).toBeInTheDocument();
+-        expect(screen.getByText("or")).toBeInTheDocument();
++        expect(screen.queryByText("or")).not.toBeInTheDocument();
+         expect(screen.getByTestId("passkey-icon")).toBeInTheDocument();
+     });
+ 
+diff --git a/web/src/views/LoginPortal/FirstFactor/PasskeyForm.tsx b/web/src/views/LoginPortal/FirstFactor/PasskeyForm.tsx
+index 5490138..5b75faa 100644
+--- a/web/src/views/LoginPortal/FirstFactor/PasskeyForm.tsx
++++ b/web/src/views/LoginPortal/FirstFactor/PasskeyForm.tsx
+@@ -2,14 +2,13 @@
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ 
+-import { Fragment, useCallback, useRef, useState } from "react";
++import { useCallback, useRef, useState } from "react";
+ 
+ import axios from "axios";
+ import { useTranslation } from "react-i18next";
+ 
+ import PasskeyIcon from "@components/PasskeyIcon";
+ import { Button } from "@components/UI/Button";
+-import { Separator } from "@components/UI/Separator";
+ import { Spinner } from "@components/UI/Spinner";
+ import { RedirectionURL, RequestMethod } from "@constants/SearchParams";
+ import { useAbortSignal } from "@hooks/Abort";
+@@ -132,28 +131,17 @@ const PasskeyForm = function (props: Props) {
+     ]);
+ 
+     return (
+-        <Fragment>
+-            <div className="w-full">
+-                <div className="relative flex items-center py-2">
+-                    <Separator className="flex-1" />
+-                    <span className="px-3 text-sm uppercase text-muted-foreground">{translate("or")}</span>
+-                    <Separator className="flex-1" />
+-                </div>
+-            </div>
+-            <div className="w-full">
+-                <Button
+-                    id="passkey-sign-in-button"
+-                    variant="default"
+-                    className="w-full"
+-                    onClick={handleSignIn}
+-                    disabled={props.disabled}
+-                >
+-                    <PasskeyIcon />
+-                    {translate("Sign in with a passkey")}
+-                    {loading ? <Spinner size={20} className="ml-2 h-5 w-5" /> : null}
+-                </Button>
+-            </div>
+-        </Fragment>
++        <Button
++            id="passkey-sign-in-button"
++            variant="default"
++            className="w-full"
++            onClick={handleSignIn}
++            disabled={props.disabled}
++        >
++            <PasskeyIcon />
++            {translate("Sign in with a passkey")}
++            {loading ? <Spinner size={20} className="ml-2 h-5 w-5" /> : null}
++        </Button>
+     );
+ };
+ 
