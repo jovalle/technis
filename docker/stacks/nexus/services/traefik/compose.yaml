@@ -66,7 +66,9 @@ services:
     labels:
       - traefik.enable=false
     networks:
-      - default
+      default:
+        # Fixed so header-auth backends such as miniflux can trust only Traefik.
+        ipv4_address: 172.30.53.254
     ports:
       - 80:80
       - 443:443
