@@ -1,9 +1,6 @@
 # Syncthing ignore patterns
 # https://docs.syncthing.net/users/ignoring.html
 
-# Git
-.git
-
 # Node
 **/node_modules
 **/.npm
