@@ -4,7 +4,6 @@ set -Eeuo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 stacks_dir=$root/docker/stacks
-ssh_snippet=$root/tools/tctl/ssh_config
 
 # Output follows jsh: cyan activity, dim notes, green ✓, yellow !, red ✗.
 # Decoration goes to stderr; tables and command output stay on stdout.
@@ -88,8 +87,13 @@ ${O_B}Usage:${O_X} tctl ${O_C}[-s stack]... [--yes]${O_X} <command> ${O_D}[...ar
 
 ${O_B}Options:${O_X}
   ${O_C}-s, --stack${O_X} ${O_D}<name>${O_X}   target stack, repeatable or comma-separated ${O_D}($list)${O_X}
-  ${O_C}-y, --yes${O_X}            skip the confirmation for changes on several stacks
+  ${O_C}-y, --yes${O_X}            skip the confirmation for changes on several stacks;
+                       also accepted after the command, never passed to compose
   ${O_C}-h, --help${O_X}           show this help
+
+${O_B}Environment:${O_X}
+  ${O_C}TCTL_PROGRESS=compose${O_X}  keep compose's own progress view for ${O_Y}up -d${O_X}; by default
+                         tctl prints only containers that change, then a summary
 
 ${O_B}Commands:${O_X}
   ${O_C}<compose command>${O_X}    any docker compose command, on every stack by default
@@ -151,20 +155,23 @@ show_cmd() {
   say "$out"
 }
 
+# ensure_ctx STACK [quiet]; quiet reports only a newly created context.
+ensure_ctx() {
+  local s=$1 want=ssh://$1 have
+  have=$(endpoint "$s" || true)
+  if [[ $have == "$want" ]]; then
+    [[ ${2:-} == quiet ]] || row ok "$s" "$want"
+  elif [[ -z $have ]]; then
+    docker context create "$s" --description "Technis $s stack" --docker "host=$want" >/dev/null 2>&1
+    row ok "$s" "$want (created)"
+  else
+    die "context $s points at $have, expected $want; fix it with: docker context update $s --docker host=$want"
+  fi
+}
+
 cmd_ctx() {
-  local s want have
-  for s in $(stacks); do
-    want=ssh://$s
-    have=$(endpoint "$s" || true)
-    if [[ $have == "$want" ]]; then
-      row ok "$s" "$want"
-    elif [[ -z $have ]]; then
-      docker context create "$s" --description "Technis $s stack" --docker "host=$want" >/dev/null 2>&1
-      row ok "$s" "$want (created)"
-    else
-      die "context $s points at $have, expected $want; fix it with: docker context update $s --docker host=$want"
-    fi
-  done
+  local s
+  for s in $(stacks); do ensure_ctx "$s"; done
 }
 
 env_keys() { sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1/p' "$1" | sort -u; }
@@ -209,10 +216,6 @@ cmd_doctor() {
 
   blank
   info "Workstation"
-  if grep -qsF "Include $ssh_snippet" "$HOME/.ssh/config"; then row ok "ssh config" "includes tools/tctl/ssh_config"; else
-    row fail "ssh config" "lacks: Include $ssh_snippet"
-    fails=$((fails + 1))
-  fi
   if [[ -f $HOME/.ssh/technis ]]; then row ok "ssh key" "present at ~/.ssh/technis"; else
     row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
   fi
@@ -249,7 +252,7 @@ cmd_doctor() {
 }
 
 bootstrap_tools() {
-  local pairs="direnv:direnv docker:docker git:git jq:jq mise:mise pre-commit:pre-commit nc:netcat" p need=()
+  local pairs="ansible-playbook:ansible direnv:direnv docker:docker git:git jq:jq mise:mise pre-commit:pre-commit nc:netcat" p need=()
   info "Tools"
   for p in $pairs; do has "${p%%:*}" || need+=("${p#*:}"); done
   rsync --version 2>/dev/null | head -1 | grep -q 'version 3\.' || need+=(rsync)
@@ -270,25 +273,6 @@ bootstrap_tools() {
     jq --arg d "$dir" '.cliPluginsExtraDirs = ((.cliPluginsExtraDirs // []) + [$d] | unique)' "$cfg" >"$cfg.tmp" && mv -f "$cfg.tmp" "$cfg"
     row ok "docker compose" "plugin installed"
   fi
-}
-
-bootstrap_ssh() {
-  local cfg=$HOME/.ssh/config line="Include $ssh_snippet"
-  mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
-  if grep -qsF "$line" "$cfg"; then
-    row ok "ssh config" "includes tools/tctl/ssh_config"
-  elif confirm "Prepend '$line' to ~/.ssh/config (a backup is kept)."; then
-    touch "$cfg"
-    cp -p "$cfg" "$cfg.tctl-$(date +%Y%m%d%H%M%S).bak"
-    {
-      printf '%s\n\n' "$line"
-      cat "$cfg"
-    } >"$cfg.tmp" && chmod 600 "$cfg.tmp" && mv -f "$cfg.tmp" "$cfg"
-    row ok "ssh config" "Include added"
-  else
-    row skip "ssh config" "skipped"
-  fi
-  [[ -f $HOME/.ssh/technis ]] || row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
 }
 
 bootstrap_shell() {
@@ -320,7 +304,7 @@ cmd_bootstrap() {
   fi
   blank
   info "SSH and Docker contexts"
-  bootstrap_ssh
+  [[ -f $HOME/.ssh/technis ]] || row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
   cmd_ctx
   blank
   info "Repository"
@@ -348,7 +332,7 @@ cmd_bootstrap() {
 
 cmd_sync() {
   ((${#targets[@]} == 1)) || die "sync needs exactly one -s stack"
-  local script=$root/scripts/docker/sync
+  local script=$root/docker/scripts/sync
   [[ -x $script ]] || die "missing $script"
   if [[ ${1:-} == -n ]]; then
     shift
@@ -453,12 +437,70 @@ ps_table() {
   row ok "$(plural "$n" container) on $(plural "$ok_n" stack)" "$(took "$start")"
 }
 
+# Compose's live view keeps settled rows and cuts the rest to "... N more"; show only what changes.
+progress_jq='
+def took($s): ((now - $s) * 1000 | floor) as $ms
+  | if $ms < 1000 then "[\($ms)ms]" else "[\($ms / 10 | floor / 100)s]" end;
+def txt($e): [$e.text, ($e.details // "")] | map(select(. != null and . != "")) | join(" ");
+def summary:
+  ([.done[]] | group_by(.) | map("\(length) \(.[0] | ascii_downcase)"))
+  + ([.failed | length | select(. > 0) | "\(.) failed"])
+  + ([(.seen | keys) - (.start | keys) - (.done | keys) - (.failed | keys) | length | select(. > 0) | "\(.) unchanged"])
+  | join(", ");
+foreach ((inputs | . as $l | (try fromjson catch null)
+    | if type == "object" then . else {raw: $l} end), {end: true}) as $e (
+  {seen: {}, start: {}, done: {}, failed: {}};
+  del(.out)
+  | if $e.end then .out = ["note", summary]
+    elif $e.raw != null then .out = ["raw", $e.raw]
+    elif $e.level != null then .out = [(if $e.level == "error" or $e.level == "fatal" then "fail" else "warn" end), $e.msg]
+    elif ($e.parent_id // "") != "" then
+      (if $e.status == "Error" then .out = ["fail", $e.parent_id, txt($e)] else . end)
+    else
+      ($e.id | sub("^Container "; "")) as $id
+      | .seen[$id] = true
+      | if $e.status == "Error" then .failed[$id] = true | .out = ["fail", $id, txt($e)]
+        elif $e.status == "Warning" then .out = ["warn", $id, txt($e)]
+        elif $e.text == "Waiting" or $e.text == "Running" then .
+        elif ($e.text == "Healthy" or $e.text == "Exited") and .start[$id] == null then .
+        elif $e.status == "Working" then .start[$id] //= now | .out = ["info", $id, $e.text]
+        else .done[$id] //= $e.text
+          | .out = ["ok", $id, ($e.text + (if .start[$id] then " " + took(.start[$id]) else "" end))]
+        end
+    end;
+  .out // empty | select(.[1] != "") | @tsv)'
+
+progress_filter() {
+  local kind subject detail
+  while IFS=$'\t' read -r kind subject detail; do
+    case $kind in
+      raw) say "$subject" ;;
+      note) muted "  $subject" ;;
+      *) row "$kind" "$subject" "$detail" ;;
+    esac
+  done < <(jq -nrR --unbuffered "$progress_jq")
+}
+
+# Attached up streams logs on the same terminal, so only detached or waiting runs are filtered.
+compose_up() {
+  local s=$1 a filter=0
+  shift
+  for a in "$@"; do [[ $a == -d || $a == --detach || $a == --wait ]] && filter=1; done
+  if ((filter)) && [[ ${TCTL_PROGRESS:-} != compose ]] && has jq; then
+    { compose "$s" --progress json up "$@" 2>&1 1>&3 3>&- | progress_filter; } 3>&1
+  else
+    compose "$s" up "$@"
+  fi
+}
+
 # up alone reuses a cached image, so upgrade pulls first.
 stack_run() {
   local s=$1 verb=$2
   shift 2
   if [[ $verb == upgrade ]]; then
-    compose "$s" pull "$@" && compose "$s" up -d "$@"
+    compose "$s" pull "$@" && compose_up "$s" -d "$@"
+  elif [[ $verb == up ]]; then
+    compose_up "$s" "$@"
   else
     compose "$s" "$verb" "$@"
   fi
@@ -485,6 +527,7 @@ run_compose() {
 
   [[ $explicit == 1 ]] || narrow_by_service "$verb" "$@"
   local n=${#targets[@]} s
+  for s in "${targets[@]}"; do ensure_ctx "$s" quiet; done
   case $kind in
     single) ((n == 1)) || die "$verb needs exactly one stack; matched: ${targets[*]} (use -s)" ;;
     one) ((n == 1)) || die "$verb is limited to one stack; matched: ${targets[*]} (use -s)" ;;
@@ -496,9 +539,6 @@ run_compose() {
       fi
       ;;
   esac
-  for s in "${targets[@]}"; do
-    [[ -n $(endpoint "$s" || true) ]] || die "no Docker context '$s'; run: tctl ctx"
-  done
 
   if [[ $verb == ps ]]; then
     local plain=0
@@ -580,8 +620,16 @@ main() {
   ((${#targets[@]})) || targets=("${all[@]}")
   has docker || [[ $1 == bootstrap ]] || die "docker CLI not found; run: tctl bootstrap"
 
-  local verb=$1
+  local verb=$1 args=() a passthru=0
   shift
+  # Compose's own up/create -y auto-accepts volume recreation, so tctl keeps -y for itself.
+  if in_list "$verb" "${single_verbs[@]}"; then args=("$@"); else
+    for a in "$@"; do
+      if ((passthru == 0)) && [[ $a == -y || $a == --yes ]]; then assume_yes=1; else args+=("$a"); fi
+      [[ $a == -- ]] && passthru=1
+    done
+  fi
+  set -- ${args[@]+"${args[@]}"}
   case $verb in
     ctx) cmd_ctx ;;
     doctor) cmd_doctor ;;

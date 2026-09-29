@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# Upgrade test for image changes since <base-ref>: start each changed service on its old image,
+# then recreate it on the new image over the same data, and require both to settle.
+set -euo pipefail
+
+usage='usage: scripts/docker/test-upgrade <base-ref>'
+(($# == 1)) || {
+  echo "$usage" >&2
+  exit 2
+}
+base=$1
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+endpoint=${DOCKER_HOST:-$(docker context inspect -f '{{.Endpoints.docker.Host}}')}
+[[ $endpoint == unix://* ]] || {
+  echo "refusing to test on $endpoint; use a local engine (unset DOCKER_HOST/DOCKER_CONTEXT)" >&2
+  exit 2
+}
+wait_timeout=${UPGRADE_WAIT_TIMEOUT:-180}
+settle=${UPGRADE_SETTLE_SECONDS:-20}
+
+tmp_root=${RUNNER_TEMP:-$root/tmp}
+mkdir -p "$tmp_root"
+work=$(mktemp -d "$tmp_root/test-upgrade.XXXXXX")
+export STACK_DATA_ROOT=$work/data TZ=${TZ:-UTC}
+project=test-upgrade-$$
+files=()
+cleanup() {
+  local f
+  for f in ${files[@]+"${files[@]}"}; do
+    docker compose -p "$project" -f "$f" down -v --remove-orphans >/dev/null 2>&1 || true
+  done
+  # Containers leave files owned by their own UID in the data tree.
+  rm -rf "$work" 2>/dev/null || sudo -n rm -rf "$work" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# service<TAB>image for every service in a model; config needs no engine and prints nothing here.
+images() { docker compose -p "$project" --project-directory "$2" -f "$1" config --format json | jq -r '.services | to_entries[] | [.key, (.value.image // "")] | @tsv'; }
+
+# settled FILE DIR SERVICE...: running, healthy when checked, and no restarts after a quiet period.
+settled() {
+  local file=$1 dir=$2 svc id state rc=0
+  shift 2
+  sleep "$settle"
+  for svc in "$@"; do
+    id=$(docker compose -p "$project" --project-directory "$dir" -f "$file" ps -q "$svc")
+    state=$(docker inspect -f '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{.RestartCount}}' "$id")
+    echo "  $svc: $state"
+    [[ $state =~ ^running\ (healthy|none)\ 0$ ]] || rc=1
+  done
+  return "$rc"
+}
+
+run_phase() {
+  local label=$1 file=$2 dir=$3
+  shift 3
+  echo "::group::$label: ${*}"
+  local rc=0
+  docker compose -p "$project" --project-directory "$dir" -f "$file" pull --quiet "$@" &&
+    docker compose -p "$project" --project-directory "$dir" -f "$file" up -d --no-deps --wait --wait-timeout "$wait_timeout" "$@" &&
+    settled "$file" "$dir" "$@" || rc=$?
+  if ((rc)); then
+    docker compose -p "$project" --project-directory "$dir" -f "$file" logs --no-color --tail 100 "$@" || true
+  fi
+  echo "::endgroup::"
+  return "$rc"
+}
+
+# Bind sources must exist with the service's UID, or Docker creates them root-owned.
+prepare_data() {
+  local file=$1 dir=$2 svc src user
+  shift 2
+  for svc in "$@"; do
+    user=$(docker compose -p "$project" --project-directory "$dir" -f "$file" config --format json |
+      jq -r --arg s "$svc" '.services[$s].user // ""')
+    while IFS= read -r src; do
+      [[ -e $src ]] || mkdir -p "$src"
+      if [[ $user =~ ^[0-9]+(:[0-9]+)?$ ]]; then
+        chown -R "$user" "$src" 2>/dev/null || sudo -n chown -R "$user" "$src" 2>/dev/null ||
+          echo "warn: cannot chown $src to $user" >&2
+      fi
+    done < <(docker compose -p "$project" --project-directory "$dir" -f "$file" config --format json |
+      jq -r --arg s "$svc" --arg d "$STACK_DATA_ROOT/" '.services[$s].volumes // [] | .[]
+        | select(.type == "bind" and (.source | startswith($d))) | .source')
+  done
+}
+
+cd "$root"
+mapfile -t changed < <(git diff --name-only "$base" -- ':(glob)docker/services/**/compose.yaml')
+tested=() failed=()
+for file in ${changed[@]+"${changed[@]}"}; do
+  [[ -f $file ]] || continue
+  git cat-file -e "$base:$file" 2>/dev/null || {
+    echo "skip $file: new model, no previous image to upgrade from"
+    continue
+  }
+  dir=$root/$(dirname "$file")
+  old=$work/$(echo "$file" | tr / _).base.yaml
+  git show "$base:$file" >"$old"
+  files+=("$old" "$root/$file")
+
+  declare -A before=()
+  while IFS=$'\t' read -r svc image; do before[$svc]=$image; done < <(images "$old" "$dir")
+  svcs=()
+  while IFS=$'\t' read -r svc image; do
+    [[ -n ${before[$svc]:-} && ${before[$svc]} != "$image" ]] || continue
+    echo "$file: $svc ${before[$svc]} -> $image"
+    svcs+=("$svc")
+  done < <(images "$root/$file" "$dir")
+  unset before
+  ((${#svcs[@]})) || continue
+
+  prepare_data "$old" "$dir" "${svcs[@]}"
+  if run_phase "old image" "$old" "$dir" "${svcs[@]}" && run_phase "new image" "$root/$file" "$dir" "${svcs[@]}"; then
+    tested+=("${svcs[@]}")
+  else
+    failed+=("${svcs[@]}")
+  fi
+  docker compose -p "$project" -f "$root/$file" down -v >/dev/null 2>&1 || true
+done
+
+[[ -z ${GITHUB_OUTPUT:-} ]] || echo "services=${tested[*]} ${failed[*]}" >>"$GITHUB_OUTPUT"
+((${#failed[@]} == 0)) || {
+  echo "upgrade test failed: ${failed[*]}" >&2
+  exit 1
+}
+echo "upgrade test passed: ${tested[*]:-no image changes}"

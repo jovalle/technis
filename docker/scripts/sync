@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Copy docker/services/<path>/**/files/ to ${STACK_DATA_ROOT}/<path>/ on one stack host.
+set -euo pipefail
+
+usage='usage: docker/scripts/sync [-n] <host> <service[/component]>...'
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+dry=()
+[[ ${1:-} == -n ]] && {
+  dry=(--dry-run)
+  shift
+}
+(($# >= 2)) || {
+  echo "$usage" >&2
+  exit 2
+}
+host=$1
+shift
+
+env_file=$root/docker/stacks/$host/.env
+[[ -f $env_file ]] || {
+  echo "unknown stack: $host" >&2
+  exit 2
+}
+data_root=$(sed -nE "s/^STACK_DATA_ROOT=['\"]?([^'\"]*)['\"]?$/\1/p" "$env_file")
+[[ $data_root =~ ^/[A-Za-z0-9._/-]+$ ]] || {
+  echo "$host: STACK_DATA_ROOT must be an absolute path" >&2
+  exit 1
+}
+
+for service in "$@"; do
+  base=$root/docker/services/$service
+  [[ $service =~ ^[a-z0-9-]+(/[a-z0-9-]+)*$ && -d $base ]] || {
+    echo "unknown service: $service" >&2
+    exit 2
+  }
+  # A group such as victoriametrics syncs every nested component's files/ tree.
+  while IFS= read -r -d '' dir; do
+    rel=${dir#"$root/docker/services/"}
+    rel=${rel%/files}
+    dest=$data_root/$rel
+    mkdir=
+    ((${#dry[@]})) || mkdir="mkdir -p $dest && "
+    # --inplace keeps inodes so single-file bind mounts see updates without recreation.
+    rsync -rtO --inplace --chmod=D755,F644 ${dry[@]+"${dry[@]}"} \
+      -e 'ssh -o BatchMode=yes' --rsync-path="${mkdir}rsync" \
+      --out-format="$host: $rel/%n" "$dir/" "$host:$dest/"
+  done < <(find "$base" -type d -name files -prune -print0 | sort -z)
+done
