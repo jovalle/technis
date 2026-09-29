@@ -1,0 +1,38 @@
+---
+- name: Create display backup directory
+  ansible.builtin.file:
+    path: >-
+      {{ watchtower_backup_root }}/{{ tv_backup_id }}/{{ inventory_hostname }}
+    state: directory
+    mode: "0700"
+  register: tv_backup_directory
+  when: not ansible_check_mode
+
+- name: Save display state snapshot
+  ansible.builtin.copy:
+    content: >-
+      {{
+        {
+          'host': inventory_hostname,
+          'address': ansible_host,
+          'captured_at': now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ'),
+          'profile': tv_profile,
+          'api': tv_api_snapshot | default({}),
+          'adb': tv_adb_snapshot | default({})
+        } | to_nice_json
+      }}
+    dest: "{{ tv_backup_directory.path }}/settings.json"
+    mode: "0600"
+  when: not ansible_check_mode
+
+- name: Report captured display state
+  ansible.builtin.debug:
+    msg:
+      profile: "{{ tv_profile }}"
+      input: "{{ tv_playing_content | default({}) }}"
+      picture_targets: >-
+        {{ tv_picture_items | default([]) | map(attribute='target') | list }}
+      android: "{{ tv_adb_property_values | default({}) }}"
+      backup: >-
+        {{ tv_backup_directory.path ~ '/settings.json'
+           if not ansible_check_mode else 'check mode; no backup written' }}

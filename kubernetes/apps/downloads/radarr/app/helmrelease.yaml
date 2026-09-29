@@ -1,0 +1,85 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: radarr
+  namespace: downloads
+spec:
+  chart:
+    spec:
+      chart: app-template
+      sourceRef:
+        name: bjw-s
+        kind: HelmRepository
+        namespace: flux-system
+      version: 3.7.3
+  install:
+    remediation:
+      retries: 3
+  interval: 30m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    controllers:
+      radarr:
+        containers:
+          app:
+            env:
+              TZ: America/New_York
+            image:
+              repository: ghcr.io/linuxserver/radarr
+              tag: 5.14.0@sha256:a5a1fdf02aa14abc33a507eafa125ff57cb83f251a519536bce331ce9e008ef7
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                cpu: 20m
+                memory: 256Mi
+    ingress:
+      app:
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.techn.is
+        className: internal
+        hosts:
+          - host: "{{ .Release.Name }}.techn.is"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+          - host: movies.techn.is
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+    persistence:
+      config:
+        accessMode: ReadWriteOnce
+        retain: true
+        size: 2Gi
+        storageClass: ceph-rbd
+      downloads:
+        path: /mnt/hulkpool/downloads
+        server: nexus.techn.is
+        type: nfs
+      movies:
+        path: /mnt/hulkpool/movies
+        server: nexus.techn.is
+        type: nfs
+    service:
+      app:
+        controller: radarr
+        ports:
+          http:
+            port: 7878

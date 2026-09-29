@@ -1,0 +1,85 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarr
+  namespace: downloads
+spec:
+  chart:
+    spec:
+      chart: app-template
+      sourceRef:
+        name: bjw-s
+        kind: HelmRepository
+        namespace: flux-system
+      version: 3.7.3
+  install:
+    remediation:
+      retries: 3
+  interval: 30m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    controllers:
+      sonarr:
+        containers:
+          app:
+            env:
+              TZ: America/New_York
+            image:
+              repository: ghcr.io/linuxserver/sonarr
+              tag: 4.0.10@sha256:c0281bd62b9a75f088fa4a09e5f8776431921883766633cb5e5fbd5a74761155
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                cpu: 20m
+                memory: 256Mi
+    ingress:
+      app:
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.techn.is
+        className: internal
+        hosts:
+          - host: "{{ .Release.Name }}.techn.is"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+          - host: series.techn.is
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+    persistence:
+      config:
+        accessMode: ReadWriteOnce
+        retain: true
+        size: 2Gi
+        storageClass: ceph-rbd
+      downloads:
+        path: /mnt/hulkpool/downloads
+        server: nexus.techn.is
+        type: nfs
+      series:
+        path: /mnt/whirlpool/series
+        server: nexus.techn.is
+        type: nfs
+    service:
+      app:
+        controller: sonarr
+        ports:
+          http:
+            port: 8989

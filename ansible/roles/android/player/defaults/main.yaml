@@ -1,0 +1,53 @@
+---
+# Use "stock" to roll back the launcher, package, and animation changes.
+player_state: tuned
+
+player_stock_launcher_package: com.google.android.tvlauncher
+player_stock_launcher_activity: com.google.android.tvlauncher/.MainActivity
+# Disabled when tuned and re-enabled when stock. Adding an app bound to a
+# dedicated remote button disables the whole app, not only the button.
+player_managed_packages:
+  - "{{ player_stock_launcher_package }}"
+  - com.google.android.tvrecommendations
+
+player_animation_scale: "0.0"
+player_stock_animation_scale: "1.0"
+player_animation_settings:
+  - window_animation_scale
+  - transition_animation_scale
+  - animator_duration_scale
+
+player_reboot: true
+player_force_compile: false
+
+# Settings exposed through Android's supported settings provider. Values are
+# snapshotted before mutation and restored automatically if verification fails.
+player_managed_settings:
+  - namespace: global
+    key: encoded_surround_output
+    value: "0"
+    description: Available audio formats = Auto
+  - namespace: global
+    key: auto_upgrade
+    value: "0"
+    description: Automatic system upgrades = Off
+
+# These are audited because changing only the Settings database would not
+# notify the vendor hardware service. The live values already match the target.
+player_audited_settings:
+  - namespace: system
+    key: nv_power_mode
+    value: "0"
+    description: Processor mode = Max performance
+  - namespace: system
+    key: nv_upscale_filter
+    value: none
+    description: Upscaling = Enhanced (Lanczos/non-AI)
+  - namespace: system
+    key: volume_music_hdmi
+    value: "15"
+    description: HDMI media volume = fixed maximum
+
+player_compile_packages:
+  - com.spocky.projengmenu
+  - com.plexapp.android

@@ -1,0 +1,165 @@
+---
+# Sets adb_bin and adb_serial for the roles that follow.
+- name: Detect controller operating system
+  ansible.builtin.command:
+    argv:
+      - uname
+      - -s
+  changed_when: false
+  check_mode: false
+  register: adb_controller_system
+
+- name: Validate controller operating system
+  ansible.builtin.assert:
+    that:
+      - adb_controller_system.stdout | trim in ["Darwin", "Linux"]
+    fail_msg: Automatic ADB installation supports macOS and Linux controllers.
+
+- name: Install ADB platform tools with Homebrew
+  community.general.homebrew:
+    name: android-platform-tools
+    state: present
+    update_homebrew: false
+  when: adb_controller_system.stdout | trim == "Darwin"
+
+- name: Install ADB platform tools on Linux controllers
+  ansible.builtin.package:
+    name: adb
+    state: present
+  become: true
+  when: adb_controller_system.stdout | trim == "Linux"
+
+- name: Locate ADB on the controller
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/env
+      - which
+      - adb
+  changed_when: false
+  check_mode: false
+  register: adb_lookup
+
+- name: Store ADB executable path and fixed-port endpoint
+  ansible.builtin.set_fact:
+    adb_bin: "{{ adb_lookup.stdout | trim }}"
+    adb_serial: "{{ ansible_host }}:{{ adb_port }}"
+
+- name: Start the local ADB server
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - start-server
+  changed_when: false
+  check_mode: false
+
+- name: List existing ADB connections
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - devices
+  changed_when: false
+  check_mode: false
+  register: adb_devices
+  when: adb_discover | bool
+
+- name: Select existing ADB connection
+  ansible.builtin.set_fact:
+    adb_connected_matches: >-
+      {{ adb_devices.stdout_lines |
+      select('match', '^' ~ (ansible_host | regex_escape) ~
+      ':[0-9]+[ \t]+device') | list }}
+  when: adb_discover | bool
+
+- name: Reuse existing ADB endpoint
+  ansible.builtin.set_fact:
+    adb_serial: >-
+      {{ adb_connected_matches | first | split | first }}
+  when:
+    - adb_discover | bool
+    - adb_connected_matches | length == 1
+
+- name: Discover paired wireless ADB services
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - mdns
+      - services
+  changed_when: false
+  check_mode: false
+  register: adb_mdns
+  when:
+    - adb_discover | bool
+    - adb_connected_matches | length == 0
+
+- name: Select wireless ADB service
+  ansible.builtin.set_fact:
+    adb_mdns_matches: >-
+      {{ adb_mdns.stdout_lines |
+      select('search', '_adb-tls-connect[.]_tcp') |
+      select('search', ansible_host ~ ':') | list }}
+  when:
+    - adb_discover | bool
+    - adb_connected_matches | length == 0
+
+- name: Require one wireless ADB service
+  ansible.builtin.assert:
+    that:
+      - adb_mdns_matches | length == 1
+    fail_msg: >-
+      Expected one paired wireless ADB service for {{ ansible_host }}, found
+      {{ adb_mdns_matches | length }}. Keep Wireless debugging open and
+      verify that {{ inventory_hostname }} and this controller share the same
+      local network.
+  when:
+    - adb_discover | bool
+    - adb_connected_matches | length == 0
+
+- name: Use discovered wireless ADB endpoint
+  ansible.builtin.set_fact:
+    adb_serial: "{{ adb_mdns_matches | first | split | last }}"
+  when:
+    - adb_discover | bool
+    - adb_connected_matches | length == 0
+
+- name: Connect ADB
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - connect
+      - "{{ adb_serial }}"
+  changed_when: >-
+    'connected to' in adb_connect.stdout
+    and 'already connected' not in adb_connect.stdout
+  failed_when: >-
+    adb_connect.rc != 0 or
+    'unable to connect' in adb_connect.stdout | lower or
+    'failed to connect' in adb_connect.stdout | lower
+  check_mode: false
+  register: adb_connect
+
+- name: Wait for ADB authorization
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - get-state
+  changed_when: false
+  check_mode: false
+  delay: "{{ adb_authorization_delay }}"
+  failed_when: false
+  register: adb_state
+  retries: "{{ adb_authorization_retries }}"
+  until:
+    - adb_state.rc == 0
+    - adb_state.stdout | trim == "device"
+
+- name: Require an authorized ADB connection
+  ansible.builtin.assert:
+    that:
+      - adb_state.rc == 0
+      - adb_state.stdout | trim == "device"
+    fail_msg: >-
+      ADB is not authorized for {{ adb_serial }}. Accept and persist the
+      debugging authorization on {{ inventory_hostname }}, then run the
+      playbook again.

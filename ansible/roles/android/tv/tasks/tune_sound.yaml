@@ -1,0 +1,122 @@
+---
+- name: Index current sound-output values
+  ansible.builtin.set_fact:
+    tv_sound_before_values: >-
+      {{ tv_sound_before_values | default({}) |
+      combine({item.target: item.currentValue}) }}
+  loop: "{{ tv_sound_items }}"
+  loop_control:
+    label: "{{ item.target }}"
+  when:
+    - item.target is defined
+    - item.currentValue is defined
+
+- name: Validate sound-output targets
+  ansible.builtin.assert:
+    that:
+      - item.target in tv_sound_before_values
+    fail_msg: >-
+      Sound target {{ item.target }} is unavailable. No sound values changed.
+  loop: "{{ tv_sound_settings }}"
+  loop_control:
+    label: "{{ item.target }}"
+
+- name: Report planned sound-output changes
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.target }}: {{ tv_sound_before_values[item.target] }} ->
+      {{ item.value }}
+  loop: "{{ tv_sound_settings }}"
+  loop_control:
+    label: "{{ item.target }}"
+  when: >-
+    tv_sound_before_values[item.target] | string != item.value | string
+
+- name: Set native sound-output value
+  ansible.builtin.uri:
+    url: "{{ tv_api_base_url }}/audio"
+    method: POST
+    headers: "{{ tv_api_headers }}"
+    body_format: json
+    body:
+      method: setSoundSettings
+      params:
+        - settings:
+            - target: "{{ item.target }}"
+              value: "{{ item.value | string }}"
+      id: 30
+      version: "{{ tv_sound_api_version }}"
+    return_content: true
+    status_code: 200
+    timeout: "{{ tv_api_timeout }}"
+    validate_certs: "{{ tv_api_validate_certs }}"
+  changed_when: true
+  failed_when: false
+  no_log: "{{ tv_api_hide_auth | bool }}"
+  register: tv_sound_set_result
+  retries: "{{ tv_sound_set_retries }}"
+  delay: "{{ tv_sound_set_delay }}"
+  until:
+    - tv_sound_set_result.status | default(0) == 200
+    - (tv_sound_set_result.json | default({})).error is not defined
+  loop: "{{ tv_sound_settings }}"
+  loop_control:
+    label: "{{ item.target }}"
+  when:
+    - not ansible_check_mode
+    - >-
+      tv_sound_before_values[item.target] | string != item.value | string
+
+- name: Read sound-output settings after changes
+  ansible.builtin.uri:
+    url: "{{ tv_api_base_url }}/audio"
+    method: POST
+    headers: "{{ tv_api_headers }}"
+    body_format: json
+    body:
+      method: getSoundSettings
+      params:
+        - target: ""
+      id: 31
+      version: "{{ tv_sound_api_version }}"
+    return_content: true
+    status_code: 200
+    timeout: "{{ tv_api_timeout }}"
+    validate_certs: "{{ tv_api_validate_certs }}"
+  changed_when: false
+  check_mode: false
+  no_log: "{{ tv_api_hide_auth | bool }}"
+  register: tv_sound_after_result
+  when: not ansible_check_mode
+
+- name: Index final sound-output values
+  ansible.builtin.set_fact:
+    tv_sound_after_values: >-
+      {{ tv_sound_after_values | default({}) |
+      combine({item.target: item.currentValue}) }}
+  loop: >-
+    {{ (tv_sound_after_result.json |
+    default({})).get('result', [[]]) | first | default([]) }}
+  loop_control:
+    label: "{{ item.target }}"
+  when:
+    - not ansible_check_mode
+    - item.target is defined
+    - item.currentValue is defined
+
+- name: Verify native sound-output values
+  ansible.builtin.assert:
+    that:
+      - >-
+        tv_sound_after_values[item.target] | string == item.value | string
+    fail_msg: "Failed to set sound target {{ item.target }}."
+  loop: "{{ tv_sound_settings }}"
+  loop_control:
+    label: "{{ item.target }}"
+  when: not ansible_check_mode
+
+- name: Record native sound-output changes
+  ansible.builtin.set_fact:
+    tv_remote_changed: >-
+      {{ tv_remote_changed | bool or
+      tv_sound_set_result.changed | default(false) }}

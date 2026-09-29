@@ -1,27 +1,81 @@
-# Syncthing ignore patterns
-# https://docs.syncthing.net/users/ignoring.html
+// Applied only when technis is the Syncthing folder root.
+// For a Projects folder, prefix rooted patterns with /technis; expand unrooted
+// patterns to both /technis/PATTERN and /technis/**/PATTERN.
+// Nested .stignore files are not read automatically.
+// No trailing slashes: exclude the directory itself before it is traversed.
+// Keep Git metadata, docs/web sources, encrypted SOPS inputs, and shared envs.
 
-# Node
-**/node_modules
-**/.npm
-.eslintcache
-
-# Build artifacts
-**/dist
-**/build
-**/*.tsbuildinfo
-
-# Logs
-**/*.log
-
-# Temporary files
-**/*.tmp
-**/*.retry
-**/.DS_Store
-
-# Archive
+// Runtime state and evidence must never be synced or marked deletable.
+.state
+.private
+.planning
+.audit
+.cache
+/tmp
+/bin/.prepare.*
+/tools/dashboard/data
 archive
+/ansible/roles/projectivy/files
+/docker/services/technitium/dns
 
-# Submodules (managed separately)
-docs
-web
+// Dependencies and generated output; keep manifests and lockfiles.
+node_modules
+.npm
+.venv
+venv
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.wrangler
+.direnv
+.vagrant
+.terraform
+.terraform.d
+dist
+build
+/target
+coverage
+htmlcov
+.coverage
+.coverage.*
+.eslintcache
+*.tsbuildinfo
+*.py[cod]
+
+// Local credentials and generated infrastructure configuration.
+*.agekey
+*.key
+*.p12
+*.pfx
+.decrypted*
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+*.tfplan
+tfplan
+tfplan.*
+*.local.hcl
+kubeconfig
+*.kubeconfig
+talosconfig
+/kubernetes/bootstrap/talos/controlplane.yaml
+/kubernetes/bootstrap/talos/secrets.yaml
+/kubernetes/bootstrap/talos/worker.yaml
+/kubernetes/bootstrap/talos/*.generated.yaml
+/kubernetes/bootstrap/talos/clusterconfig
+
+// Logs, captures, and transient files; no blanket *.lock or hidden-file rules.
+*.log
+*.log.*
+*.tmp
+*.retry
+*.pcap
+*.pcapng
+*.sock
+*.ipc
+*.swp
+*.swo
+*~
+(?d).DS_Store
+(?d)._*

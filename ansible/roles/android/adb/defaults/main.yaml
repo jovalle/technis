@@ -1,0 +1,7 @@
+---
+# Fixed-port ADB works on older firmware. Paired wireless debugging endpoints
+# are discovered by IP because their TLS port changes when the service restarts.
+adb_port: 5555
+adb_discover: false
+adb_authorization_retries: 30
+adb_authorization_delay: 2

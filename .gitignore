@@ -1,71 +1,96 @@
-# Generic
-/target/
+# Local runtime state, evidence, and scratch work
+.state/
+.cache/
+.private/
+.planning/
+.audit/
+/tmp/
 /bin/.prepare.*
+/tools/dashboard/data/
+archive/
+
+# Dependencies and generated output (keep manifests and lockfiles)
+node_modules/
+.npm/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.wrangler/
+.direnv/
+.vagrant/
+dist/
+build/
+/target/
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+.eslintcache
+*.tsbuildinfo
+
+# Machine-local credentials; encrypted SOPS inputs and examples are source
+.env
+.env.*
+!.env.example
+!.env.*.example
+.envrc.local
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.decrypted*
+.secrets/*
+!.secrets/*.sops.yaml
+!.secrets/*.sops.yml
+*.agekey
+*.key
+*.pem
+!/ansible/inventory/group_vars/amt/certificates/ms-01.pem
+!/ansible/inventory/group_vars/amt/certificates/ms-02.pem
+!/ansible/inventory/group_vars/amt/certificates/ms-03.pem
+*.p12
+*.pfx
+key.json
+auth.json
+config.xml
+kubeconfig
+*.kubeconfig
+talosconfig
+*_history
+
+# OpenTofu state and plans; provider lockfiles and HCL config stay visible
+.terraform/
+.terraform.d/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+*.tfplan
+tfplan
+tfplan.*
+*.tfvars
+*.tfvars.json
+*.local.hcl
+
+# Device exports contain installed application data or private network state
+/ansible/roles/projectivy/files/
+/docker/services/technitium/dns/
+
+# OS, editor, capture, and temporary files
 .DS_Store
+._*
+.idea/
+*.swp
+*.swo
+*~
 *.log
 *.log.*
 *.tmp
 *.retry
-
-# IDE
-* copy*
-*copy
-.idea/
-
-# Node
-node_modules/
-.npm/
-.eslintcache
-*.tsbuildinfo
-
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-
-# Local infrastructure state
-.state/
-.terraform/
-*.tfstate
-*.tfstate.*
-.terraform.tfstate.lock.info
-*.local.hcl
-
-# Sensitive files
-.env
-.envrc
-!/.envrc
-!/docker/stacks/*/.envrc
-.envrc.local
-.decrypted*
-.private/
-*.agekey
-*.key
-*.pem
-*.tfvars
-*.kubeconfig
-*[cC][lL][aA][uU][dD][eE]*
-*[gG][eE][mM][iI][nN][iI]*
-config.xml
-key.json
-kubeconfig
-talosconfig
-*_history
-
-# Archive
-archive/
-
-# Temporary files
-.cache/
-.planning/
-tmp/
-.wrangler/
-
-# Android
+*.pcap
+*.pcapng
+*.sock
+*.ipc
 androguard.*
-
-# Device exports that may contain installed application data
-ansible/roles/projectivy/files/
-
-# Exported DNS state: internal topology and WAN addressing
-docker/services/technitium/dns/
