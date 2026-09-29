@@ -1,0 +1,17 @@
+---
+all:
+  children:
+    watchtower:
+      children:
+        player:
+          hosts:
+            sentry:
+              ansible_host: 192.168.1.23
+        receiver:
+          hosts:
+            arbiter:
+              ansible_host: 192.168.1.99
+        tv:
+          hosts:
+            ghost:
+              ansible_host: 192.168.1.155

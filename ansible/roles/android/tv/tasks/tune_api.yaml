@@ -1,0 +1,167 @@
+---
+- name: Index current picture values
+  ansible.builtin.set_fact:
+    tv_picture_before_values: >-
+      {{ tv_picture_before_values | default({}) |
+      combine({item.target: item.currentValue}) }}
+    tv_picture_availability: >-
+      {{ tv_picture_availability | default({}) |
+      combine({item.target: item.isAvailable | default(false) | bool}) }}
+  loop: "{{ tv_picture_items }}"
+  loop_control:
+    label: "{{ item.target }}"
+  when:
+    - item.target is defined
+    - item.currentValue is defined
+
+- name: Validate picture targets and active input context
+  ansible.builtin.assert:
+    that:
+      - item.target in tv_picture_before_values
+      - >-
+        tv_required_input_uri | length == 0 or
+        tv_playing_content.uri | default('') == tv_required_input_uri
+      - >-
+        tv_required_hdr_tone_mapping_available is none or
+        tv_picture_availability.hdrToneMapping | default(false) | bool ==
+        tv_required_hdr_tone_mapping_available | bool
+    fail_msg: >-
+      Picture target {{ item.target }} is unavailable or the TV is not on the
+      required input/signal context {{ tv_required_input_uri }}. No picture
+      values changed.
+  loop: "{{ tv_picture_settings }}"
+  loop_control:
+    label: "{{ item.target }}"
+
+- name: Report planned picture changes
+  ansible.builtin.debug:
+    msg: >-
+      {{ item.target }}: {{ tv_picture_before_values[item.target] }} ->
+      {{ item.value }} (profile={{ tv_profile }})
+  loop: "{{ tv_picture_settings }}"
+  loop_control:
+    label: "{{ item.target }}"
+  when: >-
+    tv_picture_before_values[item.target] | string != item.value | string
+
+- name: Apply and verify native picture settings
+  block:
+    - name: Set native picture value
+      ansible.builtin.uri:
+        url: "{{ tv_api_base_url }}/video"
+        method: POST
+        headers: "{{ tv_api_headers }}"
+        body_format: json
+        body:
+          method: setPictureQualitySettings
+          params:
+            - settings:
+                - target: "{{ item.target }}"
+                  value: "{{ item.value | string }}"
+          id: 20
+          version: "{{ tv_picture_api_version }}"
+        return_content: true
+        status_code: 200
+        timeout: "{{ tv_api_timeout }}"
+        validate_certs: "{{ tv_api_validate_certs }}"
+      changed_when: true
+      failed_when: >-
+        tv_picture_set_result.status | default(0) != 200 or
+        (tv_picture_set_result.json | default({})).error is defined
+      no_log: "{{ tv_api_hide_auth | bool }}"
+      loop: "{{ tv_picture_settings }}"
+      loop_control:
+        label: "{{ item.target }}"
+      register: tv_picture_set_result
+      when:
+        - not ansible_check_mode
+        - >-
+          tv_picture_before_values[item.target] | string !=
+          item.value | string
+
+    - name: Read picture settings after changes
+      ansible.builtin.uri:
+        url: "{{ tv_api_base_url }}/video"
+        method: POST
+        headers: "{{ tv_api_headers }}"
+        body_format: json
+        body:
+          method: getPictureQualitySettings
+          params:
+            - {}
+          id: 21
+          version: "{{ tv_picture_api_version }}"
+        return_content: true
+        status_code: 200
+        timeout: "{{ tv_api_timeout }}"
+        validate_certs: "{{ tv_api_validate_certs }}"
+      changed_when: false
+      check_mode: false
+      no_log: "{{ tv_api_hide_auth | bool }}"
+      register: tv_picture_after_result
+      when: not ansible_check_mode
+
+    - name: Index final picture values
+      ansible.builtin.set_fact:
+        tv_picture_after_values: >-
+          {{ tv_picture_after_values | default({}) |
+          combine({item.target: item.currentValue}) }}
+      loop: >-
+        {{ (tv_picture_after_result.json |
+        default({})).get('result', [[]]) | first | default([]) }}
+      loop_control:
+        label: "{{ item.target }}"
+      when:
+        - not ansible_check_mode
+        - item.target is defined
+        - item.currentValue is defined
+
+    - name: Verify native picture values
+      ansible.builtin.assert:
+        that:
+          - >-
+            tv_picture_after_values[item.target] | string ==
+            item.value | string
+        fail_msg: "Failed to set picture target {{ item.target }}."
+      loop: "{{ tv_picture_settings }}"
+      loop_control:
+        label: "{{ item.target }}"
+      when: not ansible_check_mode
+  rescue:
+    - name: Restore native picture values after failure
+      ansible.builtin.uri:
+        url: "{{ tv_api_base_url }}/video"
+        method: POST
+        headers: "{{ tv_api_headers }}"
+        body_format: json
+        body:
+          method: setPictureQualitySettings
+          params:
+            - settings:
+                - target: "{{ item.target }}"
+                  value: "{{ tv_picture_before_values[item.target] | string }}"
+          id: 22
+          version: "{{ tv_picture_api_version }}"
+        status_code: 200
+        timeout: "{{ tv_api_timeout }}"
+        validate_certs: "{{ tv_api_validate_certs }}"
+      changed_when: true
+      no_log: "{{ tv_api_hide_auth | bool }}"
+      loop: "{{ tv_picture_settings }}"
+      loop_control:
+        label: "Restore {{ item.target }}"
+      when:
+        - item.target in tv_picture_before_values
+        - >-
+          tv_picture_before_values[item.target] | string !=
+          item.value | string
+
+    - name: Stop after restoring native picture values
+      ansible.builtin.fail:
+        msg: Native picture tuning failed and prior values were restored.
+
+- name: Record native picture changes
+  ansible.builtin.set_fact:
+    tv_remote_changed: >-
+      {{ tv_remote_changed | bool or
+      tv_picture_set_result.changed | default(false) }}

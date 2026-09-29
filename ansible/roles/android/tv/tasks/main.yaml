@@ -1,0 +1,60 @@
+---
+- name: Report disabled TV placeholder
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} is staged but disabled. Set tv_enabled=true
+      after its network identity, API PSK, and ADB authorization are ready.
+  when: not tv_enabled | bool
+
+- name: Stop processing disabled TV placeholder
+  ansible.builtin.meta: end_host
+  when: not tv_enabled | bool
+
+- name: Validate requested display state
+  ansible.builtin.assert:
+    that:
+      - tv_state in ["audit", "tuned"]
+      - tv_api_enabled | bool or tv_adb_enabled | bool
+      - not tv_api_enabled | bool or tv_api_psk | string | length > 0
+    fail_msg: >-
+      tv_state must be audit or tuned, at least one transport must be
+      enabled, and native API control requires a non-empty PSK.
+
+- name: Initialize display run state
+  ansible.builtin.set_fact:
+    tv_remote_changed: false
+    tv_backup_id: "{{ now(utc=true, fmt='%Y%m%dT%H%M%SZ') }}"
+
+- name: Audit native display API
+  ansible.builtin.include_tasks: api_audit.yaml
+  when: tv_api_enabled | bool
+
+- name: Audit Android over ADB
+  ansible.builtin.include_tasks: adb_audit.yaml
+  when: tv_adb_enabled | bool
+
+- name: Save pre-change display snapshot
+  ansible.builtin.include_tasks: snapshot.yaml
+
+- name: Apply native sound-output configuration
+  ansible.builtin.include_tasks: tune_sound.yaml
+  when:
+    - tv_state == "tuned"
+    - tv_api_enabled | bool
+    - tv_sound_settings | length > 0
+
+- name: Apply native picture configuration
+  ansible.builtin.include_tasks: tune_api.yaml
+  when:
+    - tv_state == "tuned"
+    - tv_api_enabled | bool
+    - tv_picture_settings | length > 0
+
+- name: Apply Android configuration
+  ansible.builtin.include_tasks: tune_android.yaml
+  when:
+    - tv_state == "tuned"
+    - tv_adb_enabled | bool
+
+- name: Verify final display state
+  ansible.builtin.include_tasks: verify.yaml

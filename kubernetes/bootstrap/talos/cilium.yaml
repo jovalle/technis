@@ -1,0 +1,14 @@
+---
+# Core CNI: Cilium is installed after bootstrap from the pinned chart. Talos 1.14 document kinds:
+# no Flannel, no kube-proxy (Cilium kube-proxy replacement via KubePrism on 7445).
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete
+---
+apiVersion: v1alpha1
+kind: KubeProxyConfig
+enabled: false
+---
+apiVersion: v1alpha1
+kind: KubePrismConfig
+port: 7445

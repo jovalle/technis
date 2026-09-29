@@ -1,0 +1,47 @@
+---
+- name: Verify native display API remains available
+  ansible.builtin.uri:
+    url: "{{ tv_api_base_url }}/system"
+    method: POST
+    headers: "{{ tv_api_headers }}"
+    body_format: json
+    body:
+      method: getPowerStatus
+      params: []
+      id: 30
+      version: "1.0"
+    return_content: true
+    status_code: 200
+    timeout: "{{ tv_api_timeout }}"
+    validate_certs: "{{ tv_api_validate_certs }}"
+  changed_when: false
+  check_mode: false
+  failed_when: >-
+    tv_api_verify.status | default(0) != 200 or
+    (tv_api_verify.json | default({})).error is defined
+  no_log: "{{ tv_api_hide_auth | bool }}"
+  register: tv_api_verify
+  when: tv_api_enabled | bool
+
+- name: Verify TV remains authorized over ADB
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - get-state
+  changed_when: false
+  check_mode: false
+  register: tv_adb_verify
+  failed_when: tv_adb_verify.stdout | trim != "device"
+  when: tv_adb_enabled | bool
+
+- name: Report final TV state
+  ansible.builtin.debug:
+    msg:
+      state: "{{ tv_state }}"
+      profile: "{{ tv_profile }}"
+      api_enabled: "{{ tv_api_enabled | bool }}"
+      adb_enabled: "{{ tv_adb_enabled | bool }}"
+      changed: "{{ tv_remote_changed | bool }}"
+      input: "{{ tv_playing_content | default({}) }}"

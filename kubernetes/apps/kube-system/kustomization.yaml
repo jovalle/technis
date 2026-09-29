@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Pre Flux-Kustomizations
+  - ./namespace.yaml
+  # Flux-Kustomizations
+  # Not enabled on Talos yet: coredns (Talos ships CoreDNS), kubelet-csr-approver and
+  # metrics-server (need kubelet serving-certificate rotation), spegel (needs a Talos
+  # registry mirror patch), traefik (needs a bare-metal load-balancer address).
+  - ./cilium/ks.yaml
+  - ./csi-driver-smb/ks.yaml
+  - ./intel-device-plugins/ks.yaml
+  - ./node-feature-discovery/ks.yaml
+  - ./reloader/ks.yaml

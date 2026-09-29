@@ -1,0 +1,173 @@
+---
+- name: Read final home activity
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - package
+      - resolve-activity
+      - --brief
+      - -a
+      - android.intent.action.MAIN
+      - -c
+      - android.intent.category.HOME
+  changed_when: false
+  check_mode: false
+  register: player_home_after
+
+- name: Read final animation settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - get
+      - global
+      - "{{ item }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ player_animation_settings }}"
+  loop_control:
+    label: "{{ item }}"
+  register: player_animations_after
+
+- name: Read final disabled packages
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - list
+      - packages
+      - -d
+      - --user
+      - "0"
+  changed_when: false
+  check_mode: false
+  register: player_disabled_packages_after
+
+- name: Read final process list
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - ps
+      - -A
+  changed_when: false
+  check_mode: false
+  register: player_processes_after
+  when:
+    - player_state == "tuned"
+    - not ansible_check_mode
+
+- name: Read final managed and audited settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - get
+      - "{{ item.namespace }}"
+      - "{{ item.key }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ player_managed_settings + player_audited_settings }}"
+  loop_control:
+    label: "{{ item.namespace }}.{{ item.key }}"
+  register: player_settings_after
+
+- name: Read final player display state
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - dumpsys
+      - display
+  changed_when: false
+  check_mode: false
+  register: player_display_after
+
+- name: Read final player network state
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - ip
+      - route
+  changed_when: false
+  check_mode: false
+  register: player_network_after
+
+- name: Verify tuned state
+  ansible.builtin.assert:
+    that:
+      - player_home_after.stdout_lines | last | trim == launcher_activity
+      - >-
+        player_animations_after.results | map(attribute='stdout') | map('trim') |
+        unique | list == [player_animation_scale]
+      - >-
+        player_managed_packages | map('regex_replace', '^', 'package:') |
+        intersect(player_installed_packages.stdout_lines) |
+        difference(player_disabled_packages_after.stdout_lines) | length == 0
+      - >-
+        player_managed_packages | select('in', player_processes_after.stdout) |
+        list | length == 0
+      - >-
+        player_settings_after.results | map(attribute='stdout') | map('trim') |
+        list ==
+        (player_managed_settings + player_audited_settings) |
+        map(attribute='value') | list
+      - "'mActiveModeId=24' in player_display_after.stdout"
+      - "'3840 x 2160' in player_display_after.stdout"
+      - "'dev eth0' in player_network_after.stdout"
+    fail_msg: "Player did not converge to the requested tuned state."
+    success_msg: "Launcher tuning and cleanup verified on {{ inventory_hostname }}."
+  when:
+    - player_state == "tuned"
+    - not ansible_check_mode
+
+- name: Verify stock state
+  ansible.builtin.assert:
+    that:
+      - player_home_after.stdout_lines | last | trim == player_stock_launcher_activity
+      - >-
+        player_animations_after.results | map(attribute='stdout') | map('trim') |
+        unique | list == [player_stock_animation_scale]
+      - >-
+        player_managed_packages | map('regex_replace', '^', 'package:') |
+        intersect(player_disabled_packages_after.stdout_lines) | length == 0
+    fail_msg: "Player did not converge to the requested stock state."
+    success_msg: "Stock launcher and animation settings verified on {{ inventory_hostname }}."
+  when:
+    - player_state == "stock"
+    - not ansible_check_mode
+
+- name: Report final player state
+  ansible.builtin.debug:
+    msg:
+      animations: >-
+        {{ dict(player_animation_settings |
+        zip(player_animations_after.results | map(attribute='stdout') |
+        map('trim'))) }}
+      disabled_packages: "{{ player_disabled_packages_after.stdout_lines }}"
+      home_activity: "{{ player_home_after.stdout_lines | last | trim }}"
+      settings: >-
+        {{ dict((player_managed_settings + player_audited_settings) |
+        map(attribute='key') |
+        zip(player_settings_after.results | map(attribute='stdout') |
+        map('trim'))) }}

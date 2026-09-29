@@ -1,0 +1,11 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+# Flux entry point. downloads, network, and rook-ceph stay out until storage,
+# load-balancer addresses, and ingress are chosen for the bare-metal cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./flux-system
+  - ./kube-system
+  - ./cert-manager
+  - ./observability

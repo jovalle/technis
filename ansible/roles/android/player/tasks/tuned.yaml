@@ -1,0 +1,185 @@
+---
+- name: Require the launcher
+  ansible.builtin.assert:
+    that:
+      - "('package:' ~ launcher_package) in player_installed_packages.stdout_lines"
+    fail_msg: >-
+      The launcher ({{ launcher_package }}) must be installed and
+      configured before the stock launcher can be disabled.
+
+- name: Select launcher as the home activity
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - package
+      - set-home-activity
+      - "{{ launcher_activity }}"
+  changed_when: true
+  register: player_home_change
+  when: player_home_before.stdout_lines | last | trim != launcher_activity
+
+- name: Disable managed stock packages for the primary user
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - disable-user
+      - --user
+      - "0"
+      - "{{ item }}"
+  changed_when: true
+  loop: "{{ player_managed_packages }}"
+  loop_control:
+    label: "{{ item }}"
+  register: player_packages_disabled
+  when:
+    - "('package:' ~ item) in player_installed_packages.stdout_lines"
+    - "('package:' ~ item) not in player_disabled_packages_before.stdout_lines"
+
+- name: Warn about unavailable managed packages
+  ansible.builtin.debug:
+    msg: "Package {{ item }} is not installed; skipping it."
+  loop: "{{ player_managed_packages }}"
+  loop_control:
+    label: "{{ item }}"
+  when: "('package:' ~ item) not in player_installed_packages.stdout_lines"
+
+- name: Set shortened animation scales
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - put
+      - global
+      - "{{ item.item }}"
+      - "{{ player_animation_scale }}"
+  changed_when: true
+  loop: "{{ player_animations_before.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: player_animations_changed
+  when: item.stdout | trim != player_animation_scale
+
+- name: Apply managed playback and update settings
+  block:
+    - name: Set managed player settings
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - put
+          - "{{ item.item.namespace }}"
+          - "{{ item.item.key }}"
+          - "{{ item.item.value }}"
+      changed_when: true
+      loop: "{{ player_settings_before.results[: player_managed_settings | length] }}"
+      loop_control:
+        label: "{{ item.item.description }}"
+      register: player_managed_settings_changed
+      when: item.stdout | trim != item.item.value
+
+    - name: Read managed player settings after changes
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - get
+          - "{{ item.namespace }}"
+          - "{{ item.key }}"
+      changed_when: false
+      check_mode: false
+      loop: "{{ player_managed_settings }}"
+      loop_control:
+        label: "{{ item.namespace }}.{{ item.key }}"
+      register: player_managed_settings_after_change
+
+    - name: Verify managed player settings immediately
+      ansible.builtin.assert:
+        that:
+          - item.stdout | trim == item.item.value
+        fail_msg: "Failed to set {{ item.item.description }}."
+      loop: "{{ player_managed_settings_after_change.results }}"
+      loop_control:
+        label: "{{ item.item.description }}"
+      when: not ansible_check_mode
+  rescue:
+    - name: Restore managed player settings after failure
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - put
+          - "{{ item.item.namespace }}"
+          - "{{ item.item.key }}"
+          - "{{ item.stdout | trim }}"
+      changed_when: true
+      loop: "{{ player_settings_before.results[: player_managed_settings | length] }}"
+      loop_control:
+        label: "{{ item.item.description }}"
+
+    - name: Stop after restoring player settings
+      ansible.builtin.fail:
+        msg: "Player tuning failed; managed settings were restored from the snapshot."
+
+- name: Determine whether tuning changed player
+  ansible.builtin.set_fact:
+    player_remote_changed: >-
+      {{
+        player_home_change.changed | default(false)
+        or player_packages_disabled.changed | default(false)
+        or player_animations_changed.changed | default(false)
+        or player_managed_settings_changed.changed | default(false)
+        or launcher_changed | default(false)
+      }}
+
+- name: Compile media applications in speed-profile mode
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - package
+      - compile
+      - -m
+      - speed-profile
+      - -f
+      - "{{ item }}"
+  changed_when: true
+  loop: "{{ player_compile_packages }}"
+  loop_control:
+    label: "{{ item }}"
+  register: player_package_compile
+  when: player_remote_changed | bool or player_force_compile | bool
+
+- name: Stop disposable background processes
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - am
+      - kill-all
+  changed_when: true
+  when: player_remote_changed | bool

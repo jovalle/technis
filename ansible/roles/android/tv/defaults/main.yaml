@@ -1,0 +1,167 @@
+---
+tv_enabled: true
+tv_state: audit
+
+# Native display control. A PSK is required by this role even when the display
+# also permits unauthenticated calls, so mutation is never exposed anonymously.
+tv_api_enabled: true
+tv_api_scheme: http
+tv_api_port: 80
+tv_api_base_url: >-
+  {{ tv_api_scheme }}://{{ ansible_host }}:{{ tv_api_port }}/sony
+tv_api_validate_certs: true
+tv_api_timeout: 10
+tv_api_hide_auth: true
+tv_api_psk: "{{ lookup('ansible.builtin.env', 'TV_API_PSK') }}"
+tv_api_services:
+  - guide
+  - system
+  - audio
+  - avContent
+  - appControl
+  - video
+
+# Read-only calls are deliberately broad and tolerate unsupported methods. The
+# live API response is the source of truth because firmware changes the surface.
+tv_api_audit_requests:
+  - name: interface_information
+    service: system
+    method: getInterfaceInformation
+    params: []
+    version: "1.0"
+  - name: system_information
+    service: system
+    method: getSystemInformation
+    params: []
+    version: "1.0"
+  - name: power_status
+    service: system
+    method: getPowerStatus
+    params: []
+    version: "1.0"
+  - name: power_saving
+    service: system
+    method: getPowerSavingMode
+    params: []
+    version: "1.0"
+  - name: wake_on_lan
+    service: system
+    method: getWolMode
+    params: []
+    version: "1.0"
+  - name: supported_system_functions
+    service: system
+    method: getSystemSupportedFunction
+    params: []
+    version: "1.0"
+  - name: remote_device_settings
+    service: system
+    method: getRemoteDeviceSettings
+    params:
+      - target: ""
+    version: "1.0"
+  - name: volume
+    service: audio
+    method: getVolumeInformation
+    params: []
+    version: "1.0"
+  - name: sound
+    service: audio
+    method: getSoundSettings
+    params:
+      - target: ""
+    version: "1.1"
+  - name: playing_content
+    service: avContent
+    method: getPlayingContentInfo
+    params: []
+    version: "1.0"
+  - name: external_inputs
+    service: avContent
+    method: getCurrentExternalInputsStatus
+    params: []
+    version: "1.0"
+  - name: applications
+    service: appControl
+    method: getApplicationList
+    params: []
+    version: "1.0"
+  - name: picture
+    service: video
+    method: getPictureQualitySettings
+    params:
+      - {}
+    version: "1.1"
+  - name: picture_professional
+    service: video
+    method: getPictureQualitySettings
+    params:
+      - target: ""
+        uri: "{{ tv_required_input_uri }}"
+        mode: professional
+    version: "1.1"
+  - name: graphics_resolution
+    service: video
+    method: getGraphicsResolution
+    params: []
+    version: "1.0"
+
+# Picture settings apply only to the active input/signal/picture-mode context.
+# Populate this list only after inspecting the TV's captured candidate values.
+tv_picture_settings: []
+tv_picture_api_version: "1.1"
+tv_required_input_uri: ""
+# null accepts either signal state. Set false for SDR and true for HDR10/HLG;
+# Dolby Vision uses its own picture-mode candidates and should be profiled
+# separately while active.
+tv_required_hdr_tone_mapping_available: null
+tv_profile: audit
+
+# Sound output is not picture-contextual. This can also repair the CEC startup
+# race after the receiver is ready without changing any picture or Android setting.
+tv_sound_settings: []
+tv_sound_api_version: "1.1"
+tv_sound_set_retries: 8
+tv_sound_set_delay: 2
+
+# Android control is independent from the native API. The transport, including
+# wireless endpoint discovery, comes from the android/adb role.
+tv_adb_enabled: false
+tv_adb_expected_manufacturer: sony
+tv_adb_properties:
+  - ro.product.manufacturer
+  - ro.product.brand
+  - ro.product.model
+  - ro.product.device
+  - ro.boot.product.hardware.sku
+  - ro.boot.vendor.extended_core.sony.build.package.version.display
+  - ro.build.version.release
+  - ro.build.version.sdk
+  - ro.build.version.security_patch
+  - ro.build.fingerprint
+
+tv_manage_animations: true
+tv_animation_scale: "0.5"
+tv_animation_settings:
+  - window_animation_scale
+  - transition_animation_scale
+  - animator_duration_scale
+
+# Only Android settings known to be backed by the public settings provider
+# belong here. Vendor picture/audio databases are intentionally excluded.
+tv_android_managed_settings: []
+
+# Android's HDMI control service marks these values as modifiable. They keep
+# the TV in charge of power while making the receiver the persistent audio system.
+tv_cec_settings:
+  - { key: hdmi_cec_enabled, value: "1" }
+  - { key: system_audio_control, value: "1" }
+  - { key: system_audio_mode, value: "1" }
+  - { key: volume_control_enabled, value: "1" }
+  - { key: tv_wake_on_one_touch_play, value: "1" }
+  - { key: tv_send_standby_on_sleep, value: "1" }
+  - { key: earc_enabled, value: "1" }
+  - { key: routing_control, value: "0" }
+  - { key: power_control_mode, value: broadcast }
+  - { key: power_state_change_on_active_source_lost, value: standby_now }
+tv_reassert_system_audio: true

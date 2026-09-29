@@ -1,0 +1,156 @@
+---
+- name: Wait for native display API
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ tv_api_port }}"
+    timeout: "{{ tv_api_timeout }}"
+
+- name: Build authenticated API headers
+  ansible.builtin.set_fact:
+    tv_api_headers:
+      Content-Type: application/json; charset=UTF-8
+      X-Auth-PSK: "{{ tv_api_psk | string }}"
+  no_log: "{{ tv_api_hide_auth | bool }}"
+
+- name: Discover supported native API services
+  ansible.builtin.uri:
+    url: "{{ tv_api_base_url }}/guide"
+    method: POST
+    headers: "{{ tv_api_headers }}"
+    body_format: json
+    body:
+      method: getSupportedApiInfo
+      params:
+        - services: "{{ tv_api_services | difference(['guide']) }}"
+      id: 1
+      version: "1.0"
+    return_content: true
+    status_code: 200
+    timeout: "{{ tv_api_timeout }}"
+    validate_certs: "{{ tv_api_validate_certs }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  no_log: "{{ tv_api_hide_auth | bool }}"
+  register: tv_api_guide
+
+- name: Discover methods exposed by each native API service
+  ansible.builtin.uri:
+    url: "{{ tv_api_base_url }}/{{ item }}"
+    method: POST
+    headers: "{{ tv_api_headers }}"
+    body_format: json
+    body:
+      method: getMethodTypes
+      params:
+        - ""
+      id: 2
+      version: "1.0"
+    return_content: true
+    status_code: 200
+    timeout: "{{ tv_api_timeout }}"
+    validate_certs: "{{ tv_api_validate_certs }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  no_log: "{{ tv_api_hide_auth | bool }}"
+  loop: "{{ tv_api_services | difference(['guide']) }}"
+  loop_control:
+    label: "{{ item }}"
+  register: tv_api_method_results
+
+- name: Read native display state
+  ansible.builtin.uri:
+    url: "{{ tv_api_base_url }}/{{ item.service }}"
+    method: POST
+    headers: "{{ tv_api_headers }}"
+    body_format: json
+    body:
+      method: "{{ item.method }}"
+      params: "{{ item.params }}"
+      id: 10
+      version: "{{ item.version }}"
+    return_content: true
+    status_code: 200
+    timeout: "{{ tv_api_timeout }}"
+    validate_certs: "{{ tv_api_validate_certs }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  no_log: "{{ tv_api_hide_auth | bool }}"
+  loop: "{{ tv_api_audit_requests }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: tv_api_audit_results
+
+- name: Select required native API results
+  ansible.builtin.set_fact:
+    tv_api_system_result: >-
+      {{ tv_api_audit_results.results |
+      selectattr('item.name', 'equalto', 'system_information') | first }}
+    tv_api_picture_result: >-
+      {{ tv_api_audit_results.results |
+      selectattr('item.name', 'equalto', 'picture') | first }}
+    tv_api_sound_result: >-
+      {{ tv_api_audit_results.results |
+      selectattr('item.name', 'equalto', 'sound') | first }}
+    tv_api_playing_result: >-
+      {{ tv_api_audit_results.results |
+      selectattr('item.name', 'equalto', 'playing_content') | first }}
+
+- name: Require authenticated native API access
+  ansible.builtin.assert:
+    that:
+      - tv_api_system_result.status | default(0) == 200
+      - (tv_api_system_result.json | default({})).result is defined
+      - (tv_api_system_result.json | default({})).error is not defined
+    fail_msg: >-
+      Native display API authentication failed. Verify IP control, remote
+      control, Simple IP control, and the configured PSK on the TV.
+
+- name: Index native API methods
+  ansible.builtin.set_fact:
+    tv_api_method_snapshot: >-
+      {{ tv_api_method_snapshot | default({}) |
+      combine({item.item: item.json | default({
+        'http_status': item.status | default(0),
+        'message': item.msg | default('no JSON response')
+      })}) }}
+  loop: "{{ tv_api_method_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Index native API state
+  ansible.builtin.set_fact:
+    tv_api_state_snapshot: >-
+      {{ tv_api_state_snapshot | default({}) |
+      combine({item.item.name: item.json | default({
+        'http_status': item.status | default(0),
+        'message': item.msg | default('no JSON response')
+      })}) }}
+  loop: "{{ tv_api_audit_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Compose native API snapshot
+  ansible.builtin.set_fact:
+    tv_api_snapshot:
+      guide: >-
+        {{ tv_api_guide.json | default({
+          'http_status': tv_api_guide.status | default(0),
+          'message': tv_api_guide.msg | default('no JSON response')
+        }) }}
+      methods: "{{ tv_api_method_snapshot }}"
+      state: "{{ tv_api_state_snapshot }}"
+
+- name: Index picture and input context
+  ansible.builtin.set_fact:
+    tv_picture_items: >-
+      {{ (tv_api_picture_result.json | default({})).get('result', [[]]) |
+      first | default([]) }}
+    tv_sound_items: >-
+      {{ (tv_api_sound_result.json | default({})).get('result', [[]]) |
+      first | default([]) }}
+    tv_playing_content: >-
+      {{ (tv_api_playing_result.json | default({})).get('result', [{}]) |
+      first | default({}) }}

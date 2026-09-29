@@ -1,0 +1,60 @@
+---
+tv_enabled: true
+tv_state: tuned
+tv_profile: home_theater
+tv_api_enabled: true
+tv_adb_enabled: true
+adb_discover: true
+tv_required_input_uri: >-
+  extInput:cec?port=3&type=player&logicalAddr=4
+tv_required_hdr_tone_mapping_available: false
+tv_sound_settings:
+  - target: outputTerminal
+    value: audioSystem
+tv_picture_settings:
+  - target: pictureMode
+    value: professional
+  - target: contrast
+    value: "90"
+  - target: gamma
+    value: "0"
+  - target: blackLevel
+    value: "50"
+  - target: blackAdjust
+    value: "off"
+  - target: advContrastEnhancer
+    value: "off"
+  - target: color
+    value: "50"
+  - target: hue
+    value: "0"
+  - target: colorTemperature
+    value: expert1
+  - target: liveColor
+    value: "off"
+  - target: sharpness
+    value: "60"
+  - target: realityCreation
+    value: auto
+  - target: randomNoiseReduction
+    value: "off"
+  - target: digitalNoiseReduction
+    value: "off"
+  - target: smoothGradation
+    value: "off"
+  - target: cineMotion
+    value: high
+  - target: motionflowMode
+    value: custom
+  - target: motionflowSmoothnessCamera
+    value: "0"
+  - target: motionflowSmoothnessFilm
+    value: "0"
+  - target: motionflowClearness
+    value: low
+  - target: hdrMode
+    value: auto
+  - target: pixelShift
+    value: "on"
+  - target: sensorAutoAdjustment
+    value: "off"

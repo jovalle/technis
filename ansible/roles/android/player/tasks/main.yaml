@@ -1,0 +1,232 @@
+---
+- name: Validate requested player state
+  ansible.builtin.assert:
+    that:
+      - player_state in ["tuned", "stock"]
+    fail_msg: "player_state must be either 'tuned' or 'stock'."
+
+- name: Connect and authorize ADB
+  ansible.builtin.include_role:
+    name: android/adb
+
+- name: Install and configure launcher
+  ansible.builtin.include_role:
+    name: android/tv/launcher
+    public: true
+  when: player_state == "tuned"
+
+- name: Read installed packages
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - list
+      - packages
+      - --user
+      - "0"
+  changed_when: false
+  check_mode: false
+  register: player_installed_packages
+
+- name: Read disabled packages
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - list
+      - packages
+      - -d
+      - --user
+      - "0"
+  changed_when: false
+  check_mode: false
+  register: player_disabled_packages_before
+
+- name: Read current home activity
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - package
+      - resolve-activity
+      - --brief
+      - -a
+      - android.intent.action.MAIN
+      - -c
+      - android.intent.category.HOME
+  changed_when: false
+  check_mode: false
+  register: player_home_before
+
+- name: Read current animation settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - get
+      - global
+      - "{{ item }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ player_animation_settings }}"
+  loop_control:
+    label: "{{ item }}"
+  register: player_animations_before
+
+- name: Read managed player settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - get
+      - "{{ item.namespace }}"
+      - "{{ item.key }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ player_managed_settings + player_audited_settings }}"
+  loop_control:
+    label: "{{ item.namespace }}.{{ item.key }}"
+  register: player_settings_before
+
+- name: Create player backup directory
+  ansible.builtin.file:
+    path: >-
+      {{ watchtower_backup_root }}/{{ player_backup_id }}/{{ inventory_hostname }}
+    state: directory
+    mode: "0700"
+  vars:
+    player_backup_id: "{{ now(utc=true, fmt='%Y%m%dT%H%M%SZ') }}"
+  register: player_backup_directory
+  when: not ansible_check_mode
+
+- name: Save restorable player settings snapshot
+  ansible.builtin.copy:
+    content: >-
+      {{
+        {
+          'host': adb_serial,
+          'captured_at': now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ'),
+          'home_activity': player_home_before.stdout_lines | last | trim,
+          'disabled_packages': player_disabled_packages_before.stdout_lines,
+          'settings': dict(
+            (player_managed_settings + player_audited_settings) |
+            map(attribute='key') |
+            zip(player_settings_before.results | map(attribute='stdout') | map('trim'))
+          ),
+          'animations': dict(
+            player_animation_settings |
+            zip(player_animations_before.results | map(attribute='stdout') | map('trim'))
+          )
+        } | to_nice_json
+      }}
+    dest: "{{ player_backup_directory.path }}/settings.json"
+    mode: "0600"
+  when: not ansible_check_mode
+
+- name: Report current player state
+  ansible.builtin.debug:
+    msg:
+      animations: >-
+        {{ dict(player_animation_settings |
+        zip(player_animations_before.results | map(attribute='stdout') |
+        map('trim'))) }}
+      disabled_packages: "{{ player_disabled_packages_before.stdout_lines }}"
+      home_activity: "{{ player_home_before.stdout_lines | last | trim }}"
+      backup: >-
+        {{ player_backup_directory.path ~ '/settings.json'
+           if not ansible_check_mode else 'check mode; no backup written' }}
+
+- name: Apply tuned player state
+  ansible.builtin.include_tasks: tuned.yaml
+  when: player_state == "tuned"
+
+- name: Restore stock player state
+  ansible.builtin.include_tasks: stock.yaml
+  when: player_state == "stock"
+
+- name: Reboot player after configuration changes
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - reboot
+  changed_when: true
+  when:
+    - player_remote_changed | bool
+    - player_reboot | bool
+
+- name: Wait for player ADB port to stop during reboot
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ adb_serial | split(':') | last }}"
+    state: stopped
+    timeout: 30
+  failed_when: false
+  when:
+    - player_remote_changed | bool
+    - player_reboot | bool
+
+- name: Wait for player ADB port after reboot
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ adb_serial | split(':') | last }}"
+    delay: 5
+    state: started
+    timeout: 180
+  when:
+    - player_remote_changed | bool
+    - player_reboot | bool
+
+- name: Reconnect ADB after reboot
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - connect
+      - "{{ adb_serial }}"
+  changed_when: false
+  delay: 2
+  register: player_adb_reconnect
+  retries: 15
+  until:
+    - player_adb_reconnect.rc == 0
+    - "'connected to' in player_adb_reconnect.stdout"
+  when:
+    - player_remote_changed | bool
+    - player_reboot | bool
+
+- name: Wait until the rebooted player is ready
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - get-state
+  changed_when: false
+  delay: 2
+  register: player_adb_ready
+  retries: 30
+  until:
+    - player_adb_ready.rc == 0
+    - player_adb_ready.stdout | trim == "device"
+  when:
+    - player_remote_changed | bool
+    - player_reboot | bool
+
+- name: Verify final player state
+  ansible.builtin.include_tasks: verify.yaml

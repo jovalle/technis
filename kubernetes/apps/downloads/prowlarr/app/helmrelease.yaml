@@ -1,0 +1,70 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prowlarr
+spec:
+  chart:
+    spec:
+      chart: app-template
+      sourceRef:
+        name: bjw-s
+        kind: HelmRepository
+        namespace: flux-system
+      version: 3.7.3
+  install:
+    remediation:
+      retries: 3
+  interval: 30m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    controllers:
+      prowlarr:
+        containers:
+          app:
+            env:
+              TZ: America/New_York
+            image:
+              repository: ghcr.io/linuxserver/prowlarr
+              tag: 1.25.4@sha256:1e2fffd859ecd260e4aae4798cf5be75938cd602161d21b1d58122afb397c864
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                cpu: 20m
+                memory: 256Mi
+    ingress:
+      app:
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.techn.is
+        className: internal
+        hosts:
+          - host: "{{ .Release.Name }}.techn.is"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+    persistence:
+      config:
+        accessMode: ReadWriteOnce
+        retain: true
+        size: 1Gi
+        storageClass: ceph-rbd
+    service:
+      app:
+        controller: prowlarr
+        ports:
+          http:
+            port: 9696

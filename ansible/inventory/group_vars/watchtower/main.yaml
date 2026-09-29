@@ -1,0 +1,5 @@
+---
+# Devices are managed from the controller over ADB, HTTP, and TCP.
+ansible_connection: local
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
+watchtower_backup_root: "{{ lookup('env', 'HOME') }}/.local/state/technis/ansible-backups"

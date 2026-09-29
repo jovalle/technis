@@ -13,6 +13,11 @@
 # Build artifacts
 **/dist
 **/build
+**/coverage
+**/htmlcov
+/target
+/tmp
+/tools/dashboard/data
 
 # Archive and submodules
 archive

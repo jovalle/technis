@@ -1,0 +1,188 @@
+{
+  "boot_assets": {
+    "cmdline-metal-amd64": {
+      "bytes": 147,
+      "sha256": "e58cf826c5b342ff5fa955e8682ee1f335aa9c890444ada3517f4a7cb181e148",
+      "url": "https://factory.talos.dev/image/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d/v1.14.4/cmdline-metal-amd64"
+    },
+    "initramfs-amd64.xz": {
+      "bytes": 124731840,
+      "sha256": "1c3635b31ef12690f39cd123fc6eead91f5d6b4edea36470e9229ebafde8ff87",
+      "url": "https://factory.talos.dev/image/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d/v1.14.4/initramfs-amd64.xz"
+    },
+    "kernel-amd64": {
+      "bytes": 19255296,
+      "sha256": "753527b541e603bfdaadaf3467f5a8562a7808dd6be4d7627cd671dbfd463a16",
+      "url": "https://factory.talos.dev/image/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d/v1.14.4/kernel-amd64"
+    },
+    "metal-amd64.iso": {
+      "bytes": 449130496,
+      "sha256": "af67d4551dce15982ce72fc9f52cf198939f5b9d0010548dfaef0f29bbece17f",
+      "url": "https://factory.talos.dev/image/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d/v1.14.4/metal-amd64.iso"
+    }
+  },
+  "cilium_signature_verification": [
+    {
+      "exit_code": 0,
+      "identity": "https://github.com/cilium/cilium/.github/workflows/release.yaml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "name": "chart",
+      "reference": "quay.io/cilium/charts/cilium@sha256:e84f73cc9edcb0d00306ecee57a56f20bb32dddad77c8cef3af62d844ec8adea",
+      "repository": "cilium/cilium",
+      "stderr_sha256": "16a261328d41dc901180218c01dda6578a0c8738a05d9f461b4f4c9fff21db6b",
+      "stdout_sha256": "c3e12876c428aec4db21253ed4cd9ab1e8bceaf9ac25e10d35a537e9580e2288",
+      "workflow": "Image Release Build",
+      "workflow_ref": "refs/tags/v1.20.3"
+    },
+    {
+      "exit_code": 0,
+      "identity": "https://github.com/cilium/cilium/.github/workflows/build-images-releases.yaml@refs/tags/v1.20.3",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "name": "agent",
+      "reference": "quay.io/cilium/cilium@sha256:95cfa5c2427cc6b452c00908778d0566311f572589284af949d06a013db1a849",
+      "repository": "cilium/cilium",
+      "stderr_sha256": "7789638efbf164293ab6451cf40597171f7bb2ae8ea0e224247433022aaa7880",
+      "stdout_sha256": "36a5c75c8e0646fc15a6ff620b54bd0fd633e1a4fdd7f1b8d9d7c4f75c1bf3ea",
+      "workflow": "Image Release Build",
+      "workflow_ref": "refs/tags/v1.20.3"
+    },
+    {
+      "exit_code": 0,
+      "identity": "https://github.com/cilium/cilium/.github/workflows/build-images-releases.yaml@refs/tags/v1.20.3",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "name": "operator",
+      "reference": "quay.io/cilium/operator-generic@sha256:efdd8d89d6d8f63d21a065fa2f9e17614a2b3ac9371b221af9355f63829e2dbc",
+      "repository": "cilium/cilium",
+      "stderr_sha256": "4031b52be58d9f29f01ba44b7e6839ac99ed46e0df056cab7bfaec1a3000a297",
+      "stdout_sha256": "056ac4d768ac8b49b4c51a85aa28ab601324058c41a902bb15e5d7a882221763",
+      "workflow": "Image Release Build",
+      "workflow_ref": "refs/tags/v1.20.3"
+    },
+    {
+      "exit_code": 0,
+      "identity": "https://github.com/cilium/proxy/.github/workflows/build-envoy-images-release-base.yaml@refs/heads/v1.38",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "name": "envoy",
+      "reference": "quay.io/cilium/cilium-envoy@sha256:d6c8c0c91954d1885026d82a31b341f37dcd34a4b127fdaf1587e43ddd224cef",
+      "repository": "cilium/proxy",
+      "stderr_sha256": "903616541f70b790a437e501fa69e2196d5b4fd6cfe3385e2e6827a00f10990a",
+      "stdout_sha256": "2f2ce36ef1bf8b81745b458c673ee70f60adfc29be2cc2abd30494cb9fd37299",
+      "workflow": "Refresh test & build cache & build latest",
+      "workflow_ref": "refs/heads/v1.38"
+    }
+  ],
+  "core_image": {
+    "excluded_services": ["cloudflared", "newt", "tailscale"],
+    "installer": "factory.talos.dev/metal-installer/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d@sha256:40a2f23a1741ab7c27c429beadb38da5dc59ffe616bcac474dd8cff563267d8b",
+    "installer_index_digest": "sha256:40a2f23a1741ab7c27c429beadb38da5dc59ffe616bcac474dd8cff563267d8b",
+    "installer_index_sha256": "40a2f23a1741ab7c27c429beadb38da5dc59ffe616bcac474dd8cff563267d8b",
+    "old_image_preserved": true,
+    "purpose": "explicit new core-only candidate after observed extension-service boot blocker",
+    "schematic": {
+      "customization": {
+        "systemExtensions": {
+          "officialExtensions": [
+            "siderolabs/i915",
+            "siderolabs/intel-ucode",
+            "siderolabs/iscsi-tools",
+            "siderolabs/mei",
+            "siderolabs/nfs-utils",
+            "siderolabs/nvme-cli",
+            "siderolabs/thunderbolt",
+            "siderolabs/util-linux-tools"
+          ]
+        }
+      }
+    },
+    "schematic_id": "458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d",
+    "talos_version": "v1.14.4"
+  },
+  "helm": {
+    "chart_sha256": "0805a5273118c436c9772bb9566d87ec558d8b25cc2ce5dc32918ecdd36f2c7c",
+    "exit_code": 0,
+    "render_sha256": "45e2ee082fec5b06370285c3df27bf36bdbf991f812a014ba1f364506594692c",
+    "single_release": "kube-system/cilium",
+    "values_sha256": "64507fa4f810872a1527aee970b291d93c1a2e6f2f2585a4e48a96764d8e51e5",
+    "version": "1.20.3"
+  },
+  "installer_verification": {
+    "argv": [
+      "/opt/technis-validation/cilium-20261022/bin/cosign",
+      "verify",
+      "--certificate-oidc-issuer",
+      "https://accounts.google.com",
+      "--certificate-identity",
+      "image-factory-signing@talos-production.iam.gserviceaccount.com",
+      "factory.talos.dev/metal-installer/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d@sha256:40a2f23a1741ab7c27c429beadb38da5dc59ffe616bcac474dd8cff563267d8b"
+    ],
+    "exit_code": 0,
+    "reference": "factory.talos.dev/metal-installer/458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d@sha256:40a2f23a1741ab7c27c429beadb38da5dc59ffe616bcac474dd8cff563267d8b",
+    "stdout_sha256": "38c165d18bd9151b6c6f26770010cf416af56b618917c2a058151b6b3d89c37b"
+  },
+  "runtime_extension_versions": {
+    "i915": "20260916-v1.14.4",
+    "intel-ucode": "20260812",
+    "iscsi-tools": "v0.2.0",
+    "mei": "v1.14.4",
+    "modules.dep": "6.18.57-talos",
+    "nfs-utils": "v0.1.1",
+    "nvme-cli": "v2.14",
+    "schematic": "458a44a3ce23f42b48d42081839a4764f3e871fc3d295b65773f42476911fe3d",
+    "thunderbolt": "v1.14.4",
+    "util-linux-tools": "2.42.2"
+  },
+  "runtime_image_binding": [
+    {
+      "linux_amd64_child": "sha256:db2a5d0463d03ba9c2ded6230096ed2b01829460dc1ad012af8669bf8b4a1098",
+      "linux_amd64_config": "sha256:f2c7bcea84b64b39618eba6f53e2dd95a7f81260ab9fbd665db1c38724221f1c",
+      "name": "agent",
+      "runtime_imageID_format": "signed index; image field is config digest",
+      "runtime_observations": 15,
+      "signed_index": "quay.io/cilium/cilium@sha256:95cfa5c2427cc6b452c00908778d0566311f572589284af949d06a013db1a849"
+    },
+    {
+      "linux_amd64_child": "sha256:bce7aee711162bb174acac2b3c808b676b1dd00fea17ea1b1491d1bd08d67b37",
+      "linux_amd64_config": "sha256:35481bd3531ab0081aa0436f51196bb64c0a80c747092a17f2fae8dbb5951f16",
+      "name": "operator",
+      "runtime_imageID_format": "signed index; image field is config digest",
+      "runtime_observations": 2,
+      "signed_index": "quay.io/cilium/operator-generic@sha256:efdd8d89d6d8f63d21a065fa2f9e17614a2b3ac9371b221af9355f63829e2dbc"
+    },
+    {
+      "linux_amd64_child": "sha256:2ea073858f3d6d8fbf3127cc669e9d4753c4471c7a0a563dd1765d676d7eb1d9",
+      "linux_amd64_config": "sha256:f855e9b109ccc6a7fc749f51c6d574dfe2381e091c8a9b1df3bbc2fcd7c652be",
+      "name": "envoy",
+      "runtime_imageID_format": "signed index; image field is config digest",
+      "runtime_observations": 3,
+      "signed_index": "quay.io/cilium/cilium-envoy@sha256:d6c8c0c91954d1885026d82a31b341f37dcd34a4b127fdaf1587e43ddd224cef"
+    }
+  ],
+  "schema": 1,
+  "scope": "owner-run disposable candidate; not TEC31 source acceptance or physical qualification",
+  "talos_release_verification": [
+    {
+      "artifact": "talosctl-linux-amd64",
+      "bundle_sha256": "58e981a9aa43849ffbdbc595839fc908f553486fe065fba4a6d84c8a52c95e0f",
+      "exit_code": 0,
+      "identity": "https://github.com/siderolabs/talos/.github/workflows/ci.yaml@refs/tags/v1.14.4",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "sha256": "0a69e3f9b682c5cd844b78dae305f6056ceb86c5fcc6913dcea78c527ed97cee"
+    },
+    {
+      "artifact": "talosctl-cni-bundle-amd64.tar.gz",
+      "bundle_sha256": "e9b5a69fec9cfc005061b5653043502d7d0e4b17f61b23c8ea4be626c4b8ac07",
+      "exit_code": 0,
+      "identity": "https://github.com/siderolabs/talos/.github/workflows/ci.yaml@refs/tags/v1.14.4",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "sha256": "5b8aee1c65c17b7c8d4a82d5c6c271afa5735bf5e95b0a654c59607d3861c245"
+    }
+  ],
+  "versions": {
+    "cilium": "1.20.3",
+    "cilium_cli": "v0.20.1",
+    "cosign": "v3.1.4",
+    "helm": "v4.3.1",
+    "kubernetes": "v1.36.5",
+    "talos": "v1.14.4"
+  }
+}

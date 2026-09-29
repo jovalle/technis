@@ -1,0 +1,293 @@
+---
+- name: Apply and verify supported Android settings
+  block:
+    - name: Shorten Android UI animations
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - put
+          - global
+          - "{{ item }}"
+          - "{{ tv_animation_scale }}"
+      changed_when: true
+      loop: "{{ tv_animation_settings }}"
+      loop_control:
+        label: "{{ item }}"
+      register: tv_animations_changed
+      when:
+        - tv_manage_animations | bool
+        - tv_animation_before_values[item] | string != tv_animation_scale
+
+    - name: Set managed Android values
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - put
+          - "{{ item.namespace }}"
+          - "{{ item.key }}"
+          - "{{ item.value | string }}"
+      changed_when: true
+      loop: "{{ tv_android_managed_settings }}"
+      loop_control:
+        label: "{{ item.description | default(item.namespace ~ '.' ~ item.key) }}"
+      register: tv_android_settings_changed
+      when: >-
+        tv_android_setting_before_values[item.namespace ~ '.' ~ item.key] |
+        string != item.value | string
+
+    - name: Set Android HDMI-CEC values
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - cmd
+          - hdmi_control
+          - cec_setting
+          - set
+          - "{{ item.key }}"
+          - "{{ item.value | string }}"
+      changed_when: true
+      loop: "{{ tv_cec_settings }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: tv_cec_settings_changed
+      when: >-
+        tv_cec_before_values[item.key] | string != item.value | string
+
+    - name: Reassert receiver system-audio mode
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - cmd
+          - hdmi_control
+          - setsystemaudiomode
+          - "on"
+      changed_when: true
+      register: tv_system_audio_changed
+      when:
+        - tv_reassert_system_audio | bool
+        - >-
+          'mSystemAudioActivated: true' not in
+          (tv_adb_service_results.results |
+          selectattr('item', 'equalto', 'hdmi_control') |
+          map(attribute='stdout') | first | default(''))
+
+    - name: Read final Android animation settings
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - get
+          - global
+          - "{{ item }}"
+      changed_when: false
+      check_mode: false
+      loop: "{{ tv_animation_settings }}"
+      loop_control:
+        label: "{{ item }}"
+      register: tv_animation_after_results
+
+    - name: Verify Android animation settings
+      ansible.builtin.assert:
+        that:
+          - item.stdout | trim == tv_animation_scale
+        fail_msg: "Failed to set Android animation {{ item.item }}."
+      loop: "{{ tv_animation_after_results.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when:
+        - tv_manage_animations | bool
+        - not ansible_check_mode
+
+    - name: Read final managed Android settings
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - get
+          - "{{ item.namespace }}"
+          - "{{ item.key }}"
+      changed_when: false
+      check_mode: false
+      loop: "{{ tv_android_managed_settings }}"
+      loop_control:
+        label: "{{ item.namespace }}.{{ item.key }}"
+      register: tv_android_setting_after_results
+
+    - name: Verify managed Android settings
+      ansible.builtin.assert:
+        that:
+          - item.stdout | trim == item.item.value | string
+        fail_msg: >-
+          Failed to set {{ item.item.namespace }}.{{ item.item.key }}.
+      loop: "{{ tv_android_setting_after_results.results }}"
+      loop_control:
+        label: "{{ item.item.namespace }}.{{ item.item.key }}"
+      when: not ansible_check_mode
+
+    - name: Read final Android HDMI-CEC settings
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - cmd
+          - hdmi_control
+          - cec_setting
+          - get
+          - "{{ item.key }}"
+      changed_when: false
+      check_mode: false
+      loop: "{{ tv_cec_settings }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: tv_cec_setting_after_results
+
+    - name: Verify Android HDMI-CEC settings
+      ansible.builtin.assert:
+        that:
+          - >-
+            item.stdout | regex_replace('^.* = ', '') | trim ==
+            item.item.value | string
+        fail_msg: "Failed to set HDMI-CEC value {{ item.item.key }}."
+      loop: "{{ tv_cec_setting_after_results.results }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: not ansible_check_mode
+
+    - name: Read final HDMI system-audio state
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - dumpsys
+          - hdmi_control
+      changed_when: false
+      check_mode: false
+      register: tv_hdmi_control_after
+      when: tv_reassert_system_audio | bool
+
+    - name: Verify receiver system-audio mode
+      ansible.builtin.assert:
+        that:
+          - "'mSystemAudioActivated: true' in tv_hdmi_control_after.stdout"
+        fail_msg: >-
+          The TV did not retain receiver system-audio mode after the CEC settings
+          were applied.
+      when:
+        - tv_reassert_system_audio | bool
+        - not ansible_check_mode
+  rescue:
+    - name: Restore Android animation settings after failure
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - put
+          - global
+          - "{{ item }}"
+          - "{{ tv_animation_before_values[item] }}"
+      changed_when: true
+      loop: "{{ tv_animation_settings }}"
+      loop_control:
+        label: "Restore {{ item }}"
+      when: tv_manage_animations | bool
+
+    - name: Restore existing managed Android settings after failure
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - put
+          - "{{ item.namespace }}"
+          - "{{ item.key }}"
+          - >-
+            {{ tv_android_setting_before_values[
+            item.namespace ~ '.' ~ item.key] }}
+      changed_when: true
+      loop: "{{ tv_android_managed_settings }}"
+      loop_control:
+        label: "Restore {{ item.namespace }}.{{ item.key }}"
+      when: >-
+        tv_android_setting_before_values[item.namespace ~ '.' ~ item.key] !=
+        'null'
+
+    - name: Delete previously absent managed Android settings after failure
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - settings
+          - delete
+          - "{{ item.namespace }}"
+          - "{{ item.key }}"
+      changed_when: true
+      loop: "{{ tv_android_managed_settings }}"
+      loop_control:
+        label: "Delete {{ item.namespace }}.{{ item.key }}"
+      when: >-
+        tv_android_setting_before_values[item.namespace ~ '.' ~ item.key] ==
+        'null'
+
+    - name: Restore Android HDMI-CEC settings after failure
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - cmd
+          - hdmi_control
+          - cec_setting
+          - set
+          - "{{ item.key }}"
+          - "{{ tv_cec_before_values[item.key] }}"
+      changed_when: true
+      loop: "{{ tv_cec_settings }}"
+      loop_control:
+        label: "Restore {{ item.key }}"
+      when: >-
+        tv_cec_before_values[item.key] | string != item.value | string
+
+    - name: Stop after restoring Android settings
+      ansible.builtin.fail:
+        msg: Android tuning failed and supported settings were restored.
+
+- name: Record Android changes
+  ansible.builtin.set_fact:
+    tv_remote_changed: >-
+      {{ tv_remote_changed | bool or
+      tv_animations_changed.changed | default(false) or
+      tv_android_settings_changed.changed | default(false) or
+      tv_cec_settings_changed.changed | default(false) or
+      tv_system_audio_changed.changed | default(false) }}

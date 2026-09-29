@@ -1,0 +1,209 @@
+---
+- name: Connect and authorize ADB
+  ansible.builtin.include_role:
+    name: android/adb
+
+- name: Read Android build properties
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - getprop
+      - "{{ item }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ tv_adb_properties }}"
+  loop_control:
+    label: "{{ item }}"
+  register: tv_adb_property_results
+
+- name: Index Android build properties
+  ansible.builtin.set_fact:
+    tv_adb_property_values: >-
+      {{ tv_adb_property_values | default({}) |
+      combine({item.item: item.stdout | trim}) }}
+  loop: "{{ tv_adb_property_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Require expected Android manufacturer
+  ansible.builtin.assert:
+    that:
+      - >-
+        tv_adb_expected_manufacturer | lower in
+        tv_adb_property_values['ro.product.manufacturer'] | lower
+    fail_msg: >-
+      {{ inventory_hostname }} does not identify as the expected Android
+      manufacturer; refusing device-specific management.
+
+- name: Read installed Android packages
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - list
+      - packages
+      - --user
+      - "0"
+  changed_when: false
+  check_mode: false
+  register: tv_installed_packages
+
+- name: Read disabled Android packages
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - list
+      - packages
+      - -d
+      - --user
+      - "0"
+  changed_when: false
+  check_mode: false
+  register: tv_disabled_packages
+
+- name: Read current Android home activity
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - package
+      - resolve-activity
+      - --brief
+      - -a
+      - android.intent.action.MAIN
+      - -c
+      - android.intent.category.HOME
+  changed_when: false
+  check_mode: false
+  register: tv_home_activity
+
+- name: Read Android animation settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - get
+      - global
+      - "{{ item }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ tv_animation_settings }}"
+  loop_control:
+    label: "{{ item }}"
+  register: tv_animation_results
+
+- name: Index Android animation settings
+  ansible.builtin.set_fact:
+    tv_animation_before_values: >-
+      {{ tv_animation_before_values | default({}) |
+      combine({item.item: item.stdout | trim}) }}
+  loop: "{{ tv_animation_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Read managed Android settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - get
+      - "{{ item.namespace }}"
+      - "{{ item.key }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ tv_android_managed_settings }}"
+  loop_control:
+    label: "{{ item.namespace }}.{{ item.key }}"
+  register: tv_android_setting_results
+
+- name: Index managed Android settings
+  ansible.builtin.set_fact:
+    tv_android_setting_before_values: >-
+      {{ tv_android_setting_before_values | default({}) |
+      combine({item.item.namespace ~ '.' ~ item.item.key: item.stdout | trim}) }}
+  loop: "{{ tv_android_setting_results.results }}"
+  loop_control:
+    label: "{{ item.item.namespace }}.{{ item.item.key }}"
+
+- name: Read Android HDMI-CEC settings
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - hdmi_control
+      - cec_setting
+      - get
+      - "{{ item.key }}"
+  changed_when: false
+  check_mode: false
+  loop: "{{ tv_cec_settings }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: tv_cec_setting_results
+
+- name: Index Android HDMI-CEC settings
+  ansible.builtin.set_fact:
+    tv_cec_before_values: >-
+      {{ tv_cec_before_values | default({}) |
+      combine({item.item.key: item.stdout |
+      regex_replace('^.* = ', '') | trim}) }}
+  loop: "{{ tv_cec_setting_results.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+
+- name: Audit Android display, audio, and HDMI services
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - dumpsys
+      - "{{ item }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  loop:
+    - display
+    - audio
+    - hdmi_control
+  loop_control:
+    label: "{{ item }}"
+  register: tv_adb_service_results
+
+- name: Build Android audit snapshot
+  ansible.builtin.set_fact:
+    tv_adb_snapshot:
+      serial: "{{ adb_serial }}"
+      properties: "{{ tv_adb_property_values }}"
+      home_activity: "{{ tv_home_activity.stdout_lines | last | trim }}"
+      animations: "{{ tv_animation_before_values }}"
+      managed_settings: "{{ tv_android_setting_before_values | default({}) }}"
+      cec_settings: "{{ tv_cec_before_values }}"
+      disabled_packages: "{{ tv_disabled_packages.stdout_lines }}"
+      installed_packages: "{{ tv_installed_packages.stdout_lines }}"
+      services: >-
+        {{ dict(tv_adb_service_results.results | map(attribute='item') |
+        zip(tv_adb_service_results.results | map(attribute='stdout'))) }}
