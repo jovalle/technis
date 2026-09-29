@@ -1,0 +1,94 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: qbittorrent
+  namespace: downloads
+spec:
+  chart:
+    spec:
+      chart: app-template
+      sourceRef:
+        name: bjw-s
+        kind: HelmRepository
+        namespace: flux-system
+      version: 3.7.3
+  install:
+    remediation:
+      retries: 3
+  interval: 30m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    controllers:
+      qbittorrent:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            dependsOn: gluetun
+            env:
+              QBT_WEBUI_PORT: "{{ .Values.service.app.ports.http.port }}"
+            image:
+              repository: ghcr.io/home-operations/qbittorrent
+              tag: 5.1.0@sha256:70b41fdfa773b9f47070391a0f972ef34672d82d9afa05c2c16b8ea2ab8fb6c9
+          gluetun:
+            env:
+              - name: FIREWALL_INPUT_PORTS
+                value: "{{ .Values.service.app.ports.http.port }}"
+              - name: FIREWALL_OUTBOUND_SUBNETS
+                value: 192.168.10.0/24,10.0.0.0/8,10.96.0.0/12
+              - name: PORT_FORWARD_ONLY
+                value: "true"
+              - name: VPN_PORT_FORWARD
+                value: "on"
+            envFrom:
+              - secretRef:
+                  name: qbittorrent
+            image:
+              repository: ghcr.io/qdm12/gluetun
+              tag: v3.40.0@sha256:2b42bfa046757145a5155acece417b65b4443c8033fb88661a8e9dcf7fda5a00
+            ports:
+              - containerPort: 6881
+              - containerPort: 6881
+                protocol: UDP
+              - containerPort: 8080
+            securityContext:
+              allowPrivilegeEscalation: true
+              capabilities:
+                add:
+                  - NET_ADMIN
+              runAsNonRoot: false
+              runAsUser: 0
+    defaultPodOptions:
+      dnsConfig:
+        nameservers:
+          - 1.1.1.1
+      dnsPolicy: None
+    persistence:
+      config:
+        accessMode: ReadWriteOnce
+        retain: true
+        size: 1Gi
+        storageClass: ceph-rbd
+      init-config:
+        name: qbittorrent
+        globalMounts:
+          - path: /app/qBittorrent.conf
+            readOnly: true
+            subPath: qBittorrent.conf
+        type: configMap
+    service:
+      app:
+        annotations:
+          io.cilium/lb-ipam-ips: 192.168.10.250
+        controller: qbittorrent
+        ports:
+          http:
+            port: 8080
+            protocol: TCP
+            targetPort: 8080
+        type: LoadBalancer

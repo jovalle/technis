@@ -1,0 +1,357 @@
+---
+- name: Require an authorized Android transport
+  ansible.builtin.assert:
+    that:
+      - adb_bin is defined
+      - adb_serial is defined
+    fail_msg: Run the android/adb role before the launcher role.
+
+- name: Read installed launcher version
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - dumpsys
+      - package
+      - "{{ launcher_package }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  register: launcher_package_info
+
+- name: Decide whether the pinned launcher is needed
+  ansible.builtin.set_fact:
+    launcher_installed_version: >-
+      {{ launcher_package_info.stdout
+         | regex_search('versionName=([0-9.]+)', '\1')
+         | default([''], true) | first }}
+
+- name: Download pinned launcher APK
+  ansible.builtin.get_url:
+    checksum: "{{ launcher_apk_checksum }}"
+    dest: "{{ launcher_apk_path }}"
+    mode: "0644"
+    url: "{{ launcher_apk_url }}"
+  when:
+    - launcher_install | bool
+    - >-
+      launcher_installed_version | length == 0 or
+      launcher_installed_version is version(launcher_version, '<')
+
+- name: Install launcher over ADB
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - install
+      - -r
+      - "{{ launcher_apk_path }}"
+  changed_when: true
+  register: launcher_install_result
+  when:
+    - launcher_install | bool
+    - >-
+      launcher_installed_version | length == 0 or
+      launcher_installed_version is version(launcher_version, '<')
+
+- name: Require launcher to be installed
+  ansible.builtin.assert:
+    that:
+      - >-
+        launcher_installed_version | length > 0 or
+        launcher_install_result.changed | default(false)
+    fail_msg: >-
+      Launcher is not installed and launcher_install is false. Install it
+      manually or enable managed installation.
+
+- name: Check required ordered apps
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - path
+      - "{{ item.package }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  loop: "{{ launcher_required_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: launcher_required_app_paths
+  when: launcher_configure_layout | bool
+
+- name: Require apps referenced by the managed layout
+  ansible.builtin.assert:
+    that:
+      - item.stdout.startswith("package:")
+    fail_msg: >-
+      {{ item.item.name }} ({{ item.item.package }}) must be installed before
+      the managed launcher layout can be applied.
+    quiet: true
+  loop: "{{ launcher_required_app_paths.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: launcher_configure_layout | bool
+
+- name: Check managed launcher layout asset
+  ansible.builtin.stat:
+    checksum_algorithm: sha256
+    path: "{{ launcher_layout_backup_b64_path }}"
+  register: launcher_layout_asset
+  when: launcher_configure_layout | bool
+
+- name: Require managed launcher layout asset
+  ansible.builtin.assert:
+    that:
+      - launcher_layout_asset.stat.isreg | default(false)
+    fail_msg: >-
+      The managed launcher layout asset is missing:
+      {{ launcher_layout_backup_b64_path }}
+  when: launcher_configure_layout | bool
+
+- name: Create launcher configuration directory on the device
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - mkdir
+      - -p
+      - "{{ launcher_remote_config_dir }}"
+  changed_when: false
+  check_mode: false
+  when: launcher_configure_layout | bool
+
+- name: Build managed launcher layout marker path
+  ansible.builtin.set_fact:
+    launcher_layout_marker_path: >-
+      {{ launcher_remote_config_dir }}/layout-{{ launcher_layout_backup_checksum }}.applied
+  when: launcher_configure_layout | bool
+
+- name: Check whether the managed launcher layout is current
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - test
+      - -f
+      - "{{ launcher_layout_marker_path }}"
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  register: launcher_layout_marker
+  when: launcher_configure_layout | bool
+
+- name: Apply managed launcher layout
+  when:
+    - launcher_configure_layout | bool
+    - >-
+      launcher_layout_marker.rc | default(1) != 0 or
+      launcher_install_result.changed | default(false)
+  block:
+    - name: Create temporary launcher layout directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: launcher-layout
+      register: launcher_layout_tempdir
+      changed_when: false
+
+    - name: Decode managed launcher layout
+      ansible.builtin.command:
+        argv:
+          - "{{ ansible_playbook_python }}"
+          - -c
+          - >-
+            import base64, pathlib, sys;
+            pathlib.Path(sys.argv[2]).write_bytes(
+            base64.b64decode(pathlib.Path(sys.argv[1]).read_bytes()))
+          - "{{ launcher_layout_backup_b64_path }}"
+          - "{{ launcher_layout_tempdir.path }}/layout.plbackup"
+      changed_when: false
+
+    - name: Check decoded launcher layout
+      ansible.builtin.stat:
+        checksum_algorithm: sha256
+        path: "{{ launcher_layout_tempdir.path }}/layout.plbackup"
+      register: launcher_decoded_layout
+
+    - name: Verify decoded launcher layout checksum
+      ansible.builtin.assert:
+        that:
+          - >-
+            launcher_decoded_layout.stat.checksum ==
+            launcher_layout_backup_checksum
+        fail_msg: "The managed launcher layout asset is corrupt."
+
+    - name: Push managed launcher layout to the device
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - push
+          - "{{ launcher_layout_tempdir.path }}/layout.plbackup"
+          - "{{ launcher_remote_layout_path }}"
+      changed_when: true
+
+    - name: Wake the device for launcher configuration
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - input
+          - keyevent
+          - KEYCODE_WAKEUP
+      changed_when: false
+
+    - name: Exit ambient mode before launcher configuration
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - input
+          - keyevent
+          - KEYCODE_HOME
+      changed_when: false
+
+    - name: Open launcher layout import
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - am
+          - start
+          - -W
+          - -a
+          - android.intent.action.VIEW
+          - -d
+          - "file://{{ launcher_remote_layout_path }}"
+          - -t
+          - application/octet-stream
+          - -n
+          - "{{ launcher_import_activity }}"
+      changed_when: true
+
+    - name: Wait for launcher import confirmation
+      ansible.builtin.pause:
+        seconds: "{{ launcher_import_delay }}"
+
+    - name: Read launcher import confirmation
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - uiautomator
+          - dump
+          - /sdcard/launcher-import.xml
+      changed_when: false
+
+    - name: Read launcher import UI
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - cat
+          - /sdcard/launcher-import.xml
+      changed_when: false
+      register: launcher_import_ui
+
+    - name: Require launcher restore confirmation
+      ansible.builtin.assert:
+        that:
+          - "'Restore backup' in launcher_import_ui.stdout"
+          - "'dialog_button_first' in launcher_import_ui.stdout"
+        fail_msg: >-
+          Launcher did not present the expected restore confirmation dialog.
+
+    - name: Focus launcher restore confirmation
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - input
+          - keyevent
+          - KEYCODE_TAB
+      changed_when: false
+
+    - name: Confirm launcher restore
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - input
+          - keyevent
+          - KEYCODE_ENTER
+      changed_when: true
+
+    - name: Wait for launcher layout import
+      ansible.builtin.pause:
+        seconds: "{{ launcher_import_settle_delay }}"
+
+    - name: Mark managed launcher layout as applied
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - touch
+          - "{{ launcher_layout_marker_path }}"
+      changed_when: true
+
+    - name: Record launcher layout change
+      ansible.builtin.set_fact:
+        launcher_layout_applied: true
+  always:
+    - name: Remove staged launcher layout from Android
+      ansible.builtin.command:
+        argv:
+          - "{{ adb_bin }}"
+          - -s
+          - "{{ adb_serial }}"
+          - shell
+          - rm
+          - -f
+          - "{{ launcher_remote_layout_path }}"
+          - /sdcard/launcher-import.xml
+      changed_when: false
+
+    - name: Remove temporary launcher layout directory
+      ansible.builtin.file:
+        path: "{{ launcher_layout_tempdir.path }}"
+        state: absent
+      changed_when: false
+      when:
+        - launcher_layout_tempdir is defined
+        - launcher_layout_tempdir.path is defined
+
+- name: Record launcher role change
+  ansible.builtin.set_fact:
+    launcher_changed: >-
+      {{
+        launcher_install_result.changed | default(false)
+        or launcher_layout_applied | default(false)
+      }}

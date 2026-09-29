@@ -1,0 +1,32 @@
+---
+receiver_additional_signal_formats: []
+receiver_arc: "1" # On; eARC remains automatically available
+receiver_audio_delay_ms: 0
+receiver_auto_lip_sync: true
+receiver_bass_sync: "0"
+receiver_control_port: 23
+receiver_room_correction_bass_control: "4"
+receiver_room_correction_value: "2"
+receiver_eco_mode: "1" # Off
+receiver_firmware_allow_update: "1" # On; manual updates remain available
+receiver_firmware_auto_update: "2" # Off
+receiver_hdcp_mode: "1" # Auto
+receiver_hdmi_audio_out: "1" # receiver
+receiver_hdmi_control: "1" # On
+receiver_hdmi_pass_through: "1" # On; audited, and avoids changing a locked live path
+receiver_hdmi_power_saving: "2" # Off
+receiver_hdmi_upscaler: "10" # Off
+receiver_hdmi_video_output: "2" # Monitor 1
+receiver_lpf_for_lfe: "120"
+receiver_media_source_code: MPLAY
+receiver_media_source_index: "5"
+receiver_power_off_control: "1" # All
+receiver_power_on_level: "40" # -40 dB
+receiver_signal_format: "2" # Enhanced (4K60)
+receiver_subwoofer_output: "1" # LFE
+receiver_tv_audio_switching: "1" # On; native TV apps select TV Audio
+receiver_video_mode: "4" # Bypass
+receiver_volume_limit: "80" # 0 dB
+receiver_volume_scale: "2" # Relative dB (-79.5 dB to +18 dB)
+receiver_web_base_url: "http://{{ ansible_host }}:{{ receiver_web_port }}"
+receiver_web_port: 11080

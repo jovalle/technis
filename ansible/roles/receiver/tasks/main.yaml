@@ -1,0 +1,454 @@
+---
+- name: Wait for receiver control services
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ item }}"
+    timeout: 10
+  loop:
+    - "{{ receiver_control_port }}"
+    - "{{ receiver_web_port }}"
+
+- name: Read receiver TCP state before changes
+  receiver_telnet:
+    host: "{{ ansible_host }}"
+    port: "{{ receiver_control_port }}"
+    query_only: true
+  check_mode: false
+  register: receiver_telnet_before
+
+- name: Define receiver audit endpoints
+  ansible.builtin.set_fact:
+    receiver_audit_endpoints:
+      - { name: advanced, path: /ajax/advanced/get_config, type: "3" }
+      - { name: audio_volume, path: /ajax/audio/get_config, type: "7" }
+      - { name: bass, path: /ajax/speakers/get_config, type: "7" }
+      - { name: bass_sync, path: /ajax/audio/get_config, type: "11" }
+      - { name: room_correction, path: /ajax/audio/get_config, type: "14" }
+      - { name: eco, path: /ajax/general/get_config, type: "3" }
+      - { name: firmware, path: /ajax/general/get_config, type: "11" }
+      - { name: hdcp, path: /ajax/video/get_config, type: "11" }
+      - { name: hdmi_setup, path: /ajax/video/get_config, type: "3" }
+      - { name: output, path: /ajax/video/get_config, type: "4" }
+      - { name: signal_format, path: /ajax/video/get_config, type: "14" }
+
+- name: Read receiver web-control state before changes
+  ansible.builtin.uri:
+    url: "{{ receiver_web_base_url }}{{ item.path }}?type={{ item.type }}"
+    return_content: true
+    status_code: 200
+  changed_when: false
+  check_mode: false
+  loop: "{{ receiver_audit_endpoints }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: receiver_web_before_results
+
+- name: Index receiver web-control snapshot
+  ansible.builtin.set_fact:
+    receiver_web_before: >-
+      {{ dict(receiver_audit_endpoints | map(attribute='name') |
+      zip(receiver_web_before_results.results | map(attribute='content'))) }}
+
+- name: Parse managed receiver settings
+  ansible.builtin.set_fact:
+    receiver_before_values:
+      volume_scale: "{{ receiver_web_before.audio_volume | regex_findall('<Scale>([^<]+)</Scale>') | first }}"
+      volume_limit: "{{ receiver_web_before.audio_volume | regex_findall('<Limit[^>]*>([^<]+)</Limit>') | first }}"
+      power_on_level: "{{ receiver_web_before.audio_volume | regex_findall('<PowerOnLevel>([^<]+)</PowerOnLevel>') | first }}"
+      video_mode: "{{ receiver_web_before.output | regex_findall('<VideoMode[^>]*>([^<]+)</VideoMode>') | first }}"
+      hdmi_upscaler: "{{ receiver_web_before.output | regex_findall('<HDMIUpscaler[^>]*>([^<]+)</HDMIUpscaler>') | first }}"
+      hdmi_video_output: "{{ receiver_web_before.output | regex_findall('<HDMIVideoOutput[^>]*>([^<]+)</HDMIVideoOutput>') | first }}"
+      signal_format: >-
+        {{ receiver_web_before.signal_format |
+        regex_findall('<Source[^>]*index="' ~ receiver_media_source_index ~
+        '"[^>]*>.*?<Format>([^<]+)</Format>') | first }}
+      hdmi_audio_out: "{{ receiver_web_before.hdmi_setup | regex_findall('<HDMIAudioOut[^>]*>([^<]+)</HDMIAudioOut>') | first }}"
+      hdmi_pass_through: "{{ receiver_web_before.hdmi_setup | regex_findall('<HDMIPassThrough[^>]*>([^<]+)</HDMIPassThrough>') | first }}"
+      hdmi_control: "{{ receiver_web_before.hdmi_setup | regex_findall('<HDMIControl[^>]*>([^<]+)</HDMIControl>') | first }}"
+      arc: "{{ receiver_web_before.hdmi_setup | regex_findall('<ARC[^>]*>([^<]+)</ARC>') | first }}"
+      tv_audio_switching: "{{ receiver_web_before.hdmi_setup | regex_findall('<TVAudioSwitching[^>]*>([^<]+)</TVAudioSwitching>') | first }}"
+      power_off_control: "{{ receiver_web_before.hdmi_setup | regex_findall('<PowerOffControl[^>]*>([^<]+)</PowerOffControl>') | first }}"
+      hdmi_power_saving: "{{ receiver_web_before.hdmi_setup | regex_findall('<PowerSaving[^>]*>([^<]+)</PowerSaving>') | first }}"
+      hdcp_mode: '{{ receiver_web_before.hdcp | regex_findall(''<Source[^>]*index="'' ~ receiver_media_source_index ~ ''"[^>]*>.*?<Value>([^<]+)</Value>'') | first }}'
+      eco_mode: "{{ receiver_web_before.eco | regex_findall('<Mode[^>]*>([^<]+)</Mode>') | first }}"
+      firmware_auto_update: "{{ receiver_web_before.firmware | regex_findall('<AutoUpdate[^>]*>.*?<Enable>([^<]+)</Enable>') | first }}"
+      firmware_allow_update: "{{ receiver_web_before.firmware | regex_findall('<AllowUpdate[^>]*>.*?<Enable>([^<]+)</Enable>') | first }}"
+
+- name: Define restorable receiver web settings
+  ansible.builtin.set_fact:
+    receiver_managed_web_settings:
+      - name: Volume display scale
+        path: /ajax/audio/set_config
+        type: "7"
+        current: "{{ receiver_before_values.volume_scale }}"
+        desired: "{{ receiver_volume_scale }}"
+        desired_xml: "<Scale>{{ receiver_volume_scale }}</Scale>"
+        rollback_xml: "<Scale>{{ receiver_before_values.volume_scale }}</Scale>"
+      - name: Volume limit
+        path: /ajax/audio/set_config
+        type: "7"
+        current: "{{ receiver_before_values.volume_limit }}"
+        desired: "{{ receiver_volume_limit }}"
+        desired_xml: "<Limit>{{ receiver_volume_limit }}</Limit>"
+        rollback_xml: "<Limit>{{ receiver_before_values.volume_limit }}</Limit>"
+      - name: Power-on volume
+        path: /ajax/audio/set_config
+        type: "7"
+        current: "{{ receiver_before_values.power_on_level }}"
+        desired: "{{ receiver_power_on_level }}"
+        desired_xml: "<PowerOnLevel>{{ receiver_power_on_level }}</PowerOnLevel>"
+        rollback_xml: "<PowerOnLevel>{{ receiver_before_values.power_on_level }}</PowerOnLevel>"
+      - name: Media source video mode
+        path: /ajax/video/set_config
+        type: "4"
+        current: "{{ receiver_before_values.video_mode }}"
+        desired: "{{ receiver_video_mode }}"
+        desired_xml: "<VideoMode>{{ receiver_video_mode }}</VideoMode>"
+        rollback_xml: "<VideoMode>{{ receiver_before_values.video_mode }}</VideoMode>"
+      - name: HDMI upscaler
+        path: /ajax/video/set_config
+        type: "4"
+        current: "{{ receiver_before_values.hdmi_upscaler }}"
+        desired: "{{ receiver_hdmi_upscaler }}"
+        desired_xml: "<HDMIUpscaler>{{ receiver_hdmi_upscaler }}</HDMIUpscaler>"
+        rollback_xml: "<HDMIUpscaler>{{ receiver_before_values.hdmi_upscaler }}</HDMIUpscaler>"
+      - name: HDMI video output
+        path: /ajax/video/set_config
+        type: "4"
+        current: "{{ receiver_before_values.hdmi_video_output }}"
+        desired: "{{ receiver_hdmi_video_output }}"
+        desired_xml: "<HDMIVideoOutput>{{ receiver_hdmi_video_output }}</HDMIVideoOutput>"
+        rollback_xml: "<HDMIVideoOutput>{{ receiver_before_values.hdmi_video_output }}</HDMIVideoOutput>"
+      - name: Media source 4K signal format
+        path: /ajax/video/set_config
+        type: "14"
+        current: "{{ receiver_before_values.signal_format }}"
+        desired: "{{ receiver_signal_format }}"
+        desired_xml: '<Format index="{{ receiver_media_source_index }}">{{ receiver_signal_format }}</Format>'
+        rollback_xml: '<Format index="{{ receiver_media_source_index }}">{{ receiver_before_values.signal_format }}</Format>'
+      - name: HDMI audio output
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.hdmi_audio_out }}"
+        desired: "{{ receiver_hdmi_audio_out }}"
+        desired_xml: "<HDMIAudioOut>{{ receiver_hdmi_audio_out }}</HDMIAudioOut>"
+        rollback_xml: "<HDMIAudioOut>{{ receiver_before_values.hdmi_audio_out }}</HDMIAudioOut>"
+      - name: HDMI standby pass through
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.hdmi_pass_through }}"
+        desired: "{{ receiver_hdmi_pass_through }}"
+        desired_xml: "<HDMIPassThrough>{{ receiver_hdmi_pass_through }}</HDMIPassThrough>"
+        rollback_xml: "<HDMIPassThrough>{{ receiver_before_values.hdmi_pass_through }}</HDMIPassThrough>"
+      - name: HDMI control
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.hdmi_control }}"
+        desired: "{{ receiver_hdmi_control }}"
+        desired_xml: "<HDMIControl>{{ receiver_hdmi_control }}</HDMIControl>"
+        rollback_xml: "<HDMIControl>{{ receiver_before_values.hdmi_control }}</HDMIControl>"
+      - name: ARC
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.arc }}"
+        desired: "{{ receiver_arc }}"
+        desired_xml: "<ARC>{{ receiver_arc }}</ARC>"
+        rollback_xml: "<ARC>{{ receiver_before_values.arc }}</ARC>"
+      - name: TV audio switching
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.tv_audio_switching }}"
+        desired: "{{ receiver_tv_audio_switching }}"
+        desired_xml: "<TVAudioSwitching>{{ receiver_tv_audio_switching }}</TVAudioSwitching>"
+        rollback_xml: "<TVAudioSwitching>{{ receiver_before_values.tv_audio_switching }}</TVAudioSwitching>"
+      - name: HDMI power-off control
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.power_off_control }}"
+        desired: "{{ receiver_power_off_control }}"
+        desired_xml: "<PowerOffControl>{{ receiver_power_off_control }}</PowerOffControl>"
+        rollback_xml: "<PowerOffControl>{{ receiver_before_values.power_off_control }}</PowerOffControl>"
+      - name: HDMI power saving
+        path: /ajax/video/set_config
+        type: "3"
+        current: "{{ receiver_before_values.hdmi_power_saving }}"
+        desired: "{{ receiver_hdmi_power_saving }}"
+        desired_xml: "<PowerSaving>{{ receiver_hdmi_power_saving }}</PowerSaving>"
+        rollback_xml: "<PowerSaving>{{ receiver_before_values.hdmi_power_saving }}</PowerSaving>"
+      - name: ECO mode
+        path: /ajax/general/set_config
+        type: "3"
+        current: "{{ receiver_before_values.eco_mode }}"
+        desired: "{{ receiver_eco_mode }}"
+        desired_xml: "<Mode>{{ receiver_eco_mode }}</Mode>"
+        rollback_xml: "<Mode>{{ receiver_before_values.eco_mode }}</Mode>"
+      - name: Firmware auto update
+        path: /ajax/general/set_config
+        type: "11"
+        current: "{{ receiver_before_values.firmware_auto_update }}"
+        desired: "{{ receiver_firmware_auto_update }}"
+        desired_xml: "<AutoUpdate>{{ receiver_firmware_auto_update }}</AutoUpdate>"
+        rollback_xml: "<AutoUpdate>{{ receiver_before_values.firmware_auto_update }}</AutoUpdate>"
+      - name: Allow manual firmware update
+        path: /ajax/general/set_config
+        type: "11"
+        current: "{{ receiver_before_values.firmware_allow_update }}"
+        desired: "{{ receiver_firmware_allow_update }}"
+        desired_xml: "<AllowUpdate>{{ receiver_firmware_allow_update }}</AllowUpdate>"
+        rollback_xml: "<AllowUpdate>{{ receiver_before_values.firmware_allow_update }}</AllowUpdate>"
+
+- name: Add high-bandwidth source signal formats
+  ansible.builtin.set_fact:
+    receiver_managed_web_settings: >-
+      {{ receiver_managed_web_settings + [{
+        'name': item.name ~ ' 4K/8K signal format',
+        'path': '/ajax/video/set_config',
+        'type': '14',
+        'current': receiver_web_before.signal_format |
+          regex_findall('<Source[^>]*index="' ~ item.source_index ~
+          '"[^>]*>.*?<Format>([^<]+)</Format>') | first,
+        'desired': item.value,
+        'desired_xml': '<Format index="' ~ item.source_index ~ '">' ~
+          item.value ~ '</Format>',
+        'rollback_xml': '<Format index="' ~ item.source_index ~ '">' ~
+          (receiver_web_before.signal_format |
+          regex_findall('<Source[^>]*index="' ~ item.source_index ~
+          '"[^>]*>.*?<Format>([^<]+)</Format>') | first) ~ '</Format>'
+      }] }}
+  loop: "{{ receiver_additional_signal_formats }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Validate media input and audit-only audio state
+  ansible.builtin.assert:
+    that:
+      - receiver_telnet_before.state.source == receiver_media_source_code
+      - "('<DiracLive><Value>' ~ receiver_room_correction_value ~ '</Value>') in receiver_web_before.room_correction"
+      - "('<BassControl>' ~ receiver_room_correction_bass_control ~ '</BassControl>') in receiver_web_before.room_correction"
+      - '(''<SubwooferOutput display="3">'' ~ receiver_subwoofer_output ~ ''</SubwooferOutput>'') in receiver_web_before.bass'
+      - '(''<LPFforLFE display="3">'' ~ receiver_lpf_for_lfe ~ ''</LPFforLFE>'') in receiver_web_before.bass'
+      - "('<BassSync>' ~ receiver_bass_sync ~ '</BassSync>') in receiver_web_before.bass_sync"
+      - '''<NetworkControl display="3">1</NetworkControl>'' in receiver_web_before.advanced'
+    fail_msg: >-
+      Receiver preflight failed. No settings were changed; verify the media input,
+      room-correction bass control, LFE configuration, and Network Control state.
+
+- name: Create receiver backup directory
+  ansible.builtin.file:
+    path: >-
+      {{ watchtower_backup_root }}/{{ now(utc=true, fmt='%Y%m%dT%H%M%SZ') }}/{{ inventory_hostname }}
+    state: directory
+    mode: "0700"
+  register: receiver_backup_directory
+  when: not ansible_check_mode
+
+- name: Save restorable receiver snapshot
+  ansible.builtin.copy:
+    content: >-
+      {{
+        {
+          'host': ansible_host,
+          'captured_at': now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ'),
+          'telnet': receiver_telnet_before.state,
+          'parsed': receiver_before_values,
+          'raw': receiver_web_before
+        } | to_nice_json
+      }}
+    dest: "{{ receiver_backup_directory.path }}/settings.json"
+    mode: "0600"
+  when: not ansible_check_mode
+
+- name: Report planned receiver changes
+  ansible.builtin.debug:
+    msg:
+      backup: >-
+        {{ receiver_backup_directory.path ~ '/settings.json'
+           if not ansible_check_mode else 'check mode; no backup written' }}
+      tcp:
+        audio_delay_ms: "{{ receiver_telnet_before.state.delay_ms }} -> {{ receiver_audio_delay_ms }}"
+        auto_lip_sync: "{{ receiver_telnet_before.state.auto_lip_sync }} -> {{ receiver_auto_lip_sync }}"
+      web: >-
+        {% set pending = [] %}
+        {% for setting in receiver_managed_web_settings %}
+        {% if setting.current | string != setting.desired | string %}
+        {% set _ = pending.append(setting.name) %}
+        {% endif %}
+        {% endfor %}
+        {{ pending }}
+
+- name: Apply and verify rollback-safe receiver configuration
+  block:
+    - name: Set receiver audio delay and Auto Lip Sync
+      receiver_telnet:
+        host: "{{ ansible_host }}"
+        port: "{{ receiver_control_port }}"
+        delay_ms: "{{ receiver_audio_delay_ms }}"
+        auto_lip_sync: "{{ receiver_auto_lip_sync }}"
+      register: receiver_telnet_change
+
+    - name: Apply receiver web-control settings
+      ansible.builtin.uri:
+        url: >-
+          {{ receiver_web_base_url }}{{ item.path }}?type={{ item.type }}&data={{
+          item.desired_xml | urlencode }}
+        return_content: true
+        status_code: [200, 423]
+      changed_when: true
+      loop: "{{ receiver_managed_web_settings }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - item.current | string != item.desired | string
+        - not ansible_check_mode
+
+    - name: Read receiver web-control state after changes
+      ansible.builtin.uri:
+        url: "{{ receiver_web_base_url }}{{ item.path }}?type={{ item.type }}"
+        return_content: true
+        status_code: 200
+      changed_when: false
+      check_mode: false
+      loop: "{{ receiver_audit_endpoints }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: receiver_web_after_results
+      when: not ansible_check_mode
+
+    - name: Index receiver verification snapshot
+      ansible.builtin.set_fact:
+        receiver_web_after: >-
+          {{ dict(receiver_audit_endpoints | map(attribute='name') |
+          zip(receiver_web_after_results.results | map(attribute='content'))) }}
+      when: not ansible_check_mode
+
+    - name: Verify receiver configuration and untouched room-correction state
+      ansible.builtin.assert:
+        that:
+          - >-
+            (receiver_web_after.audio_volume |
+            regex_findall('<Scale>([^<]+)</Scale>') | first | string) ==
+            (receiver_volume_scale | string)
+          - >-
+            (receiver_web_after.audio_volume |
+            regex_findall('<Limit[^>]*>([^<]+)</Limit>') | first | string) ==
+            (receiver_volume_limit | string)
+          - >-
+            (receiver_web_after.audio_volume |
+            regex_findall('<PowerOnLevel>([^<]+)</PowerOnLevel>') | first | string) ==
+            (receiver_power_on_level | string)
+          - >-
+            (receiver_web_after.output |
+            regex_findall('<VideoMode[^>]*>([^<]+)</VideoMode>') | first | string) ==
+            (receiver_video_mode | string)
+          - >-
+            (receiver_web_after.output |
+            regex_findall('<HDMIUpscaler[^>]*>([^<]+)</HDMIUpscaler>') | first | string) ==
+            (receiver_hdmi_upscaler | string)
+          - >-
+            (receiver_web_after.output |
+            regex_findall('<HDMIVideoOutput[^>]*>([^<]+)</HDMIVideoOutput>') | first | string) ==
+            (receiver_hdmi_video_output | string)
+          - >-
+            (receiver_web_after.signal_format |
+            regex_findall('<Source[^>]*index=\"' ~ receiver_media_source_index ~
+            '\"[^>]*>.*?<Format>([^<]+)</Format>') | first | string) ==
+            (receiver_signal_format | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<HDMIAudioOut[^>]*>([^<]+)</HDMIAudioOut>') | first | string) ==
+            (receiver_hdmi_audio_out | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<HDMIPassThrough[^>]*>([^<]+)</HDMIPassThrough>') | first | string) ==
+            (receiver_hdmi_pass_through | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<HDMIControl[^>]*>([^<]+)</HDMIControl>') | first | string) ==
+            (receiver_hdmi_control | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<ARC[^>]*>([^<]+)</ARC>') | first | string) ==
+            (receiver_arc | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<TVAudioSwitching[^>]*>([^<]+)</TVAudioSwitching>') | first | string) ==
+            (receiver_tv_audio_switching | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<PowerOffControl[^>]*>([^<]+)</PowerOffControl>') | first | string) ==
+            (receiver_power_off_control | string)
+          - >-
+            (receiver_web_after.hdmi_setup |
+            regex_findall('<PowerSaving[^>]*>([^<]+)</PowerSaving>') | first | string) ==
+            (receiver_hdmi_power_saving | string)
+          - >-
+            (receiver_web_after.eco |
+            regex_findall('<Mode[^>]*>([^<]+)</Mode>') | first | string) ==
+            (receiver_eco_mode | string)
+          - >-
+            (receiver_web_after.firmware |
+            regex_findall('<AutoUpdate[^>]*>.*?<Enable>([^<]+)</Enable>') | first | string) ==
+            (receiver_firmware_auto_update | string)
+          - >-
+            (receiver_web_after.firmware |
+            regex_findall('<AllowUpdate[^>]*>.*?<Enable>([^<]+)</Enable>') | first | string) ==
+            (receiver_firmware_allow_update | string)
+          - receiver_web_after.room_correction == receiver_web_before.room_correction
+          - receiver_web_after.bass == receiver_web_before.bass
+          - receiver_web_after.bass_sync == receiver_web_before.bass_sync
+        fail_msg: "Receiver verification failed; the rescue block will restore the snapshot."
+      when: not ansible_check_mode
+
+    - name: Verify high-bandwidth source signal formats
+      ansible.builtin.assert:
+        that:
+          - >-
+            (receiver_web_after.signal_format |
+            regex_findall('<Source[^>]*index="' ~ item.source_index ~
+            '"[^>]*>.*?<Format>([^<]+)</Format>') | first | string) ==
+            (item.value | string)
+        fail_msg: "{{ item.name }} signal-format verification failed."
+      loop: "{{ receiver_additional_signal_formats }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+  rescue:
+    - name: Restore receiver web-control settings
+      ansible.builtin.uri:
+        url: >-
+          {{ receiver_web_base_url }}{{ item.path }}?type={{ item.type }}&data={{
+          item.rollback_xml | urlencode }}
+        status_code: [200, 423]
+      loop: "{{ receiver_managed_web_settings }}"
+      loop_control:
+        label: "Restore {{ item.name }}"
+      when: item.current | string != item.desired | string
+
+    - name: Restore receiver TCP settings
+      receiver_telnet:
+        host: "{{ ansible_host }}"
+        port: "{{ receiver_control_port }}"
+        delay_ms: "{{ receiver_telnet_before.state.delay_ms }}"
+        auto_lip_sync: "{{ receiver_telnet_before.state.auto_lip_sync }}"
+
+    - name: Stop after restoring receiver settings
+      ansible.builtin.fail:
+        msg: "Receiver configuration failed and was restored from the pre-change snapshot."
+
+- name: Report final receiver state
+  ansible.builtin.debug:
+    msg:
+      audio_delay_ms: "{{ receiver_audio_delay_ms }}"
+      auto_lip_sync: "{{ receiver_auto_lip_sync }}"
+      volume_scale: Relative dB
+      video_mode: Bypass
+      signal_format:
+        media: Enhanced
+        high_bandwidth_sources: "8K Enhanced (4K120/VRR)"
+      hdmi_pass_through: "On"
+      hdmi_control: "On"
+      arc: "On"
+      tv_audio_switching: "On"
+      eco: "Off"
+      firmware_auto_update: "Off"
+      room_correction: "Audit passed; unchanged"

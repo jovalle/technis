@@ -1,0 +1,37 @@
+---
+launcher_package: com.spocky.projengmenu
+launcher_activity: com.spocky.projengmenu/.ui.home.MainActivity
+launcher_import_activity: >-
+  com.spocky.projengmenu/.ui.launcherActivities.ImportSettingsActivity
+
+launcher_install: true
+# Bumped by `scripts/pins`; installed devices older than this are upgraded.
+launcher_version: "4.72"
+launcher_apk_name: ProjectivyLauncher-4.72-c97-xda-release.apk
+launcher_apk_checksum: >-
+  sha256:a312935837b7cf323880455c322f4c98060e3e37e8c6187963fb2c4764534aae
+launcher_apk_url: >-
+  https://github.com/spocky/miproja1/releases/download/{{ launcher_version }}/{{ launcher_apk_name }}
+launcher_apk_path: "/tmp/{{ launcher_apk_name }}"
+launcher_configure_layout: true
+# This encrypted launcher backup also pins the wallpaper to Dynamic colors.
+launcher_layout_backup_b64_path: >-
+  {{ role_path }}/files/layout.plbackup.b64
+launcher_layout_backup_checksum: >-
+  717872a3905d170183138becc38b0eefad07d1f8482acb91ad03e70ce24e4316
+# Existing layout markers live here; renaming it forces one re-import.
+launcher_remote_config_dir: /sdcard/.technis/projectivy
+launcher_remote_layout_path: >-
+  {{ launcher_remote_config_dir }}/layout.plbackup
+launcher_import_delay: 2
+launcher_import_settle_delay: 3
+
+launcher_required_apps:
+  - name: Plex
+    package: com.plexapp.android
+  - name: YouTube
+    package: com.google.android.youtube.tv
+  - name: Apple TV
+    package: com.apple.atve.androidtv.appletv
+  - name: Peacock
+    package: com.peacocktv.peacockandroid

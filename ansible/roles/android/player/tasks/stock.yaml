@@ -1,0 +1,72 @@
+---
+- name: Require the stock launcher package
+  ansible.builtin.assert:
+    that:
+      - "('package:' ~ player_stock_launcher_package) in player_installed_packages.stdout_lines"
+    fail_msg: >-
+      The configured stock launcher package ({{ player_stock_launcher_package }})
+      is not installed, so the stock state cannot be restored safely.
+
+- name: Enable managed stock packages for the primary user
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - pm
+      - enable
+      - --user
+      - "0"
+      - "{{ item }}"
+  changed_when: true
+  loop: "{{ player_managed_packages }}"
+  loop_control:
+    label: "{{ item }}"
+  register: player_packages_restored
+  when:
+    - "('package:' ~ item) in player_installed_packages.stdout_lines"
+    - "('package:' ~ item) in player_disabled_packages_before.stdout_lines"
+
+- name: Restore stock animation scales
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - settings
+      - put
+      - global
+      - "{{ item.item }}"
+      - "{{ player_stock_animation_scale }}"
+  changed_when: true
+  loop: "{{ player_animations_before.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: player_animations_restored
+  when: item.stdout | trim != player_stock_animation_scale
+
+- name: Select the stock launcher
+  ansible.builtin.command:
+    argv:
+      - "{{ adb_bin }}"
+      - -s
+      - "{{ adb_serial }}"
+      - shell
+      - cmd
+      - package
+      - set-home-activity
+      - "{{ player_stock_launcher_activity }}"
+  changed_when: true
+  register: player_home_restored
+  when: player_home_before.stdout_lines | last | trim != player_stock_launcher_activity
+
+- name: Determine whether rollback changed player
+  ansible.builtin.set_fact:
+    player_remote_changed: >-
+      {{
+        player_packages_restored.changed | default(false)
+        or player_animations_restored.changed | default(false)
+        or player_home_restored.changed | default(false)
+      }}

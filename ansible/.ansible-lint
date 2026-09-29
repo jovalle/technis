@@ -1,0 +1,9 @@
+---
+# .ansible-lint.yml
+
+exclude_paths:
+  - .cache/
+profile: production
+skip_list:
+  - no-same-owner
+  - experimental

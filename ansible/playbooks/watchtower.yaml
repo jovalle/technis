@@ -1,0 +1,26 @@
+---
+# Purpose:  Configure the Watchtower setup.
+# Usage:    just run watchtower [--tags player|receiver|tv]
+- name: Configure player
+  gather_facts: false
+  hosts: player
+  roles:
+    - role: android/player
+      tags:
+        - player
+
+- name: Configure receiver
+  gather_facts: false
+  hosts: receiver
+  roles:
+    - role: receiver
+      tags:
+        - receiver
+
+- name: Configure TV
+  gather_facts: false
+  hosts: tv
+  roles:
+    - role: android/tv
+      tags:
+        - tv
