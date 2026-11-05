@@ -201,8 +201,16 @@ prompt_value() {
   printf '%s' "$key (hidden; Enter accepts, Esc skips): " >&2
   while IFS= read -rsn1 char; do
     case $char in
-      $'\e') printf '\n' >&2; return 1 ;;
-      '') printf '\n' >&2; [[ -n $value ]] || return 1; REPLY=$value; return 0 ;;
+      $'\e')
+        printf '\n' >&2
+        return 1
+        ;;
+      '')
+        printf '\n' >&2
+        [[ -n $value ]] || return 1
+        REPLY=$value
+        return 0
+        ;;
       $'\177' | $'\b') value=${value%?} ;;
       *) value+=$char ;;
     esac
@@ -214,13 +222,20 @@ prompt_value() {
 # Compose validates the complete model locally; missing values can be supplied for this run.
 preflight() {
   local s=$1 err=$env_root/$1.preflight.err key value f rc skipped=0 seen=' '
-  [[ -f $stacks_dir/$s/compose.yaml ]] || { row fail "$s" 'compose.yaml missing'; return 1; }
+  [[ -f $stacks_dir/$s/compose.yaml ]] || {
+    row fail "$s" 'compose.yaml missing'
+    return 1
+  }
   while :; do
     if compose "$s" config --quiet 2>"$err"; then rc=0; else rc=$?; fi
     key=$(sed 's/\\"/"/g' "$err" | sed -nE -e 's/.*required variable ([A-Za-z_][A-Za-z0-9_]*) is missing a value.*/\1/p' \
       -e 's/.*The "([A-Za-z_][A-Za-z0-9_]*)" variable is not set.*/\1/p' | head -1)
     if [[ -z $key ]]; then
-      if ((rc)); then cat "$err" >&2; row fail "$s" 'preflight failed'; return 1; fi
+      if ((rc)); then
+        cat "$err" >&2
+        row fail "$s" 'preflight failed'
+        return 1
+      fi
       break
     fi
     if [[ $seen == *" $key "* ]]; then
@@ -240,7 +255,10 @@ preflight() {
     printf "%s='%s'\n" "$key" "$value" >>"$env_root/$s.inputs"
     for f in "$env_root/$s.plain"/*.env; do printf "%s='%s'\n" "$key" "$value" >>"$f"; done
   done
-  ((skipped == 0)) || { row fail "$s" 'preflight has skipped values'; return 1; }
+  ((skipped == 0)) || {
+    row fail "$s" 'preflight has skipped values'
+    return 1
+  }
   if [[ ${2:-} == secret ]]; then
     if ! compose_mode=secret compose "$s" config --quiet 2>"$err"; then
       cat "$err" >&2
@@ -446,7 +464,7 @@ cmd_sync() {
     dry=(-n)
     shift
   fi
-  if ((!$#)); then
+  if ((! $#)); then
     while IFS= read -r service; do services+=("$service"); done < <(
       sed -nE 's#.*\.\./\.\./services/(.+)/compose\.yaml.*#\1#p' "$stacks_dir/${targets[0]}/compose.yaml" | sort -u
     )
@@ -602,14 +620,19 @@ compose_up() {
   for a in "$@"; do [[ $a == -d || $a == --detach || $a == --wait ]] && filter=1; done
   if ((filter)) && [[ ${STACKS_PROGRESS:-} != compose ]] && has python3; then
     local results=() capture line
-    capture=$(mktemp "${env_root:-${TMPDIR:-/tmp}}/stacks-progress.XXXXXX") || { compose "$s" up "$@"; return; }
-    if { compose "$s" --progress json up "$@" 2>&1 1>&3 3>&- |
-      ( trap '' PIPE
-        while IFS= read -r line || [[ -n $line ]]; do
-          printf '%s\n' "$line" >&4 || :
-          printf '%s\n' "$line" 2>/dev/null || :
-        done
-      ) 4>"$capture" | python3 "$root/docker/scripts/compose_progress.py" "$s"
+    capture=$(mktemp "${env_root:-${TMPDIR:-/tmp}}/stacks-progress.XXXXXX") || {
+      compose "$s" up "$@"
+      return
+    }
+    if {
+      compose "$s" --progress json up "$@" 2>&1 1>&3 3>&- |
+        (
+          trap '' PIPE
+          while IFS= read -r line || [[ -n $line ]]; do
+            printf '%s\n' "$line" >&4 || :
+            printf '%s\n' "$line" 2>/dev/null || :
+          done
+        ) 4>"$capture" | python3 "$root/docker/scripts/compose_progress.py" "$s"
       results=("${PIPESTATUS[@]}")
     } 3>&1; then :; fi
     rc=${results[0]:-1} render_rc=${results[2]:-1}
@@ -760,20 +783,42 @@ main() {
       case $1 in
         -s | --stack)
           [[ -n ${2:-} ]] || die "$1 needs a stack name"
-          if [[ $explicit == 0 ]]; then targets=(); explicit=1; fi
+          if [[ $explicit == 0 ]]; then
+            targets=()
+            explicit=1
+          fi
           for s in ${2//,/ }; do
             in_list "$s" "${all[@]}" || die "unknown stack '$s' (known: ${all[*]})"
             in_list "$s" ${targets[@]+"${targets[@]}"} || targets+=("$s")
           done
-          shift 2 ;;
-        -y | --yes) assume_yes=1; shift ;;
-        -f | --follow) [[ $verb == logs ]] || die "unknown option $1"; follow=1; args+=("$1"); shift ;;
+          shift 2
+          ;;
+        -y | --yes)
+          assume_yes=1
+          shift
+          ;;
+        -f | --follow)
+          [[ $verb == logs ]] || die "unknown option $1"
+          follow=1
+          args+=("$1")
+          shift
+          ;;
         -*)
           [[ $verb == logs ]] || die "unknown option $1"
           args+=("$1")
-          case $1 in --tail | -n | --since | --until) [[ -n ${2:-} ]] || die "$1 needs a value"; args+=("$2"); shift ;; esac
-          shift ;;
-        *) [[ -z $selector ]] || die "$verb takes one target"; selector=$1; shift ;;
+          case $1 in --tail | -n | --since | --until)
+            [[ -n ${2:-} ]] || die "$1 needs a value"
+            args+=("$2")
+            shift
+            ;;
+          esac
+          shift
+          ;;
+        *)
+          [[ -z $selector ]] || die "$verb takes one target"
+          selector=$1
+          shift
+          ;;
       esac
     done
     [[ $verb != logs && $verb != upgrade || -n $selector ]] || die "$verb needs a stack or service"
@@ -789,8 +834,10 @@ main() {
       deploy) assume_yes=1 run_compose up -d --remove-orphans ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
       check | status) run_compose ps ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
       logs)
-        if ((follow && ${#targets[@]} > 1)); then follow_logs "${args[@]}" ${svc_tokens[@]+"${svc_tokens[@]}"}
-        else run_compose logs "${args[@]}" ${svc_tokens[@]+"${svc_tokens[@]}"}; fi ;;
+        if ((follow && ${#targets[@]} > 1)); then
+          follow_logs "${args[@]}" ${svc_tokens[@]+"${svc_tokens[@]}"}
+        else run_compose logs "${args[@]}" ${svc_tokens[@]+"${svc_tokens[@]}"}; fi
+        ;;
       upgrade) run_compose upgrade ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
     esac
     return
@@ -825,5 +872,8 @@ main() {
   esac
 }
 
-# Exit on the same line so edits to this file during a long run are never read.
-main "$@"; exit
+# Bash parses the whole group before running it, so edits to this file during a long run are never read.
+{
+  main "$@"
+  exit
+}
