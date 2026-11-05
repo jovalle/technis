@@ -1,9 +1,23 @@
 services:
   gluetun:
+    # Pin the build supporting official server-directory downloads.
+    image: ghcr.io/qdm12/gluetun@sha256:c2ee4191762fca6b6a3c3359a731198a95d9c9af4db32d466e223bf3a84e779b
     environment:
       - FIREWALL_INPUT_PORTS=${GLUETUN_FIREWALL_INPUT_PORTS:?GLUETUN_FIREWALL_INPUT_PORTS is required},5030
       - HTTPPROXY=on
       - HTTPPROXY_STEALTH=on
+      # Let internal VPN recovery select another server instead of retrying one IP.
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - SERVER_COUNTRIES=United States
+      - SERVER_CITIES=New York
+      - PORT_FORWARD_ONLY=on
+      - UPDATER_PERIOD=480h
+      # Proton's login API requires a CAPTCHA; fetch the official server directory.
+      - UPDATER_PREFER_DIRECT_DOWNLOAD=on
+      - WIREGUARD_ENDPOINT_IP=
+      - WIREGUARD_ENDPOINT_PORT=
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY:?A unique nexus WireGuard private key is required}
+      - WIREGUARD_PUBLIC_KEY=
     networks:
       default: {}
       coolify: {}
