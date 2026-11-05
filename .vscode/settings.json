@@ -26,15 +26,14 @@
   },
   "files.trimTrailingWhitespace": true,
   "files.watcherExclude": {
-    "**/tools/dashboard/data/**": true,
-    "**/.state/**": true,
-    "**/.private/**": true,
-    "**/.planning/**": true,
     "**/.audit/**": true,
     "**/.cache/**": true,
+    "**/.planning/**": true,
+    "**/.private/**": true,
+    "**/.state/**": true,
     "**/.terraform/**": true,
-    "**/.wrangler/**": true,
-    "**/.venv/**": true
+    "**/.venv/**": true,
+    "**/.wrangler/**": true
   },
   "github.copilot.chat.tools.viewImage.enabled": false,
   "material-icon-theme.files.associations": {
@@ -73,6 +72,7 @@
     "archive": "archive",
     "atlantis": "cluster",
     "audits": "review",
+    "beacon": "server",
     "bootstrap": "base",
     "cert-manager": "secure",
     "cilium": "connection",
@@ -93,6 +93,7 @@
     "nexus": "server",
     "node_modules": "node",
     "observability": "log",
+    "observer": "server",
     "paperclip": "attachment",
     "platform": "core",
     "playbooks": "tasks",
@@ -107,12 +108,13 @@
     "web": "global"
   },
   "material-icon-theme.folders.theme": "specific",
+  "python.terminal.useEnvFile": true,
   "yaml.schemaStore.enable": true,
   "yaml.schemas": {
     "ansible": "./ansible/**/*.yaml",
     "https://json.schemastore.org/yamllint.json": "./kubernetes/**/*.yaml",
+    "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook": "file:///Users/jay/Projects/technis/ansible/playbooks/kind.yaml",
     "https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json": "./kubernetes/**/helmrelease.yaml",
-    "kubernetes": "./kubernetes/**/*.yaml",
-    "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook": "file:///Users/jay/Projects/technis/ansible/playbooks/kind.yaml"
+    "kubernetes": "./kubernetes/**/*.yaml"
   }
 }
