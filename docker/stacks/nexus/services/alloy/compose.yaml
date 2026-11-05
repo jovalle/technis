@@ -6,5 +6,6 @@ services:
       - OBSERVABILITY_STACK=nexus
   alloy-host:
     environment:
+      GOMEMLIMIT: 320MiB
       OBSERVABILITY_HOST: nexus
       OBSERVABILITY_SITE: home
