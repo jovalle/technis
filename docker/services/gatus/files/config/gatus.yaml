@@ -29,7 +29,9 @@ ui:
       --destructive: 358.8 100% 69.6%; --destructive-foreground: 224 71.4% 4.1%;
       --border: 223 20% 13.7%; --input: 226 13.7% 18.6%; --ring: 189.6 100% 42.9%;
     }
-    header .w-12.h-12 { width: auto; aspect-ratio: 34 / 9; }
+    header > .container { width: 100%; max-width: 92rem; padding: 1rem; }
+    @media (min-width: 64rem) { header > .container { padding-inline: 3rem; } }
+    header .w-12.h-12 { width: auto; height: 2rem; aspect-ratio: 34 / 9; }
     header h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     #global footer { display: none; }
     /* Only the dashboard heading has a subheading paragraph; endpoint-page names keep the default style. */
