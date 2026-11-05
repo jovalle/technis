@@ -1,7 +1,0 @@
-name: technis-infisical
-
-include:
-  - path:
-      - ../../../services/infisical/compose.yaml
-      - override.yaml
-    project_directory: .
