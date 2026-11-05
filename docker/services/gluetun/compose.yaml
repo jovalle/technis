@@ -1,6 +1,10 @@
 services:
   gluetun:
     cap_add:
+      # Gluetun creates, assigns, and chmods its state files.
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
       - NET_ADMIN
       - NET_RAW
       - SYS_MODULE
@@ -34,10 +38,12 @@ services:
       - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER:?GLUETUN_VPN_SERVICE_PROVIDER is required}
       - VPN_TYPE=${GLUETUN_VPN_TYPE:?GLUETUN_VPN_TYPE is required}
       - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES:?GLUETUN_WIREGUARD_ADDRESSES is required}
-      - WIREGUARD_ENDPOINT_IP=${GLUETUN_WIREGUARD_ENDPOINT_IP:?GLUETUN_WIREGUARD_ENDPOINT_IP is required}
-      - WIREGUARD_ENDPOINT_PORT=${GLUETUN_WIREGUARD_ENDPOINT_PORT:?GLUETUN_WIREGUARD_ENDPOINT_PORT is required}
-      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY:?GLUETUN_WIREGUARD_PRIVATE_KEY is required}
-      - WIREGUARD_PUBLIC_KEY=${GLUETUN_WIREGUARD_PUBLIC_KEY:?GLUETUN_WIREGUARD_PUBLIC_KEY is required}
+      - WIREGUARD_ENDPOINT_IP=${GLUETUN_WIREGUARD_ENDPOINT_IP:-}
+      - WIREGUARD_ENDPOINT_PORT=${GLUETUN_WIREGUARD_ENDPOINT_PORT:-51820}
+      - WIREGUARD_PERSISTENT_KEEPALIVE_INTERVAL=25s
+      # Disabled profiles may have no peer; Gluetun validates the key when started.
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY:-}
+      - WIREGUARD_PUBLIC_KEY=${GLUETUN_WIREGUARD_PUBLIC_KEY:-}
     healthcheck:
       interval: 30s
       retries: 5
@@ -50,8 +56,7 @@ services:
           nslookup github.com 127.0.0.1 >/dev/null 2>&1
       timeout: 10s
     hostname: gluetun
-    # gluetun builds latest from every master commit; v3 tracks tagged releases.
-    image: ghcr.io/qdm12/gluetun:v3
+    image: ghcr.io/qdm12/gluetun:v3.41.3
     labels:
       - traefik.enable=false
     restart: unless-stopped
