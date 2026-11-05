@@ -12,7 +12,7 @@ services:
       resources:
         limits:
           cpus: 1
-          memory: 512M
+          memory: 2G
         reservations:
           cpus: 0.25
           memory: 128M
@@ -30,7 +30,7 @@ services:
         - curl -f http://127.0.0.1:8989/series/ping || exit 1
       timeout: 10s
     hostname: sonarr
-    image: lscr.io/linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr:develop
     labels:
       - traefik.http.routers.sonarr.middlewares=auth@file
       - traefik.http.services.sonarr.loadbalancer.server.port=8989
