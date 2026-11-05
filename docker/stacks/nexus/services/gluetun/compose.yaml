@@ -1,6 +1,7 @@
 services:
   gluetun:
     environment:
+      - FIREWALL_INPUT_PORTS=${GLUETUN_FIREWALL_INPUT_PORTS:?GLUETUN_FIREWALL_INPUT_PORTS is required},5030
       - HTTPPROXY=on
       - HTTPPROXY_STEALTH=on
     networks:
@@ -8,3 +9,4 @@ services:
       coolify: {}
     ports:
       - 10095:10095
+      - 5030:5030

@@ -1,0 +1,54 @@
+services:
+  slskd:
+    cap_drop:
+      - ALL
+    container_name: slskd
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        required: true
+        restart: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 1024M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    environment:
+      - SLSKD_API_KEY=role=ReadWrite;${SLSKD_API_KEY:?SLSKD_API_KEY is required}
+      - SLSKD_DOWNLOADS_DIR=/downloads/slskd/complete
+      - SLSKD_HTTP_IP_ADDRESS=0.0.0.0
+      - SLSKD_INCOMPLETE_DIR=/downloads/slskd/incomplete
+      - SLSKD_JWT_KEY=${SLSKD_JWT_KEY:?SLSKD_JWT_KEY is required}
+      - SLSKD_NO_HTTPS=true
+      - SLSKD_PASSWORD=${SLSKD_PASSWORD:?SLSKD_PASSWORD is required}
+      - SLSKD_REMOTE_CONFIGURATION=false
+      - SLSKD_SLSK_PASSWORD=${SLSKD_SLSK_PASSWORD:?SLSKD_SLSK_PASSWORD is required}
+      - SLSKD_SLSK_USERNAME=${SLSKD_SLSK_USERNAME:?SLSKD_SLSK_USERNAME is required}
+      - SLSKD_UMASK=0022
+      - SLSKD_USERNAME=${SLSKD_USERNAME:-admin}
+      - SLSKD_VPN=true
+      - SLSKD_VPN_GLUETUN_API_KEY=${SLSKD_GLUETUN_API_KEY:?SLSKD_GLUETUN_API_KEY is required}
+      - SLSKD_VPN_GLUETUN_URL=http://127.0.0.1:8000
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 1m0s
+      test:
+        - CMD-SHELL
+        - wget -q -T 3 -O /dev/null http://127.0.0.1:9999/ && wget -q -T 3 -O /dev/null http://127.0.0.1:5030/health
+      timeout: 10s
+    image: slskd/slskd:0.26.1
+    labels:
+      - traefik.enable=false
+    network_mode: service:gluetun
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: ${PUID:-1000}:${PGID:-1000}
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/slskd:/app
+      - /mnt/media/downloads/slskd:/downloads/slskd
