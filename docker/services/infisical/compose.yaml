@@ -1,0 +1,41 @@
+services:
+  infisical:
+    image: infisical/infisical:v0.167.4
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - private
+      - frontend
+
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - private
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - private
+
+networks:
+  private:
+    internal: true
+  frontend:
+
+volumes:
+  postgres:
