@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Console - Technis</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="stylesheet" href="/console.css">
+    <script src="/vendor/zlib.js" defer></script>
+    <script src="/vendor/zlib-inflate.js" defer></script>
+    <script src="/vendor/zlib-adler32.js" defer></script>
+    <script src="/vendor/zlib-crc32.js" defer></script>
+    <script src="/vendor/amt-desktop-0.0.2.js" defer></script>
+    <script src="/client.mjs" type="module"></script>
+    <script src="/power-client.mjs" type="module"></script>
+  </head>
+  <body>
+    <!-- Lucide icons (ISC), including Feather-derived icons (MIT): /vendor/LUCIDE-LICENSE -->
+    <svg class="icon-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="icon-reconnect" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5"/></symbol>
+      <symbol id="icon-disconnect" viewBox="0 0 24 24"><path d="m19 5 3-3M2 22l3-3m1.3 1.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Zm1.2-6.8L10 11m.5 5.5L13 14m-1-8 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/></symbol>
+      <symbol id="icon-fullscreen" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3"/></symbol>
+      <symbol id="icon-backspace" viewBox="0 0 24 24"><path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm2 4 6 6m0-6-6 6"/></symbol>
+      <symbol id="icon-tab" viewBox="0 0 24 24"><path d="M17 12H3m8 6 6-6-6-6m10-1v14"/></symbol>
+    </svg>
+    <header>
+      <div class="brand"><img src="/logo.svg" width="91" height="24" alt="Technis"><span>Console</span></div>
+      <h1 id="host">Technis</h1>
+      <p id="status" role="status" aria-live="polite">Connecting to Intel AMT…</p>
+      <div class="key-controls" role="group" aria-label="Send console keys">
+        <button data-key="backspace" type="button" aria-label="Backspace" title="Backspace" disabled><svg aria-hidden="true"><use href="#icon-backspace"/></svg></button>
+        <button data-key="ctrlc" type="button" aria-label="Ctrl-C" title="Ctrl-C" disabled><span aria-hidden="true">⌃C</span></button>
+        <button data-key="escape" type="button" aria-label="Esc" title="Escape" disabled><span aria-hidden="true">Esc</span></button>
+        <button data-key="tab" type="button" aria-label="Tab" title="Tab" disabled><svg aria-hidden="true"><use href="#icon-tab"/></svg></button>
+        <button data-key="f2" type="button" aria-label="F2" title="F2" disabled><span aria-hidden="true">F2</span></button>
+        <button data-key="f11" type="button" aria-label="F11" title="F11" disabled><span aria-hidden="true">F11</span></button>
+        <button data-key="cad" type="button" aria-label="Ctrl-Alt-Del" title="Ctrl-Alt-Delete" disabled><span aria-hidden="true">⌃⌥⌦</span></button>
+      </div>
+      <div class="actions">
+        <details id="power-controls">
+          <summary>Power · <span id="power-state">unknown</span></summary>
+          <div class="power-menu" role="group" aria-label="Host power controls">
+            <button type="button" data-power="on" disabled>Power on</button>
+            <button type="button" data-power="shutdown" disabled>Shut down</button>
+            <button type="button" data-power="restart" disabled>Reset (force)</button>
+            <button type="button" data-power="off" disabled>Power off (force)</button>
+            <button type="button" data-power="cycle" disabled>Power cycle (force)</button>
+            <button id="power-refresh" type="button">Refresh status</button>
+            <p id="power-feedback" role="status" aria-live="polite"></p>
+          </div>
+        </details>
+        <button id="reconnect" type="button" aria-label="Reconnect" title="Reconnect"><svg aria-hidden="true"><use href="#icon-reconnect"/></svg></button>
+        <button id="disconnect" type="button" aria-label="Disconnect" title="Disconnect"><svg aria-hidden="true"><use href="#icon-disconnect"/></svg></button>
+        <button id="fullscreen" type="button" aria-label="Full screen" title="Full screen"><svg aria-hidden="true"><use href="#icon-fullscreen"/></svg></button>
+      </div>
+    </header>
+    <main id="viewport" aria-label="Remote hardware console">
+      <canvas id="screen" width="640" height="400" tabindex="0" role="application" aria-label="Remote console. Click to control. Shift Escape releases keyboard control." aria-describedby="help"></canvas>
+      <div id="notice" role="status">Connecting to Intel AMT…</div>
+    </main>
+    <footer>
+      <span id="focus">Click to control</span>
+      <span id="resolution"></span>
+      <span id="help" title="Shift-Escape releases keyboard control. Use the toolbar for shortcuts intercepted by your browser or OS."><kbd>⇧ Esc</kbd> release keys</span>
+    </footer>
+  </body>
+</html>
