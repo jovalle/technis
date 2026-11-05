@@ -1,0 +1,50 @@
+services:
+  soularr:
+    cap_drop:
+      - ALL
+    container_name: soularr
+    depends_on:
+      lidarr:
+        condition: service_healthy
+        required: true
+      slskd:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - SCRIPT_INTERVAL=300
+      - SOULARR_LIDARR_API_KEY=${SOULARR_LIDARR_API_KEY:?SOULARR_LIDARR_API_KEY is required}
+      - SOULARR_SLSKD_API_KEY=${SLSKD_API_KEY:?SLSKD_API_KEY is required}
+      - TZ=${TZ:-America/New_York}
+      - WEBUI_ENABLED=true
+      - WEBUI_PORT=8265
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8265/', timeout=5).close()"
+      timeout: 10s
+    hostname: soularr
+    image: mrusse08/soularr:latest@sha256:89b6809a169f6c78032c9a66abf5130e4877c46c0b95391818a38ab66cd71548
+    labels:
+      - traefik.http.routers.soularr.middlewares=auth@file
+      - traefik.http.services.soularr.loadbalancer.server.port=8265
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: ${PUID:-1000}:${PGID:-1000}
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/soularr:/data
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/soularr/run.sh:/app/run.sh:ro
+      - /mnt/media/downloads/slskd:/downloads/slskd

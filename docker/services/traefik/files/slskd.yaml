@@ -1,0 +1,16 @@
+http:
+  routers:
+    slskd:
+      entryPoints:
+        - websecure
+      middlewares:
+        - auth@file
+      rule: Host(`slskd.techn.is`)
+      service: slskd
+      tls:
+        certResolver: letsencrypt
+  services:
+    slskd:
+      loadBalancer:
+        servers:
+          - url: http://gluetun:5030
