@@ -1,0 +1,21 @@
+services:
+  beszel-agent:
+    container_name: beszel-agent
+    environment:
+      - HUB_URL=https://beszel.techn.is
+      - DISABLE_SSH=true
+      - KEY=${BESZEL_KEY:?BESZEL_KEY is required}
+      - TOKEN=${BESZEL_TOKEN:?BESZEL_TOKEN is required}
+      - SYSTEM_NAME=${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}
+    extra_hosts:
+      - beszel.techn.is=100.100.1.3
+    image: henrygd/beszel-agent:latest
+    labels:
+      - traefik.enable=false
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel-agent:/var/lib/beszel-agent
