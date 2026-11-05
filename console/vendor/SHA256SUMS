@@ -1,0 +1,6 @@
+3a99358790f4e99feddbb15ade3e8c9b8ecb23eacc3260d36ac8c14a772e569e  console/vendor/amt-desktop-0.0.2.js
+e03adbf49a6af1360df5c733790e0ce22f1e3ed3c12e5057881f474a3d735891  console/vendor/zlib-adler32.js
+565475048716b27f06f5663d7be65657fda675c44f354c4c477a9c4cd1ed4fe8  console/vendor/zlib-crc32.js
+600b668ace103a417140fdce9b4456304c486de6c2db094a697a3f601c61a936  console/vendor/zlib-inflate.js
+3060c3d13e20d9316c481596ffc55db4d4ed6a8ed247ad48675f83309f512820  console/vendor/zlib.js
+b7158523c38e5d643531d44ddbedbc823f0797f58f88ad4acef8ab037a6fc94b  console/vendor/LICENSE

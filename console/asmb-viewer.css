@@ -1,0 +1,10 @@
+html, body, #main, .content-wrapper, .content { background: #000 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+.h5-toolbar, .statusbar { display: none !important; }
+.div_remote, #remote-div, .remote-view, .box, .row { margin: 0 !important; padding: 0 !important; border: 0 !important; background: #000 !important; }
+.div_remote { left: 0 !important; }
+.remote-view { display: grid; place-items: center; height: 100vh; overflow: hidden; }
+#scroll_div { position: relative; width: var(--console-width, 800px) !important; height: var(--console-height, 600px) !important; overflow: hidden !important; }
+#kvm, #cursor_canvas { display: block; left: 0 !important; top: 0 !important; }
+#kvm { z-index: 0 !important; }
+#cursor_canvas { z-index: 1 !important; }
+#kvm_textbox { caret-color: transparent; }
