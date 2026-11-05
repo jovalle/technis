@@ -1,0 +1,68 @@
+---
+# Purpose:    Query or change mini server power through Intel AMT.
+# Usage:      ansible-playbook ansible/playbooks/amt.yaml                                   # status of all
+#             ansible-playbook ansible/playbooks/amt.yaml -l ms-02 -e amt_power=on
+#             ansible-playbook ansible/playbooks/amt.yaml -l ms-01,ms-03 -e amt_power=off
+#             ansible-playbook ansible/playbooks/amt.yaml -e amt_power=on                   # all
+# Requires:   Infisical /amt/<host>/{username,password} (`just vault -p amt/<host>/password`).
+# Warning:    off, restart and cycle are hard resets that skip OS shutdown; scope them with -l.
+- name: Manage mini server power through Intel AMT
+  hosts: amt
+  gather_facts: false
+  vars:
+    # status, on, off, restart, or cycle; restart and cycle boot a host that is off.
+    amt_power: status
+    amt_timeout: 30
+    amt_retries: 3
+    amt_retry_delay: 10
+    amt_wait_retries: 30
+    ansible_connection: local
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+  tasks:
+    - name: Validate the AMT request
+      ansible.builtin.assert:
+        that: amt_power in ['status', 'on', 'off', 'restart', 'cycle']
+        fail_msg: amt_power must be status, on, off, restart, or cycle.
+        quiet: true
+      run_once: true
+
+    - name: Apply the AMT power request
+      amt:
+        host: "{{ amt_host }}"
+        server_certificate: "{{ amt_server_certificate }}"
+        legacy_server_connect: "{{ amt_legacy_server_connect | default(false) }}"
+        username: "{{ amt_username }}"
+        password: "{{ amt_password }}"
+        power: "{{ omit if amt_power == 'status' else amt_power }}"
+        timeout: "{{ amt_timeout }}"
+      register: amt_result
+      until: amt_result is succeeded or not amt_result.retryable | default(false)
+      retries: "{{ amt_retries }}"
+      delay: "{{ amt_retry_delay }}"
+
+    - name: Wait for the requested power state
+      amt:
+        host: "{{ amt_host }}"
+        server_certificate: "{{ amt_server_certificate }}"
+        legacy_server_connect: "{{ amt_legacy_server_connect | default(false) }}"
+        username: "{{ amt_username }}"
+        password: "{{ amt_password }}"
+        timeout: "{{ amt_timeout }}"
+      register: amt_state
+      # AMT on a shared NIC can drop out for a while during host boot.
+      until: >-
+        (amt_state is succeeded and amt_state.power_state == amt_power)
+        or (amt_state is failed and not amt_state.retryable | default(false))
+      retries: "{{ amt_wait_retries }}"
+      delay: "{{ amt_retry_delay }}"
+      when:
+        - amt_result is changed
+        - amt_power in ['on', 'off']
+        - not ansible_check_mode
+
+    - name: Report the AMT power state
+      ansible.builtin.debug:
+        msg:
+          before: "{{ amt_result.power_state }}"
+          action: "{{ amt_result.power_action or 'none' }}"
+          after: "{{ amt_state.power_state | default('unverified' if amt_result is changed else amt_result.power_state) }}"

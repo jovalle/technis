@@ -1,0 +1,5 @@
+---
+amt_server_certificate: "{{ lookup('ansible.builtin.file', inventory_dir ~ '/group_vars/amt/certificates/' ~ inventory_hostname ~ '.pem') }}"
+# Set with `just vault amt/HOST/username` and `.../password`; read from Infisical /amt, folder per host.
+amt_username: "{{ lookup('ansible.builtin.pipe', 'python3 ' ~ ((inventory_dir ~ '/../../tools/vault.py') | quote) ~ ' get amt/' ~ (inventory_hostname | quote) ~ '/username') }}"
+amt_password: "{{ lookup('ansible.builtin.pipe', 'python3 ' ~ ((inventory_dir ~ '/../../tools/vault.py') | quote) ~ ' get amt/' ~ (inventory_hostname | quote) ~ '/password') }}"

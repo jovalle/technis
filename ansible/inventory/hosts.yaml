@@ -1,6 +1,36 @@
 ---
 all:
   children:
+    amt:
+      vars:
+        amt_legacy_server_connect: true
+      hosts:
+        ms-01:
+          ansible_host: 192.168.10.11
+          amt_host: 192.168.10.101
+          pxe_host: 192.168.10.111
+          pxe_mac: 58:47:ca:77:80:e8
+        ms-02:
+          ansible_host: 192.168.10.12
+          amt_host: 192.168.10.102
+          pxe_host: 192.168.10.112
+          pxe_mac: 58:47:ca:77:4f:d4
+        ms-03:
+          ansible_host: 192.168.10.13
+          amt_host: 192.168.10.103
+          pxe_host: 192.168.10.113
+          pxe_mac: 58:47:ca:77:80:34
+    glkvm:
+      hosts:
+        stargate:
+          glkvm_host: 192.168.1.22
+    ipmi:
+      hosts:
+        nexus:
+          ipmi_host: 192.168.1.33
+    nas:
+      hosts:
+        nexus:
     watchtower:
       children:
         player:
