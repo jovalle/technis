@@ -13,7 +13,6 @@
 .cache
 /tmp
 /bin/.prepare.*
-/tools/dashboard/data
 archive
 /ansible/roles/projectivy/files
 /docker/services/technitium/dns
