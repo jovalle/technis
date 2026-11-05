@@ -36,11 +36,13 @@ services:
         - http://127.0.0.1:9091/api/health
       timeout: 10s
     hostname: authelia
-    image: technis/authelia:4.39.28
+    image: technis/authelia:latest
     labels:
       - traefik.enable=true
       - traefik.http.routers.authelia.rule=Host(`auth.techn.is`)
       - traefik.http.services.authelia.loadbalancer.server.port=9091
+    # Local build only; never resolve technis/* against Docker Hub.
+    pull_policy: never
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
