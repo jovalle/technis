@@ -1,0 +1,28 @@
+x-nut-exporter: &nut-exporter
+  image: ghcr.io/druggeri/nut_exporter:latest
+  command: ["--nut.vars_enable="]
+  expose: ["9199"]
+  environment:
+    NUT_EXPORTER_SERVER: nut
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  depends_on:
+    nut:
+      condition: service_healthy
+services:
+  nut-exporter-1:
+    <<: *nut-exporter
+    labels:
+      - observability.metrics.address=nut-exporter-1:9199
+      - observability.metrics.path=/ups_metrics
+      - observability.metrics.ups=ups1
+      - traefik.enable=false
+  nut-exporter-2:
+    <<: *nut-exporter
+    labels:
+      - observability.metrics.address=nut-exporter-2:9199
+      - observability.metrics.path=/ups_metrics
+      - observability.metrics.ups=ups2
+      - traefik.enable=false

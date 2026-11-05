@@ -1,0 +1,10 @@
+services:
+  alloy:
+    environment:
+      - OBSERVABILITY_HOST=beacon
+      - OBSERVABILITY_SITE=home
+      - OBSERVABILITY_STACK=beacon
+  alloy-host:
+    environment:
+      OBSERVABILITY_HOST: beacon
+      OBSERVABILITY_SITE: home
