@@ -2,37 +2,37 @@ include:
   - path:
       - ../../services/alloy/compose.yaml
       - services/alloy/compose.yaml
-    env_file: &env
-      - ../../.env
-      - .env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/alloy.env
   - path:
       - ../../services/cadvisor/compose.yaml
       - services/cadvisor/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/cadvisor.env
+  - path: ../../services/beszel-agent/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/beszel-agent.env
   - path: services/cloudflared/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/cloudflared.env
   - path:
       - ../../services/docker-socket-proxy/compose.yaml
       - services/docker-socket-proxy/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/docker-socket-proxy.env
   - path:
       - ../../services/gluetun/compose.yaml
       - services/gluetun/compose.yaml
-    env_file: *env
-  - path: ../../services/hawser/compose.yaml
-    env_file: *env
-  - path: ../../services/netdata/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/gluetun.env
+  - path:
+      - ../../services/hawser/compose.yaml
+      - services/hawser/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/hawser.env
   - path: ../../services/tailscale/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/tailscale.env
   - path:
       - ../../services/technitium/compose.yaml
       - services/technitium/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/technitium.env
   - path:
       - ../../services/traefik/compose.yaml
       - services/traefik/compose.yaml
-    env_file: *env
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/traefik.env
 
 name: mothership
 

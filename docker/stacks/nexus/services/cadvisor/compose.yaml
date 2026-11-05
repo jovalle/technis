@@ -1,0 +1,6 @@
+services:
+  cadvisor:
+    deploy:
+      resources:
+        limits:
+          cpus: 1

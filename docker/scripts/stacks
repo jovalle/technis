@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# tctl: Docker Compose across the Technis stacks, plus workstation setup and checks.
+# Docker Compose across the Technis stacks, plus workstation setup and checks; run through just.
 set -Eeuo pipefail
 
-root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)
 stacks_dir=$root/docker/stacks
+ssh_snippet=$root/ansible/ssh_config
 
 # Output follows jsh: cyan activity, dim notes, green ✓, yellow !, red ✗.
 # Decoration goes to stderr; tables and command output stay on stdout.
@@ -52,6 +53,11 @@ in_list() {
 }
 plural() { if (($1 == 1)); then printf '%s %s' "$1" "$2"; else printf '%s %ss' "$1" "$2"; fi; }
 
+ssh_config_first() {
+  [[ -f $HOME/.ssh/config ]] &&
+    [[ $(awk '!/^[[:space:]]*(#|$)/ {sub(/^[[:space:]]*/, ""); sub(/[[:space:]]*$/, ""); print; exit}' "$HOME/.ssh/config") == "Include \"$ssh_snippet\"" ]]
+}
+
 now_ms() {
   if [[ -n ${EPOCHREALTIME:-} ]]; then
     local t=${EPOCHREALTIME/[.,]/}
@@ -81,56 +87,167 @@ usage() {
   local s list=
   for s in $(stacks); do list+="${list:+, }$s"; done
   cat <<EOF
-${O_B}tctl${O_X} ${O_D}Docker Compose across the Technis stacks${O_X}
-
-${O_B}Usage:${O_X} tctl ${O_C}[-s stack]... [--yes]${O_X} <command> ${O_D}[...args]${O_X}
-
-${O_B}Options:${O_X}
-  ${O_C}-s, --stack${O_X} ${O_D}<name>${O_X}   target stack, repeatable or comma-separated ${O_D}($list)${O_X}
-  ${O_C}-y, --yes${O_X}            skip the confirmation for changes on several stacks;
-                       also accepted after the command, never passed to compose
-  ${O_C}-h, --help${O_X}           show this help
-
-${O_B}Environment:${O_X}
-  ${O_C}TCTL_PROGRESS=compose${O_X}  keep compose's own progress view for ${O_Y}up -d${O_X}; by default
-                         tctl prints only containers that change, then a summary
+${O_B}just${O_X} ${O_D}Docker Compose across the Technis stacks ($list)${O_X}
 
 ${O_B}Commands:${O_X}
-  ${O_C}<compose command>${O_X}    any docker compose command, on every stack by default
-  ${O_C}upgrade${O_X} ${O_D}[service]...${O_X}  pull, then up -d, so floating tags pick up new images
-  ${O_C}ctx${O_X}                  create the per-stack Docker contexts ${O_D}(ssh://<stack>)${O_X}
-  ${O_C}doctor${O_X}               read-only checks for tools, SSH, contexts, env files, and models
-  ${O_C}bootstrap${O_X}            install missing tools and configure this workstation
-  ${O_C}sync${O_X} ${O_D}[-n] <service>...${O_X} copy service files/ to one stack host ${O_D}(needs -s)${O_X}
+  ${O_C}just deploy${O_X} ${O_D}[target]${O_X}          start or update services, removing orphaned containers
+  ${O_C}just check${O_X} ${O_D}[target]${O_X}           preflight compose models, then show container status
+  ${O_C}just logs${O_X} ${O_D}<target> [flags]${O_X}    show or follow logs
+  ${O_C}just update${O_X} ${O_D}<target>${O_X}          pull images and recreate services
+  ${O_C}just compose${O_X} ${O_D}<stack> <args...>${O_X} pass arguments to Docker Compose
+  ${O_C}just sync${O_X} ${O_D}<stack> [-n] [service...]${O_X}  copy service files to the host (default: all)
+  ${O_C}just check workstation${O_X}       check tools, SSH, contexts, and engines
+  ${O_C}just prepare workstation${O_X}     install tools and configure the workstation
+  ${O_C}just prepare contexts${O_X}        create the Docker contexts
+
+${O_B}Options:${O_X}
+  ${O_C}-s, --stack${O_X} ${O_D}<name>${O_X}   filter stacks, repeatable or comma-separated
+  ${O_C}-y, --yes${O_X}            skip the confirmation for other changes on several stacks
+
+${O_B}Environment:${O_X}
+  ${O_C}STACKS_PROGRESS=compose${O_X}  use Compose's own progress view for detached runs;
+                           by default show resource progress and final results
 
 ${O_B}Targeting:${O_X}
-  Service names narrow the stacks to those that define them. Read-only commands
-  run everywhere; changes on several stacks ask first; ${O_Y}down${O_X} and ${O_Y}rm${O_X} take one
-  stack; ${O_Y}exec${O_X}, ${O_Y}run${O_X}, ${O_Y}cp${O_X}, ${O_Y}attach${O_X}, ${O_Y}logs -f${O_X}, and streaming ${O_Y}stats${O_X} need exactly one.
+  Use a stack name, a service name, or stack/service. Service names are found
+  across all stacks; -s filters the stacks. Deploy and check default
+  to all stacks. Other changes across stacks ask first.
+  Preflight prompts for missing values on a terminal; Esc skips, Ctrl-C stops.
+  Values are hidden and used only for the current run; skipped values block changes.
 
 ${O_B}Examples:${O_X}
-  ${O_D}\$${O_X} t ps                        ${O_D}# every container, one table${O_X}
-  ${O_D}\$${O_X} t logs --tail 50 tracearr   ${O_D}# finds the stack that runs tracearr${O_X}
-  ${O_D}\$${O_X} t -s nexus up -d immich
-  ${O_D}\$${O_X} t upgrade watchtower        ${O_D}# pull and recreate where it runs${O_X}
+  just check
+  just logs alloy -f
+  just deploy immich -s nexus
+  just update nexus/immich
+  just compose nexus config --services
 EOF
 }
 
 stacks() {
   local f
-  for f in "$stacks_dir"/*/compose.yaml; do
-    [[ -f $f ]] && basename "$(dirname "$f")"
+  for f in "$stacks_dir"/*; do
+    [[ -d $f ]] && basename "$f"
   done
 }
 
-# Isolate every call from direnv state left by whichever directory the shell is in.
+secretless_verbs=(ps ls images top port version volumes logs stats events)
+
+# secretless COMPOSE_ARGS...; read-only calls get placeholders instead of secret values.
+secretless() {
+  [[ ${1:-} == --progress ]] && shift 2
+  local verb=${1:-} a
+  in_list "$verb" "${secretless_verbs[@]}" && return 0
+  [[ $verb == config ]] || return 1
+  for a in "$@"; do [[ $a == --hash* ]] && return 1; done
+  return 0
+}
+
+resolve() {
+  if [[ $1 == secret ]]; then
+    python3 "$root/tools/vault.py" inject
+  else
+    # *_IP keys must parse as addresses for Compose validation.
+    sed -E -e "s/^([A-Za-z0-9_]*_IP=)'?\{\{ *vault:\/\/[^}]*\}\}'?/\1127.0.0.1/" \
+      -e 's/\{\{ *vault:\/\/[^}]*\}\}/placeholder/g'
+  fi
+}
+
+# stack_env STACK MODE OUT; one resolve per stack, then one file per app: common, stack, app, stack override.
+stack_env() (
+  umask 077
+  local stack=$1 mode=$2 out=$3 dir=$stacks_dir/$1 name f apps
+  apps=$(sed -nE 's/.*\$\{TECHNIS_ENV[^}]*\}\/([^ ]+)\.env.*/\1/p' "$dir/compose.yaml" | grep -vxE 'common|stack' | sort -u)
+  mkdir "$out" "$out/.parts"
+  : >"$out/project.env"
+  {
+    for name in common stack $apps; do
+      printf '#env:%s\n' "$name"
+      case $name in
+        common) set -- "$root/docker/.env" ;;
+        stack) set -- "$dir/.env" ;;
+        *) set -- "$root/docker/services/${name//.//}/.env" "$dir/services/${name//.//}/.env" ;;
+      esac
+      for f; do [[ ! -f $f ]] || { cat "$f" && echo; }; done
+    done
+  } | resolve "$mode" |
+    awk -v out="$out/.parts" '/^#env:/ { if (f) close(f); f = out "/" substr($0, 6) ".env"; printf "" >f; next } { print >f }' ||
+    { rm -rf "$out" && exit 1; }
+  # Within one dotenv file the last assignment wins, so later layers override earlier ones.
+  for name in $apps; do cat "$out/.parts/common.env" "$out/.parts/stack.env" "$out/.parts/$name.env" >"$out/$name.env"; done
+  rm -rf "$out/.parts"
+  if [[ -f $env_root/$stack.inputs ]]; then
+    for f in "$out"/*.env; do cat "$env_root/$stack.inputs" >>"$f"; done
+  fi
+)
+
+# Isolate every call from direnv state; the project .env stays unread so raw references never override.
 compose() {
   local stack=$1
   shift
-  local dir=$stacks_dir/$stack
+  local dir=$stacks_dir/$stack mode=secret envs
+  if [[ ${compose_mode:-} != secret ]] && secretless "$@"; then mode=plain; fi
+  envs=$env_root/$stack.$mode
+  [[ -d $envs ]] || stack_env "$stack" "$mode" "$envs" || return
   env -u DOCKER_HOST -u DOCKER_CONTEXT -u COMPOSE_FILE -u COMPOSE_PROJECT_NAME -u COMPOSE_PROFILES \
-    COMPOSE_ENV_FILES="$dir/.env" \
+    COMPOSE_ENV_FILES="$envs/project.env" TECHNIS_ENV="$envs" \
     docker --context "$stack" compose --project-directory "$dir" -f "$dir/compose.yaml" "$@"
+}
+
+# Prompt values stay in private temporary files and are never echoed or saved to the repository.
+prompt_value() {
+  local key=$1 char value=''
+  [[ -t 0 ]] || return 1
+  printf '%s' "$key (hidden; Enter accepts, Esc skips): " >&2
+  while IFS= read -rsn1 char; do
+    case $char in
+      $'\e') printf '\n' >&2; return 1 ;;
+      '') printf '\n' >&2; [[ -n $value ]] || return 1; REPLY=$value; return 0 ;;
+      $'\177' | $'\b') value=${value%?} ;;
+      *) value+=$char ;;
+    esac
+  done
+  printf '\n' >&2
+  return 1
+}
+
+# Compose validates the complete model locally; missing values can be supplied for this run.
+preflight() {
+  local s=$1 err=$env_root/$1.preflight.err key value f rc skipped=0 seen=' '
+  [[ -f $stacks_dir/$s/compose.yaml ]] || { row fail "$s" 'compose.yaml missing'; return 1; }
+  while :; do
+    if compose "$s" config --quiet 2>"$err"; then rc=0; else rc=$?; fi
+    key=$(sed 's/\\"/"/g' "$err" | sed -nE -e 's/.*required variable ([A-Za-z_][A-Za-z0-9_]*) is missing a value.*/\1/p' \
+      -e 's/.*The "([A-Za-z_][A-Za-z0-9_]*)" variable is not set.*/\1/p' | head -1)
+    if [[ -z $key ]]; then
+      if ((rc)); then cat "$err" >&2; row fail "$s" 'preflight failed'; return 1; fi
+      break
+    fi
+    if [[ $seen == *" $key "* ]]; then
+      cat "$err" >&2
+      row fail "$s" 'preflight could not apply the supplied value'
+      return 1
+    fi
+    seen+="$key "
+    if prompt_value "$s: $key"; then value=$REPLY; else
+      row warn "$s" "$key skipped"
+      skipped=1
+      case $key in *_ROOT | *_DIR) value=/tmp/stacks-placeholder ;; *) value=placeholder ;; esac
+    fi
+    # Single-quoted Compose dotenv values do not interpolate dollar signs.
+    value=${value//\\/\\\\}
+    value=${value//\'/\\\'}
+    printf "%s='%s'\n" "$key" "$value" >>"$env_root/$s.inputs"
+    for f in "$env_root/$s.plain"/*.env; do printf "%s='%s'\n" "$key" "$value" >>"$f"; done
+  done
+  ((skipped == 0)) || { row fail "$s" 'preflight has skipped values'; return 1; }
+  if [[ ${2:-} == secret ]]; then
+    if ! compose_mode=secret compose "$s" config --quiet 2>"$err"; then
+      cat "$err" >&2
+      row fail "$s" 'secret resolution or resolved compose validation failed'
+      return 1
+    fi
+  fi
 }
 
 endpoint() { docker context inspect -f '{{.Endpoints.docker.Host}}' "$1" 2>/dev/null; }
@@ -174,28 +291,11 @@ cmd_ctx() {
   for s in $(stacks); do ensure_ctx "$s"; done
 }
 
-env_keys() { sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1/p' "$1" | sort -u; }
-
-# check_env EXAMPLE; missing keys only warn because the compose model check is authoritative.
-check_env() {
-  local example=$1 real=${1%.example} missing
-  if [[ ! -f $real ]]; then
-    row fail "${real#"$root"/}" "missing (secrets arrive via Syncthing)"
-    return 1
-  fi
-  missing=$(comm -23 <(env_keys "$example") <(env_keys "$real") | tr '\n' ' ')
-  if [[ -n $missing ]]; then
-    row warn "${real#"$root"/}" "lacks keys from the example: ${missing% }"
-  else
-    row ok "${real#"$root"/}"
-  fi
-}
-
 cmd_doctor() {
   local fails=0 t s v start
   start=$(now_ms)
   info "Tools"
-  for t in bash docker ssh git jq direnv rsync nc; do
+  for t in bash docker ssh git jq direnv rsync nc python3; do
     if has "$t"; then row ok "$t"; else
       row fail "$t" "not installed"
       fails=$((fails + 1))
@@ -211,21 +311,24 @@ cmd_doctor() {
     fi
   fi
   if has rsync && ! rsync --version 2>/dev/null | head -1 | grep -q 'version 3\.'; then
-    row warn rsync "not 3.x; tctl sync needs GNU rsync"
+    row warn rsync "not 3.x; just sync needs GNU rsync"
   fi
 
   blank
   info "Workstation"
+  if ssh_config_first; then row ok "ssh config" "includes ansible/ssh_config first"; else
+    row fail "ssh config" "run: just run workstation --tags ssh"
+    fails=$((fails + 1))
+  fi
   if [[ -f $HOME/.ssh/technis ]]; then row ok "ssh key" "present at ~/.ssh/technis"; else
     row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
   fi
-  check_env "$root/docker/.env.example" || fails=$((fails + 1))
 
   for s in $(stacks); do
     blank
     info "$s"
     if [[ $(endpoint "$s" || true) == "ssh://$s" ]]; then row ok context "ssh://$s"; else
-      row fail context "missing or wrong (run: tctl ctx)"
+      row fail context "missing or wrong (run: just prepare contexts)"
       fails=$((fails + 1))
       continue
     fi
@@ -240,9 +343,8 @@ cmd_doctor() {
       row fail engine "unreachable"
       fails=$((fails + 1))
     fi
-    [[ ! -f $stacks_dir/$s/.env.example ]] || check_env "$stacks_dir/$s/.env.example" || fails=$((fails + 1))
     if compose "$s" config --quiet 2>/dev/null; then row ok "compose model" "valid"; else
-      row fail "compose model" "invalid (run: tctl -s $s config --quiet)"
+      row fail "compose model" "invalid (run: just check $s)"
       fails=$((fails + 1))
     fi
   done
@@ -257,7 +359,7 @@ bootstrap_tools() {
   for p in $pairs; do has "${p%%:*}" || need+=("${p#*:}"); done
   rsync --version 2>/dev/null | head -1 | grep -q 'version 3\.' || need+=(rsync)
   if ((${#need[@]})); then
-    has brew || die "Homebrew is required to install: ${need[*]}. Install it from https://brew.sh, then rerun tctl bootstrap."
+    has brew || die "Homebrew is required to install: ${need[*]}. Install it from https://brew.sh, then rerun just prepare workstation."
     if confirm "Install with Homebrew: ${need[*]}."; then brew install "${need[@]}"; else row skip "tools" "skipped: ${need[*]}"; fi
   else
     row ok tools "all present"
@@ -275,6 +377,15 @@ bootstrap_tools() {
   fi
 }
 
+bootstrap_ssh() {
+  if confirm "Manage the Technis SSH block in ~/.ssh/config with Ansible (backups are kept)."; then
+    (cd "$root" && ansible-playbook ansible/playbooks/workstation.yaml --tags ssh)
+  else
+    row skip "ssh config" "skipped"
+  fi
+  [[ -f $HOME/.ssh/technis ]] || row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
+}
+
 bootstrap_shell() {
   local shell_name rc
   shell_name=$(basename "${SHELL:-bash}")
@@ -288,9 +399,6 @@ bootstrap_shell() {
   esac
   grep -qs 'direnv hook' "$rc" || row warn shell "add to ${rc/#$HOME/~}: eval \"\$(direnv hook $shell_name)\""
   grep -qs 'mise activate' "$rc" || row warn shell "add to ${rc/#$HOME/~}: eval \"\$(mise activate $shell_name)\""
-  if grep -qsE "^[[:space:]]*alias t=" "$rc"; then
-    row warn shell "${rc/#$HOME/~} defines alias t, which hides the repo's t -> tctl"
-  fi
 }
 
 cmd_bootstrap() {
@@ -304,7 +412,7 @@ cmd_bootstrap() {
   fi
   blank
   info "SSH and Docker contexts"
-  [[ -f $HOME/.ssh/technis ]] || row warn "ssh key" "missing at ~/.ssh/technis; copy it from a trusted workstation"
+  bootstrap_ssh
   cmd_ctx
   blank
   info "Repository"
@@ -331,14 +439,20 @@ cmd_bootstrap() {
 }
 
 cmd_sync() {
-  ((${#targets[@]} == 1)) || die "sync needs exactly one -s stack"
-  local script=$root/docker/scripts/sync
+  ((${#targets[@]} == 1)) || die "sync needs exactly one stack"
+  local script=$root/docker/scripts/sync dry=() service services=()
   [[ -x $script ]] || die "missing $script"
   if [[ ${1:-} == -n ]]; then
+    dry=(-n)
     shift
-    exec "$script" -n "${targets[0]}" "$@"
   fi
-  exec "$script" "${targets[0]}" "$@"
+  if ((!$#)); then
+    while IFS= read -r service; do services+=("$service"); done < <(
+      sed -nE 's#.*\.\./\.\./services/(.+)/compose\.yaml.*#\1#p' "$stacks_dir/${targets[0]}/compose.yaml" | sort -u
+    )
+    set -- "${services[@]}"
+  fi
+  exec "$script" ${dry[@]+"${dry[@]}"} "${targets[0]}" "$@"
 }
 
 readonly_verbs=(ps ls images top port version volumes)
@@ -371,6 +485,50 @@ narrow_by_service() {
   return 0
 }
 
+# Resolve an explicit stack, service, or stack/service before any changes.
+control_target() {
+  local selector=$1 s services matched=() stack='' service=''
+  [[ -n $selector ]] || return 0
+  if [[ $selector == */* ]]; then
+    stack=${selector%%/*}
+    service=${selector#*/}
+    [[ -n $stack && -n $service && $service != */* ]] || die "invalid target '$selector'"
+    in_list "$stack" "${all[@]}" || die "unknown stack '$stack'"
+    in_list "$stack" "${targets[@]}" || die "target '$selector' excluded by -s"
+    targets=("$stack")
+  elif in_list "$selector" "${all[@]}"; then
+    in_list "$selector" "${targets[@]}" || die "stack '$selector' excluded by -s"
+    targets=("$selector")
+    return 0
+  else
+    service=$selector
+  fi
+  for s in "${targets[@]}"; do
+    if ! services=$(compose "$s" config --services 2>"$env_root/$s.discovery.err"); then
+      preflight "$s" || die "cannot discover services on $s"
+      services=$(compose "$s" config --services) || die "cannot discover services on $s"
+    fi
+    if grep -qxF -- "$service" <<<"$services"; then matched+=("$s"); fi
+  done
+  ((${#matched[@]})) || die "service '$service' not found in selected stacks"
+  targets=("${matched[@]}")
+  svc_tokens=("$service")
+}
+
+# Follow all selected stacks concurrently, with each line labelled by its stack.
+follow_logs() {
+  local s pid rc=0 pids=()
+  show_cmd logs "$@"
+  for s in "${targets[@]}"; do
+    ensure_ctx "$s" quiet
+    (compose "$s" logs "$@" | while IFS= read -r line || [[ -n $line ]]; do printf '[%s] %s\n' "$s" "$line"; done) &
+    pids+=("$!")
+  done
+  trap 'kill "${pids[@]}" 2>/dev/null || true; exit 130' INT TERM
+  for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
+  return "$rc"
+}
+
 status_color() {
   case $1/$2 in
     running/unhealthy | exited/* | dead/*) printf '%s' "$O_R" ;;
@@ -384,7 +542,7 @@ status_color() {
 ps_table() {
   local start tmp s rc failed=() rows=() line
   start=$(now_ms)
-  tmp=$(mktemp -d "${TMPDIR:-/tmp}/tctl.XXXXXX")
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/stacks.XXXXXX")
   for s in "${targets[@]}"; do
     (
       if compose "$s" ps --format json "$@" >"$tmp/$s.json" 2>"$tmp/$s.err"; then echo 0; else echo $?; fi >"$tmp/$s.rc"
@@ -437,57 +595,30 @@ ps_table() {
   row ok "$(plural "$n" container) on $(plural "$ok_n" stack)" "$(took "$start")"
 }
 
-# Compose's live view keeps settled rows and cuts the rest to "... N more"; show only what changes.
-progress_jq='
-def took($s): ((now - $s) * 1000 | floor) as $ms
-  | if $ms < 1000 then "[\($ms)ms]" else "[\($ms / 10 | floor / 100)s]" end;
-def txt($e): [$e.text, ($e.details // "")] | map(select(. != null and . != "")) | join(" ");
-def summary:
-  ([.done[]] | group_by(.) | map("\(length) \(.[0] | ascii_downcase)"))
-  + ([.failed | length | select(. > 0) | "\(.) failed"])
-  + ([(.seen | keys) - (.start | keys) - (.done | keys) - (.failed | keys) | length | select(. > 0) | "\(.) unchanged"])
-  | join(", ");
-foreach ((inputs | . as $l | (try fromjson catch null)
-    | if type == "object" then . else {raw: $l} end), {end: true}) as $e (
-  {seen: {}, start: {}, done: {}, failed: {}};
-  del(.out)
-  | if $e.end then .out = ["note", summary]
-    elif $e.raw != null then .out = ["raw", $e.raw]
-    elif $e.level != null then .out = [(if $e.level == "error" or $e.level == "fatal" then "fail" else "warn" end), $e.msg]
-    elif ($e.parent_id // "") != "" then
-      (if $e.status == "Error" then .out = ["fail", $e.parent_id, txt($e)] else . end)
-    else
-      ($e.id | sub("^Container "; "")) as $id
-      | .seen[$id] = true
-      | if $e.status == "Error" then .failed[$id] = true | .out = ["fail", $id, txt($e)]
-        elif $e.status == "Warning" then .out = ["warn", $id, txt($e)]
-        elif $e.text == "Waiting" or $e.text == "Running" then .
-        elif ($e.text == "Healthy" or $e.text == "Exited") and .start[$id] == null then .
-        elif $e.status == "Working" then .start[$id] //= now | .out = ["info", $id, $e.text]
-        else .done[$id] //= $e.text
-          | .out = ["ok", $id, ($e.text + (if .start[$id] then " " + took(.start[$id]) else "" end))]
-        end
-    end;
-  .out // empty | select(.[1] != "") | @tsv)'
-
-progress_filter() {
-  local kind subject detail
-  while IFS=$'\t' read -r kind subject detail; do
-    case $kind in
-      raw) say "$subject" ;;
-      note) muted "  $subject" ;;
-      *) row "$kind" "$subject" "$detail" ;;
-    esac
-  done < <(jq -nrR --unbuffered "$progress_jq")
-}
-
 # Attached up streams logs on the same terminal, so only detached or waiting runs are filtered.
 compose_up() {
-  local s=$1 a filter=0
+  local s=$1 a filter=0 rc render_rc
   shift
   for a in "$@"; do [[ $a == -d || $a == --detach || $a == --wait ]] && filter=1; done
-  if ((filter)) && [[ ${TCTL_PROGRESS:-} != compose ]] && has jq; then
-    { compose "$s" --progress json up "$@" 2>&1 1>&3 3>&- | progress_filter; } 3>&1
+  if ((filter)) && [[ ${STACKS_PROGRESS:-} != compose ]] && has python3; then
+    local results=() capture line
+    capture=$(mktemp "${env_root:-${TMPDIR:-/tmp}}/stacks-progress.XXXXXX") || { compose "$s" up "$@"; return; }
+    if { compose "$s" --progress json up "$@" 2>&1 1>&3 3>&- |
+      ( trap '' PIPE
+        while IFS= read -r line || [[ -n $line ]]; do
+          printf '%s\n' "$line" >&4 || :
+          printf '%s\n' "$line" 2>/dev/null || :
+        done
+      ) 4>"$capture" | python3 "$root/docker/scripts/compose_progress.py" "$s"
+      results=("${PIPESTATUS[@]}")
+    } 3>&1; then :; fi
+    rc=${results[0]:-1} render_rc=${results[2]:-1}
+    if ((render_rc != 0)); then
+      row warn 'progress display failed' "exit $render_rc; raw Compose progress follows"
+      cat "$capture" >&2
+    fi
+    rm -f "$capture"
+    return "$rc"
   else
     compose "$s" up "$@"
   fi
@@ -497,7 +628,9 @@ compose_up() {
 stack_run() {
   local s=$1 verb=$2
   shift 2
-  if [[ $verb == upgrade ]]; then
+  if [[ ${raw_compose:-0} == 1 ]]; then
+    compose "$s" "$verb" "$@"
+  elif [[ $verb == upgrade ]]; then
     compose "$s" pull "$@" && compose_up "$s" -d "$@"
   elif [[ $verb == up ]]; then
     compose_up "$s" "$@"
@@ -540,7 +673,7 @@ run_compose() {
       ;;
   esac
 
-  if [[ $verb == ps ]]; then
+  if [[ $verb == ps && ${raw_compose:-0} != 1 ]]; then
     local plain=0
     for a in "$@"; do [[ $a == -q || $a == --quiet || $a == --format || $a == --format=* ]] && plain=1; done
     ((plain)) || {
@@ -609,7 +742,7 @@ main() {
         shift
         break
         ;;
-      -*) die "unknown option $1 (tctl options go before the command)" ;;
+      -*) die "unknown option $1 (options go before the command)" ;;
       *) break ;;
     esac
   done
@@ -618,18 +751,71 @@ main() {
     exit 2
   }
   ((${#targets[@]})) || targets=("${all[@]}")
-  has docker || [[ $1 == bootstrap ]] || die "docker CLI not found; run: tctl bootstrap"
+  has docker || [[ $1 == bootstrap ]] || die "docker CLI not found; run: just prepare workstation"
 
-  local verb=$1 args=() a passthru=0
+  local verb=$1 args=() a passthru=0 selector='' follow=0
   shift
-  # Compose's own up/create -y auto-accepts volume recreation, so tctl keeps -y for itself.
-  if in_list "$verb" "${single_verbs[@]}"; then args=("$@"); else
+  if in_list "$verb" deploy check status logs upgrade; then
+    while (($#)); do
+      case $1 in
+        -s | --stack)
+          [[ -n ${2:-} ]] || die "$1 needs a stack name"
+          if [[ $explicit == 0 ]]; then targets=(); explicit=1; fi
+          for s in ${2//,/ }; do
+            in_list "$s" "${all[@]}" || die "unknown stack '$s' (known: ${all[*]})"
+            in_list "$s" ${targets[@]+"${targets[@]}"} || targets+=("$s")
+          done
+          shift 2 ;;
+        -y | --yes) assume_yes=1; shift ;;
+        -f | --follow) [[ $verb == logs ]] || die "unknown option $1"; follow=1; args+=("$1"); shift ;;
+        -*)
+          [[ $verb == logs ]] || die "unknown option $1"
+          args+=("$1")
+          case $1 in --tail | -n | --since | --until) [[ -n ${2:-} ]] || die "$1 needs a value"; args+=("$2"); shift ;; esac
+          shift ;;
+        *) [[ -z $selector ]] || die "$verb takes one target"; selector=$1; shift ;;
+      esac
+    done
+    [[ $verb != logs && $verb != upgrade || -n $selector ]] || die "$verb needs a stack or service"
+    env_root=$(mktemp -d "${TMPDIR:-/tmp}/stacks-env.XXXXXX")
+    trap 'rm -rf "$env_root"' EXIT
+    trap 'exit 130' INT TERM
+    control_target "$selector"
+    explicit=1
+    if in_list "$verb" deploy check upgrade; then
+      for s in "${targets[@]}"; do preflight "$s" secret || die "preflight failed for $s"; done
+    fi
+    case $verb in
+      deploy) assume_yes=1 run_compose up -d --remove-orphans ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
+      check | status) run_compose ps ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
+      logs)
+        if ((follow && ${#targets[@]} > 1)); then follow_logs "${args[@]}" ${svc_tokens[@]+"${svc_tokens[@]}"}
+        else run_compose logs "${args[@]}" ${svc_tokens[@]+"${svc_tokens[@]}"}; fi ;;
+      upgrade) run_compose upgrade ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
+    esac
+    return
+  fi
+  if [[ $verb == compose ]]; then
+    (($#)) || die "compose needs arguments"
+    explicit=1
+    passthru=1
+    raw_compose=1
+    verb=$1
+    shift
+  fi
+  # Compose's own up/create -y auto-accepts volume recreation, so this script keeps -y for itself.
+  if ((passthru)) || in_list "$verb" "${single_verbs[@]}"; then args=("$@"); else
     for a in "$@"; do
       if ((passthru == 0)) && [[ $a == -y || $a == --yes ]]; then assume_yes=1; else args+=("$a"); fi
       [[ $a == -- ]] && passthru=1
     done
   fi
   set -- ${args[@]+"${args[@]}"}
+  if [[ $verb != sync ]]; then
+    env_root=$(mktemp -d "${TMPDIR:-/tmp}/stacks-env.XXXXXX")
+    trap 'rm -rf "$env_root"' EXIT
+    trap 'exit 130' INT TERM
+  fi
   case $verb in
     ctx) cmd_ctx ;;
     doctor) cmd_doctor ;;
@@ -639,4 +825,5 @@ main() {
   esac
 }
 
-main "$@"
+# Exit on the same line so edits to this file during a long run are never read.
+main "$@"; exit
