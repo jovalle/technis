@@ -99,7 +99,7 @@ endpoints:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Media
-    url: https://plex.techn.is
+    url: https://plex.direct.techn.is:443
     interval: 1m
     client: *public-client
     ui: *private-result
