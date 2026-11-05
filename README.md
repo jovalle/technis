@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/icon.svg" alt="Technis Logo" width="400" height="400">
+<img src="assets/impossible-t.svg" alt="Technis Logo" width="400" height="400">
 
 # Technis
 
