@@ -1,7 +1,0 @@
-kubeconfig
-*.kubeconfig
-bootstrap/talos/controlplane.yaml
-bootstrap/talos/secrets.yaml
-bootstrap/talos/*.generated.yaml
-bootstrap/talos/worker.yaml
-talosconfig
