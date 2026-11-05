@@ -1,0 +1,26 @@
+services:
+  beszel:
+    container_name: beszel
+    environment:
+      - APP_URL=https://beszel.techn.is
+      - DISABLE_SSH=true
+      - USER_EMAIL=${BESZEL_USER_EMAIL:?BESZEL_USER_EMAIL is required}
+      - USER_PASSWORD=${BESZEL_USER_PASSWORD:?BESZEL_USER_PASSWORD is required}
+    expose:
+      - "8090"
+    healthcheck:
+      test: [CMD, /beszel, health, --url, http://localhost:8090]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    image: henrygd/beszel:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.beszel.rule=Host(`beszel.techn.is`)
+      - traefik.http.services.beszel.loadbalancer.server.port=8090
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel:/beszel_data
