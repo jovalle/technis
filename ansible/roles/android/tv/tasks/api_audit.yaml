@@ -132,7 +132,7 @@
   loop_control:
     label: "{{ item.item.name }}"
 
-- name: Compose native API snapshot
+- name: Docker native API snapshot
   ansible.builtin.set_fact:
     tv_api_snapshot:
       guide: >-

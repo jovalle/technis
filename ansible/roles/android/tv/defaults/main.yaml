@@ -12,7 +12,8 @@ tv_api_base_url: >-
 tv_api_validate_certs: true
 tv_api_timeout: 10
 tv_api_hide_auth: true
-tv_api_psk: "{{ lookup('ansible.builtin.env', 'TV_API_PSK') }}"
+# Set with `just vault tv/api_psk`.
+tv_api_psk: "{{ lookup('ansible.builtin.pipe', 'python3 ' ~ ((inventory_dir ~ '/../../tools/vault.py') | quote) ~ ' get tv/api_psk') }}"
 tv_api_services:
   - guide
   - system
