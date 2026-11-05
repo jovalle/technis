@@ -1,0 +1,18 @@
+---
+# /data persists across reboots but is mounted noexec, so jobs invoke Python explicitly.
+smart_root: /data/technis-smart
+smart_python: /usr/bin/python3
+smart_monitor: "{{ smart_python }} {{ smart_root }}/monitor.py"
+smart_jobs:
+  - description: SMART test result checks
+    command: "{{ smart_monitor }} check"
+    schedule: {minute: "*/30", hour: "*", dom: "*", month: "*", dow: "*"}
+  - description: SMART short tests
+    command: "{{ smart_monitor }} short"
+    schedule: {minute: "00", hour: "05", dom: "*", month: "*", dow: "5"}
+  # Cron ORs day-of-month with day-of-week, so the first-Tuesday limit lives in the command.
+  - description: SMART extended tests
+    command: >-
+      if {{ smart_python }} -c "import datetime,sys; sys.exit(datetime.date.today().day > 7)";
+      then {{ smart_monitor }} long; fi
+    schedule: {minute: "00", hour: "05", dom: "*", month: "*", dow: "2"}

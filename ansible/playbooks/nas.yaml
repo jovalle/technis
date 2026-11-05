@@ -1,0 +1,11 @@
+---
+# Purpose:    Schedule SMART self-tests on the NAS and email failures.
+# Usage:      ansible-playbook ansible/playbooks/nas.yaml
+# Requires:   Infisical /smart/<host>/recipient (`just vault smart/<host>/recipient`).
+- name: Configure the NAS
+  hosts: nas
+  gather_facts: false
+  roles:
+    - role: smart
+      tags:
+        - smart
