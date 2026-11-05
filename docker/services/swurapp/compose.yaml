@@ -1,0 +1,40 @@
+services:
+  swurapp:
+    cap_drop:
+      - ALL
+    container_name: swurapp
+    depends_on:
+      sonarr:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 128M
+        reservations:
+          cpus: 0.05
+          memory: 32M
+    environment:
+      - API_KEY=${UNPACKERR_UN_SONARR_0_API_KEY:?UNPACKERR_UN_SONARR_0_API_KEY is required}
+      - BASE_URL=http://sonarr:8989/series
+      - DELAY_IN_MINUTES=60
+      - IGNORE_TAG_NAME=ignore
+      - LOG_LEVEL=INFO
+      - TZ=${TZ:-America/New_York}
+    # Upstream runs a shell sleep loop with no listener to probe.
+    healthcheck:
+      test:
+        - NONE
+    hostname: swurapp
+    # Upstream publishes only latest and dev tags.
+    image: docker.io/owlcaribou/swurapp:latest@sha256:3cf876be1f5d572ab51648769db31791c78abd4772cd4c5d854e613bbab75c2d
+    labels:
+      - traefik.enable=false
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    user: 1000:1000
