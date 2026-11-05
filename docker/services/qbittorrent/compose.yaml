@@ -33,7 +33,7 @@ services:
       start_period: 1m0s
       test:
         - CMD-SHELL
-        - curl -f http://127.0.0.1:10095 || exit 1
+        - curl -fsS --max-time 3 http://127.0.0.1:9999/ && curl -fsS --max-time 3 http://127.0.0.1:10095/
       timeout: 10s
     image: lscr.io/linuxserver/qbittorrent:latest
     labels:
