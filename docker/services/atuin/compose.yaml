@@ -1,0 +1,51 @@
+services:
+  atuin:
+    cap_drop:
+      - ALL
+    command:
+      - start
+    container_name: atuin
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 512M
+        reservations:
+          cpus: 0.1
+          memory: 64M
+    environment:
+      - ATUIN_DB_URI=sqlite:///config/atuin.db
+      - ATUIN_HOST=0.0.0.0
+      - ATUIN_OPEN_REGISTRATION=${ATUIN_OPEN_REGISTRATION:-false}
+      - ATUIN_PORT=8888
+      - RUST_LOG=atuin_server=info
+      - TZ=${TZ:-America/New_York}
+    expose:
+      - "8888"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8888 &&
+          printf 'GET /healthz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"healthy"' <&3
+      timeout: 5s
+    hostname: atuin
+    image: ghcr.io/atuinsh/atuin:18.23.0
+    init: true
+    labels:
+      - traefik.http.routers.atuin.rule=Host(`atuin.techn.is`)
+      - traefik.http.routers.atuin.service=atuin
+      - traefik.http.services.atuin.loadbalancer.server.port=8888
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/atuin/config:/config
