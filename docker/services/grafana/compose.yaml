@@ -50,7 +50,7 @@ services:
       - /tmp:rw,noexec,nosuid,size=256m
     user: 1000:1000
     volumes:
-      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/dashboards:/etc/grafana/dashboards:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/power-dashboards:/etc/grafana/dashboards:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/data:/var/lib/grafana
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/provisioning/dashboards/observability.yaml:/etc/grafana/provisioning/dashboards/observability.yaml:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/provisioning/datasources/observability.yaml:/etc/grafana/provisioning/datasources/observability.yaml:ro
