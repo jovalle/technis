@@ -1,0 +1,17 @@
+services:
+  peanut:
+    image: brandawg93/peanut:6.1.2
+    container_name: peanut
+    depends_on:
+      nut:
+        condition: service_healthy
+    volumes:
+      - peanut:/config
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+volumes:
+  peanut:
+    name: beacon_peanut
+    external: true

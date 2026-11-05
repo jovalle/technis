@@ -1,0 +1,23 @@
+include:
+  - path: ../../services/nut/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/nut.env
+  - path: ../../services/peanut/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/peanut.env
+  - path: ../../services/nut-exporter/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/nut-exporter.env
+  - path:
+      - ../../services/alloy/compose.yaml
+      - services/alloy/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/alloy.env
+  - path: ../../services/cadvisor/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/cadvisor.env
+  - path: ../../services/beszel-agent/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/beszel-agent.env
+  - path: ../../services/docker-socket-proxy/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/docker-socket-proxy.env
+  - path: ../../services/hawser/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/hawser.env
+  - path: ../../services/tailscale/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/tailscale.env
+
+name: beacon

@@ -1,0 +1,27 @@
+services:
+  nut:
+    image: instantlinux/nut-upsd:2.8.5-r1
+    container_name: nut
+    entrypoint: /bin/sh
+    command:
+      - -ec
+      - |
+        mkdir -p /var/run/nut
+        chown nut:nut /var/run/nut
+        printf 'LISTEN 0.0.0.0 3493\n' > /etc/nut/upsd.conf
+        /usr/sbin/upsdrvctl -u root start
+        exec /usr/sbin/upsd -F -u nut
+    device_cgroup_rules:
+      - 'c 189:* rwm'
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/nut/ups.conf:/etc/nut/ups.conf:ro
+    healthcheck:
+      test: [CMD-SHELL, 'upsc ups1@127.0.0.1 >/dev/null 2>&1 && upsc ups2@127.0.0.1 >/dev/null 2>&1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    labels: [traefik.enable=false]
