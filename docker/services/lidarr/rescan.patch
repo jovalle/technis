@@ -1,0 +1,62 @@
+--- a/src/NzbDrone.Core/MediaFiles/DiskScanService.cs
++++ b/src/NzbDrone.Core/MediaFiles/DiskScanService.cs
+@@ -198,6 +198,7 @@
+             folders.ForEach(x => knownFiles.AddRange(_mediaFileService.GetFilesWithBasePath(x)));
+ 
+             var newFiles = decisions
++                .Where(x => !x.Item.AdditionalFile)
+                 .ExceptBy(x => x.Item.Path, knownFiles, x => x.Path, PathEqualityComparer.Instance)
+                 .Select(decision => new TrackFile
+                 {
+--- a/src/NzbDrone.Core.Test/MediaFiles/DiskScanServiceTests/ScanFixture.cs
++++ b/src/NzbDrone.Core.Test/MediaFiles/DiskScanServiceTests/ScanFixture.cs
+@@ -404,6 +404,39 @@
+         }
+ 
+         [Test]
++        public void should_only_insert_scanned_unmatched_files()
++        {
++            GivenArtistFolder();
++            var scanned = Path.Combine(_artist.Path, "new.flac");
++            var additional = Path.Combine(_otherArtistFolder, "existing.flac");
++            GivenFiles(new[] { scanned });
++            GivenKnownFiles(new List<string>());
++
++            var decisions = new List<ImportDecision<LocalTrack>>
++            {
++                new ImportDecision<LocalTrack>(new LocalTrack
++                {
++                    Path = scanned,
++                    FileTrackInfo = new ParsedTrackInfo()
++                }, new Rejection("Reject")),
++                new ImportDecision<LocalTrack>(new LocalTrack
++                {
++                    Path = additional,
++                    AdditionalFile = true,
++                    FileTrackInfo = new ParsedTrackInfo()
++                }, new Rejection("Reject"))
++            };
++            Mocker.GetMock<IMakeImportDecision>()
++                .Setup(x => x.GetImportDecisions(It.IsAny<List<IFileInfo>>(), It.IsAny<IdentificationOverrides>(), It.IsAny<ImportDecisionMakerInfo>(), It.IsAny<ImportDecisionMakerConfig>()))
++                .Returns(decisions);
++
++            Subject.Scan(new List<string> { _artist.Path });
++
++            Mocker.GetMock<IMediaFileService>()
++                .Verify(x => x.AddMany(It.Is<List<TrackFile>>(files => files.Count == 1 && files[0].Path == scanned)), Times.Once());
++        }
++
++        [Test]
+         public void should_insert_new_unmatched_files_when_all_new()
+         {
+             GivenArtistFolder();
+--- a/src/NzbDrone.Core.Test/Lidarr.Core.Test.csproj
++++ b/src/NzbDrone.Core.Test/Lidarr.Core.Test.csproj
+@@ -10,6 +10,7 @@
+   <ItemGroup>
+     <ProjectReference Include="..\NzbDrone.Test.Common\Lidarr.Test.Common.csproj" />
+     <ProjectReference Include="..\NzbDrone.Core\Lidarr.Core.csproj" />
++    <ProjectReference Include="..\NzbDrone.Mono\Lidarr.Mono.csproj" />
+   </ItemGroup>
+   <ItemGroup>
+     <None Include="..\..\Logo\1024.png">
