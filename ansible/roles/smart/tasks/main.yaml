@@ -1,0 +1,44 @@
+---
+- name: Create the SMART monitor directory
+  ansible.builtin.file:
+    path: "{{ smart_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the SMART monitor
+  ansible.builtin.copy:
+    src: monitor.py
+    dest: "{{ smart_root }}/monitor.py"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Write the SMART alert recipient
+  ansible.builtin.copy:
+    content: "{{ {'recipient': smart_recipient} | to_json }}\n"
+    dest: "{{ smart_root }}/config.json"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Read scheduled jobs
+  ansible.builtin.command: midclt call cronjob.query
+  register: smart_cron
+  changed_when: false
+  check_mode: false
+
+- name: Schedule SMART jobs
+  vars:
+    smart_job: "{{ item | combine({'user': 'root', 'enabled': true, 'stdout': true, 'stderr': false}) }}"
+    smart_current: "{{ smart_cron.stdout | from_json | selectattr('description', 'equalto', item.description) | first | default({}) }}"
+  ansible.builtin.command:
+    argv: "{{ ['midclt', 'call', 'cronjob.update', smart_current.id | string, smart_job | to_json] if smart_current
+      else ['midclt', 'call', 'cronjob.create', smart_job | to_json] }}"
+  loop: "{{ smart_jobs }}"
+  loop_control:
+    label: "{{ item.description }}"
+  when: not smart_current or smart_current | combine(smart_job) != smart_current
+  changed_when: true

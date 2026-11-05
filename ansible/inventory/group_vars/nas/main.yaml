@@ -1,0 +1,4 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+# Set with `just vault smart/HOST/recipient`; read from Infisical /smart, folder per host.
+smart_recipient: "{{ lookup('ansible.builtin.pipe', 'python3 ' ~ ((inventory_dir ~ '/../../tools/vault.py') | quote) ~ ' get smart/' ~ (inventory_hostname | quote) ~ '/recipient') }}"
