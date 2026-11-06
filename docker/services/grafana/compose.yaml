@@ -47,8 +47,8 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=256m
-    user: 1000:1000
+      - /tmp:rw,noexec,nosuid,size=256m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/power-dashboards:/etc/grafana/dashboards:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/grafana/data:/var/lib/grafana

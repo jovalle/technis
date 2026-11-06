@@ -45,7 +45,8 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=16m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/external-dns/config:/config:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/external-dns:/data

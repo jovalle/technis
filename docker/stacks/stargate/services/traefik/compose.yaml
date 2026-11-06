@@ -72,7 +72,7 @@ services:
       - 100.100.1.2:8080:8080
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/data/dynamic:/etc/traefik/dynamic:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/letsencrypt:/etc/letsencrypt

@@ -48,7 +48,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    user: ${PUID:-1000}:${PGID:-1000}
+    user: ${PUID:-568}:${PGID:-568}
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/slskd:/app
       - /mnt/media/downloads/slskd:/downloads/slskd

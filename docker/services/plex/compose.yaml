@@ -22,8 +22,9 @@ services:
     environment:
       - ADVERTISE_IP=${PLEX_ADVERTISE_IP:?PLEX_ADVERTISE_IP is required}
       - ALLOWED_NETWORKS=192.168.0.0/16,172.16.0.0/12
-      - PGID=${PGID:-1000}
-      - PUID=${PUID:-1000}
+      # pms-docker reads PLEX_UID/PLEX_GID, not PUID/PGID; init stays root, the server runs as 568.
+      - PLEX_GID=${PGID:-568}
+      - PLEX_UID=${PUID:-568}
       - TZ=${TZ:-America/New_York}
       - UMASK_SET=${PLEX_UMASK_SET:?PLEX_UMASK_SET is required}
       - VERSION=${PLEX_VERSION:?PLEX_VERSION is required}
@@ -45,5 +46,7 @@ services:
       - no-new-privileges:true
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/plex:/config
-      - /mnt/media:/media
+      - /mnt/media:/media:ro
+      # Plex DVR records into the Series library.
+      - /mnt/media/series:/media/series
       - /dev/shm/transcode:/transcode

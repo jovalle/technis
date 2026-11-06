@@ -1,5 +1,11 @@
 services:
   cadvisor:
+    # Unprivileged: DAC_READ_SEARCH walks other users' layers for disk stats; SYSLOG reads /dev/kmsg for OOM events.
+    cap_add:
+      - DAC_READ_SEARCH
+      - SYSLOG
+    cap_drop:
+      - ALL
     command:
       - --housekeeping_interval=30s
       - --docker_only=true
@@ -14,6 +20,8 @@ services:
         reservations:
           cpus: 0.1
           memory: 128M
+    devices:
+      - /dev/kmsg:/dev/kmsg:r
     healthcheck:
       interval: 30s
       retries: 3
@@ -25,7 +33,6 @@ services:
     image: ghcr.io/google/cadvisor:latest
     labels:
       - traefik.enable=false
-    privileged: true
     read_only: true
     restart: unless-stopped
     security_opt:

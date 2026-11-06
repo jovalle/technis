@@ -19,10 +19,15 @@ services:
       - AGENT_NAME=${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}
       - DOCKER_SOCKET=/var/run/docker.sock
       - DOCKHAND_SERVER_URL=wss://dockhand.${DOMAIN:?DOMAIN is required}/api/hawser/connect
+      # The Docker CLI keeps its config under HOME; 568 has no home in the image.
+      - HOME=/tmp
       - LOG_LEVEL=${HAWSER_LOG_LEVEL:-info}
       - REQUEST_TIMEOUT=${HAWSER_REQUEST_TIMEOUT:-1800}
       - STACKS_DIR=${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/hawser/stacks
       - TOKEN=${HAWSER_TOKEN:?HAWSER_TOKEN is required}
+    # Dockhand deploys stacks through this agent, so its Docker API access is host-root equivalent by design.
+    group_add:
+      - ${DOCKER_GID:?DOCKER_GID is required; set it in the stack .env from getent group docker}
     hostname: hawser
     image: ghcr.io/finsys/hawser:latest
     labels:
@@ -34,7 +39,8 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=16m,uid=568,gid=568
+    user: 568:568
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/hawser/stacks:${STACK_DATA_ROOT}/hawser/stacks

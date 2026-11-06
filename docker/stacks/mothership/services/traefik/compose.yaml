@@ -45,6 +45,11 @@ services:
       - 443:443
       - ${INTERNAL_IP:?INTERNAL_IP is required}:8443:8443
       - ${INTERNAL_IP:?INTERNAL_IP is required}:8080:8080
+    read_only: true
+    tmpfs:
+      # Traefik downloads its experimental plugins here at every start.
+      - /plugins-storage:rw,nosuid,size=128m,uid=568,gid=568
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/certs:/etc/traefik/certs
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/data/dynamic:/etc/traefik/dynamic:ro

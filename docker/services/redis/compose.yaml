@@ -1,8 +1,5 @@
 services:
   redis:
-    cap_add:
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     command:
@@ -39,8 +36,8 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    user: 1000:1000
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/redis:/data
   redis-exporter:

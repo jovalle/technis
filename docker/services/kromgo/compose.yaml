@@ -25,6 +25,6 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    user: 1000:1000
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/kromgo/kromgo.yaml:/kromgo/config.yaml:ro

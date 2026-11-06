@@ -16,9 +16,11 @@ services:
     labels:
       - observability.metrics.address=gatus:8080
       - traefik.enable=false
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/data:/data
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/gatus/config/gatus.yaml:/config/gatus.yaml:ro

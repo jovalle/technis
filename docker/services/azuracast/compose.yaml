@@ -1,5 +1,17 @@
 services:
   azuracast:
+    # Supervisord starts as root and drops each service to its own user; it needs no more than these.
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - FSETID
+      - KILL
+      - NET_BIND_SERVICE
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
     container_name: azuracast
     deploy:
       resources:
@@ -76,6 +88,8 @@ services:
       - 8595:8595
       - 8596:8596
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ulimits:
       nofile:
         hard: 65536

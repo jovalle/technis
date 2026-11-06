@@ -30,6 +30,7 @@ services:
     restart: unless-stopped
     security_opt: &security_opt
       - no-new-privileges:true
+    user: &user 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/victoriametrics/alert/rules:/etc/vmalert/rules:ro
   vmalert-logs:
@@ -65,5 +66,6 @@ services:
     read_only: true
     restart: unless-stopped
     security_opt: *security_opt
+    user: *user
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/victoriametrics/alert/rules:/etc/vmalert/rules:ro

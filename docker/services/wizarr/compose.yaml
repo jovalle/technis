@@ -1,9 +1,5 @@
 services:
   wizarr:
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: wizarr
@@ -16,7 +12,10 @@ services:
           cpus: 0.05
           memory: 128M
     environment:
+      # Started as 568, the entrypoint skips its root chown and su-exec step.
+      - HOME=/tmp
       - TZ=${TZ:-America/New_York}
+      - UV_CACHE_DIR=/tmp/uv
     healthcheck:
       interval: 30s
       retries: 3
@@ -33,7 +32,8 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      - /tmp:rw,noexec,nosuid,size=128m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/wizarr/database:/data/database
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/wizarr/wizard_steps:/data/wizard_steps

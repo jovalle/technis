@@ -1,10 +1,5 @@
 services:
   seerr:
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: seerr
@@ -17,6 +12,8 @@ services:
           cpus: 0.25
           memory: 256M
     environment:
+      # 568 has no home in the image; npm writes its cache under HOME.
+      - HOME=/tmp
       - TZ=${TZ:-America/New_York}
     healthcheck:
       interval: 30s
@@ -40,7 +37,7 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    user: node:node
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/seerr:/app/config

@@ -8,6 +8,7 @@ x-nut-exporter: &nut-exporter
   read_only: true
   cap_drop: [ALL]
   security_opt: [no-new-privileges:true]
+  user: "568:568"
   depends_on:
     nut:
       condition: service_healthy

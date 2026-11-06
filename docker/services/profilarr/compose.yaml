@@ -1,10 +1,5 @@
 services:
   profilarr:
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: profilarr
@@ -20,8 +15,6 @@ services:
       - AUTH=${PROFILARR_AUTH:-off}
       - HOME=/config
       - ORIGIN=https://${PROFILARR_ROOT_DOMAIN:?PROFILARR_ROOT_DOMAIN is required}
-      - PGID=${PGID:-1000}
-      - PUID=${PUID:-1000}
       - TZ=${TZ:-America/New_York}
     expose:
       - "6868"
@@ -39,7 +32,7 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    user: ${PUID:-1000}:${PGID:-1000}
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: ${PUID:-568}:${PGID:-568}
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/profilarr:/config
