@@ -110,11 +110,11 @@ An interrupted run or failed recovery leaves a stopped Docker container named
 `technis-update-lock-flaresolverr` on Nexus. Do not remove it until the service
 and its image are verified and recovery is complete; its image ID identifies the
 previous image. Avoid other deployment tools during a pilot run: the lock only
-coordinates pilot commands. The staged GitHub deployment and Renovate policy are
-disabled until the restricted host identity, Tailscale and Infisical workload
-identities, branch-protection-compatible Git recovery, and end-to-end failure
-reporting are provisioned and verified. The GitHub check workflow runs without
-access to Nexus or secrets.
+coordinates pilot commands. Renovate is configured to automerge digest updates
+only for this service after the required GitHub check passes. The deployment
+workflow validates the new image and, on failure, restores the previous image,
+pauses pilot automerge, and opens an issue linking to the failed run. The GitHub
+check workflow runs without access to Nexus or secrets.
 
 The deployment workflow expects a Tailscale OIDC identity restricted to the
 `pilot` GitHub environment and a `tag:pilot-ci` node that can reach only Nexus
@@ -141,10 +141,9 @@ public connection details, not secret values):
 - `PILOT_HOST` and `PILOT_HOST_KEY`: Nexus Tailscale address and its verified
   SSH host public key.
 
-Before enabling, require the pilot check and up-to-date branches in GitHub
-branch protection, permit only the recovery app to bypass that protection, and
-configure Renovate automerge for the pilot. Verify a successful deployment and
-a deliberately failed candidate end to end, including the recovery commit,
-issue, and retained lock when recovery cannot be confirmed. An unsuccessful
-deployment leaves the workflow failed even if rollback succeeds. An issue
-links to the workflow run for details; raw container logs are not published.
+Main requires the pilot check and up-to-date branches; only the recovery app can
+bypass those protections. An unsuccessful deployment leaves the workflow failed
+even if rollback succeeds. The issue includes the image digest, recovery status,
+and a link to the workflow run; raw container logs are not published. To pause
+the pilot, disable its Renovate automerge rule and set `PILOT_DEPLOY_ENABLED` to
+`false`; check the service and Git state before resuming both settings.
