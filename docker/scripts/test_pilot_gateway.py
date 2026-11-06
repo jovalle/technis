@@ -14,6 +14,11 @@ class GatewayTest(unittest.TestCase):
         self.assertEqual(gateway.candidate('deploy sha256:' + digest),
                          'ghcr.io/flaresolverr/flaresolverr@sha256:' + digest)
 
+    def test_probe_accepts_only_a_pinned_digest(self):
+        self.assertEqual(gateway.request('probe sha256:' + 'a' * 64), ('probe', gateway.candidate('deploy sha256:' + 'a' * 64)))
+        with self.assertRaises(ValueError):
+            gateway.request('probe sha256:' + 'a' * 64 + ';id')
+
     def test_rejects_shell_syntax_and_other_commands(self):
         for value in ('', 'shell', 'deploy sha256:' + 'a' * 64 + '; id',
                       'deploy sha256:' + 'a' * 63, 'deploy sha256:' + 'A' * 64,

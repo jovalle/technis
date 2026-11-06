@@ -68,6 +68,11 @@ class AccessTest(unittest.TestCase):
             return {'secret': {'secretValue': 'key'}}
         self.assertEqual(access.pilot_key(request, env), 'key')
 
+    def test_probe_accepts_only_a_pinned_digest(self):
+        access.validate_request('probe', 'a' * 64, 'nexus')
+        with self.assertRaises(ValueError):
+            access.validate_request('probe', 'a' * 64 + ';id', 'nexus')
+
     def test_rejects_untrusted_remote_command_and_host(self):
         for operation, digest, host in [('shell', 'a' * 64, 'nexus'),
                                         ('deploy', 'a' * 64 + ';id', 'nexus'),
