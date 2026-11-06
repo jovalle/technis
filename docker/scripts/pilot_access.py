@@ -42,7 +42,7 @@ def pilot_key(request, env):
 
 
 def validate_request(operation, digest, host):
-    if operation not in ('deploy', 'unlock') or not re.fullmatch(r'[0-9a-f]{64}', digest):
+    if operation not in ('deploy', 'unlock', 'probe') or not re.fullmatch(r'[0-9a-f]{64}', digest):
         raise ValueError('unsupported pilot request')
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.-]{0,252}', host):
         raise ValueError('invalid pilot host')

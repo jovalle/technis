@@ -20,6 +20,14 @@ def candidate(command):
     return 'ghcr.io/flaresolverr/flaresolverr@sha256:' + match.group(1)
 
 
+def request(command):
+    for operation in ('deploy', 'unlock', 'probe'):
+        prefix = operation + ' '
+        if command.startswith(prefix):
+            return operation, candidate('deploy ' + command[len(prefix):])
+    raise ValueError('unsupported pilot command')
+
+
 def verify_desired(image, text):
     pattern = r'^[ \t]*image:[ \t]*ghcr\.io/flaresolverr/flaresolverr(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:([0-9a-f]{64})[ \t]*$'
     digests = re.findall(pattern, text, re.MULTILINE)
@@ -104,14 +112,17 @@ def trusted_tree(root):
 def main():
     try:
         command = os.environ.get('SSH_ORIGINAL_COMMAND', '')
-        unlocking = command.startswith('unlock ')
-        image = candidate('deploy ' + command[7:] if unlocking else command)
+        operation, image = request(command)
+        unlocking = operation == 'unlock'
         if os.geteuid() != 0:
             raise RuntimeError('pilot gateway must run as root')
         trusted_tree(ROOT)
         revision, config, policy = snapshot(read_url)
         verify_desired(image, config)
         verify_installed_config((ROOT / 'docker/services/flaresolverr/compose.yaml').read_text(), config)
+        if operation == 'probe':
+            print('Pilot gateway is reachable and matches Git.')
+            return 0
         if not unlocking:
             verify_policy(policy)
         if unlocking:
