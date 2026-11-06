@@ -36,6 +36,18 @@
         "ghcr.io/flaresolverr/flaresolverr"
       ],
       "automerge": false
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchFileNames": [
+        "docker/services/flaresolverr/compose.yaml"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/flaresolverr/flaresolverr"
+      ],
+      "automerge": false
     }
   ],
   "ignorePaths": [
