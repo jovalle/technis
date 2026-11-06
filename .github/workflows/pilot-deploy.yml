@@ -51,6 +51,7 @@ jobs:
           audience: ${{ vars.PILOT_TS_AUDIENCE }}
           tags: tag:pilot-ci
           use-cache: 'false'
+          args: --accept-dns=false
       - id: deploy
         env:
           DIGEST: ${{ needs.prepare.outputs.digest }}
@@ -124,6 +125,7 @@ jobs:
           audience: ${{ vars.PILOT_TS_AUDIENCE }}
           tags: tag:pilot-ci
           use-cache: 'false'
+          args: --accept-dns=false
       - env:
           DIGEST: ${{ needs.prepare.outputs.previous }}
           INFISICAL_IDENTITY_ID: ${{ vars.PILOT_INFISICAL_IDENTITY_ID }}

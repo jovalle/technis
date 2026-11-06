@@ -24,6 +24,7 @@ jobs:
           audience: ${{ vars.PILOT_TS_AUDIENCE }}
           tags: tag:pilot-ci
           use-cache: 'false'
+          args: --accept-dns=false
       - env:
           INFISICAL_IDENTITY_ID: ${{ vars.PILOT_INFISICAL_IDENTITY_ID }}
           INFISICAL_PROJECT_ID: ${{ vars.PILOT_INFISICAL_DEPLOY_PROJECT_ID }}
