@@ -84,3 +84,67 @@ Read-only commands (`ps`, `logs`, `config --services`) use placeholders and neve
 contact Infisical. Values that nothing references yet are kept in the `archive` item.
 
 Kubernetes configuration is absent from this checkout and has not been migrated.
+
+### Pilot image update
+
+The pilot currently accepts only `nexus/flaresolverr` and an immutable image
+reference in the form `ghcr.io/flaresolverr/flaresolverr@sha256:<digest>`.
+Find the current candidate with:
+
+```sh
+docker buildx imagetools inspect ghcr.io/flaresolverr/flaresolverr:latest
+```
+
+Copy the top-level `Digest` shown before the per-platform `Manifests` and append
+it to the image name after `@`. Run `just update pilot nexus/flaresolverr <image>`
+to preview, or add `--apply` to pull and deploy the candidate. The pilot renders
+only FlareSolverr with placeholders for unrelated secrets; it fetches no
+Infisical secrets and stops if the service requires one. It observes health and
+restores and verifies the previous image if validation fails.
+
+`just test pilot` exercises deployment and rollback with disposable, network-isolated
+containers and images on Nexus. It requires `busybox:latest` to be cached there
+and removes the test resources afterward.
+
+An interrupted run or failed recovery leaves a stopped Docker container named
+`technis-update-lock-flaresolverr` on Nexus. Do not remove it until the service
+and its image are verified and recovery is complete; its image ID identifies the
+previous image. Avoid other deployment tools during a pilot run: the lock only
+coordinates pilot commands. The staged GitHub deployment and Renovate policy are
+disabled until the restricted host identity, Tailscale and Infisical workload
+identities, branch-protection-compatible Git recovery, and end-to-end failure
+reporting are provisioned and verified. The GitHub check workflow runs without
+access to Nexus or secrets.
+
+The deployment workflow expects a Tailscale OIDC identity restricted to the
+`pilot` GitHub environment and a `tag:pilot-ci` node that can reach only Nexus
+SSH. Its SSH key is read from Infisical `/ci/pilot/PILOT_DEPLOY_SSH_KEY` and
+loaded into an ephemeral agent. The Nexus key must force
+`/usr/bin/python3 -I /root/technis-pilot/docker/scripts/pilot_gateway.py` with
+SSH's `restrict` option; the gateway is not a general shell or Docker API.
+Recovery uses a separate Infisical OIDC identity scoped to
+`/ci/pilot-recovery/PILOT_GITHUB_APP_KEY` and a GitHub App with repository-only
+contents-write access and the required branch-protection bypass. The workflow's
+own token is limited to creating issues. Both GitHub environments must be
+restricted to `main` before either identity is trusted.
+
+The workflow reads these GitHub Actions variables (they are identifiers and
+public connection details, not secret values):
+
+- `PILOT_DEPLOY_ENABLED`: set to `true` only after the checks below pass.
+- `PILOT_TS_CLIENT_ID` and `PILOT_TS_AUDIENCE`: Tailscale workload identity.
+- `PILOT_INFISICAL_DEPLOY_PROJECT_ID`, `PILOT_INFISICAL_RECOVERY_PROJECT_ID`,
+  `PILOT_INFISICAL_IDENTITY_ID`, and `PILOT_INFISICAL_RECOVERY_ID`: the two
+  isolated Infisical projects and their respective read-only identities. Each
+  project must contain only its designated pilot credential.
+- `PILOT_GITHUB_APP_ID` and `PILOT_GITHUB_INSTALLATION_ID`: recovery app.
+- `PILOT_HOST` and `PILOT_HOST_KEY`: Nexus Tailscale address and its verified
+  SSH host public key.
+
+Before enabling, require the pilot check and up-to-date branches in GitHub
+branch protection, permit only the recovery app to bypass that protection, and
+configure Renovate automerge for the pilot. Verify a successful deployment and
+a deliberately failed candidate end to end, including the recovery commit,
+issue, and retained lock when recovery cannot be confirmed. An unsuccessful
+deployment leaves the workflow failed even if rollback succeeds. An issue
+links to the workflow run for details; raw container logs are not published.

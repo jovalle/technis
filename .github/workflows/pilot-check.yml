@@ -1,0 +1,27 @@
+name: Pilot checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install just
+        run: sudo apt-get update && sudo apt-get install -y just
+      - name: Prepare local Compose context
+        run: docker context create nexus --docker host=unix:///var/run/docker.sock
+      - name: Validate the pilot
+        run: python3 -m unittest discover -s docker/scripts -p 'test_pilot*.py' -v
+      - name: Enforce the pilot promotion gate
+        run: python3 docker/scripts/pilot_pr_guard.py
