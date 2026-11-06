@@ -31,6 +31,12 @@ all:
     nas:
       hosts:
         nexus:
+    # Debian Docker hosts; Nexus is TrueNAS, which ships apps (568) itself.
+    stacks:
+      hosts:
+        beacon:
+        mothership:
+        stargate:
     watchtower:
       children:
         player:

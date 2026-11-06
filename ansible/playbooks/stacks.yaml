@@ -1,0 +1,41 @@
+---
+# Purpose:  Prepare the Debian Docker hosts for unprivileged containers.
+# Usage:    ansible-playbook ansible/playbooks/stacks.yaml [--limit stargate]
+- name: Prepare stack hosts
+  hosts: stacks
+  gather_facts: false
+  tasks:
+    # Matches the TrueNAS apps account on Nexus so 568 means the same thing everywhere.
+    - name: Create the apps group
+      ansible.builtin.group:
+        name: apps
+        gid: 568
+        system: true
+
+    - name: Create the apps user
+      ansible.builtin.user:
+        name: apps
+        uid: 568
+        group: apps
+        system: true
+        create_home: false
+        home: /var/empty
+        shell: /usr/sbin/nologin
+
+    - name: Let jay manage app data
+      ansible.builtin.user:
+        name: jay
+        groups: apps
+        append: true
+
+    # Gluetun no longer gets SYS_MODULE, so the host loads WireGuard.
+    - name: Load WireGuard at boot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/wireguard.conf
+        content: "wireguard\n"
+        mode: "0644"
+
+    - name: Load WireGuard now
+      community.general.modprobe:
+        name: wireguard
+        state: present
