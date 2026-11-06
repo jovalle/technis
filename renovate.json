@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "enabled": false,
-  "enabledManagers": ["docker-compose"],
+  "enabled": true,
+  "enabledManagers": ["helmv3"],
   "packageRules": [
     {
       "matchManagers": ["docker-compose"],
@@ -15,5 +15,6 @@
       "pinDigests": true,
       "automerge": true
     }
-  ]
+  ],
+  "ignorePaths": ["**/*"]
 }
