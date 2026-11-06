@@ -52,7 +52,9 @@ jobs:
           PILOT_GITHUB_INSTALLATION_ID: ${{ vars.PILOT_GITHUB_INSTALLATION_ID }}
         run: |
           python3 - <<'PY'
-          import os, sys
+          import os, sys, urllib.parse
+          endpoint = urllib.parse.urlsplit(os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'])
+          print('OIDC endpoint hostname:', endpoint.hostname)
           sys.path.insert(0, 'docker/scripts')
           from pilot_access import infisical_secret, request
           from pilot_recovery import github_api, installation_token
