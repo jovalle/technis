@@ -104,18 +104,23 @@ def ssh_call(operation, digest, host, host_key, key):
 
 
 def main(args):
+    stage = 'request validation'
     try:
         if len(args) != 2:
             raise ValueError('expected operation and digest')
         host = os.environ['PILOT_HOST']
         validate_request(args[0], args[1], host)
+        stage = 'credential lookup'
         key = pilot_key(request, os.environ)
+        stage = 'SSH connection'
         code = ssh_call(args[0], args[1], host, os.environ['PILOT_HOST_KEY'], key)
         if code not in (0, 10, 11):
+            print(f'Pilot SSH connection or gateway failed (exit {code}).', file=sys.stderr)
             return 1
         return code
-    except (KeyError, OSError, ValueError, RuntimeError, subprocess.SubprocessError):
-        print('Pilot access failed; no credentials or remote output were logged.', file=sys.stderr)
+    except (KeyError, OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        status = f' (HTTP {error.code})' if isinstance(error, urllib.error.HTTPError) else f' ({type(error).__name__})'
+        print(f'Pilot {stage} failed{status}; no credentials or remote output were logged.', file=sys.stderr)
         return 1
 
 
