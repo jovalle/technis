@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   prepare:
-    if: vars.PILOT_DEPLOY_ENABLED == 'true'
+    if: vars.PILOT_DEPLOY_ENABLED == 'true' && github.actor != 'technis-pilot-recovery-v2[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
