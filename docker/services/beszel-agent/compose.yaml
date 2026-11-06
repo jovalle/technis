@@ -1,9 +1,13 @@
 services:
   beszel-agent:
+    cap_drop:
+      - ALL
     container_name: beszel-agent
     environment:
       - HUB_URL=https://beszel.techn.is
       - DISABLE_SSH=true
+      # Read-only Docker API from docker-socket-proxy instead of the raw socket.
+      - DOCKER_HOST=tcp://127.0.0.1:2375
       - KEY=${BESZEL_KEY:?BESZEL_KEY is required}
       - TOKEN=${BESZEL_TOKEN:?BESZEL_TOKEN is required}
       - SYSTEM_NAME=${TAILSCALE_HOSTNAME:?TAILSCALE_HOSTNAME is required}
@@ -13,9 +17,10 @@ services:
     labels:
       - traefik.enable=false
     network_mode: host
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    user: 568:568
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel-agent:/var/lib/beszel-agent

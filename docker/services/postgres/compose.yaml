@@ -55,6 +55,8 @@ services:
       - no-new-privileges:true
     shm_size: 512m
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=256m
+      - /tmp:rw,noexec,nosuid,size=256m,uid=568,gid=568
+    # The image's postgres user is UID 1000; 568 keeps it off the admin account's UID.
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/postgres/pg18:/home/postgres/pgdata

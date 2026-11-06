@@ -36,5 +36,5 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=16m
-    user: 1000:1000
+      - /tmp:rw,noexec,nosuid,size=16m,uid=568,gid=568
+    user: 568:568

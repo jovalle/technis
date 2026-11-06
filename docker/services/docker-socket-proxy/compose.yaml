@@ -1,9 +1,13 @@
 services:
   docker-socket-proxy:
+    cap_drop:
+      - ALL
     container_name: docker-socket-proxy
     environment:
       - CONTAINERS=1
       - EVENTS=1
+      # beszel-agent reads image metadata for its container table.
+      - IMAGES=1
       - INFO=1
       - NETWORKS=1
       - PING=1
@@ -17,12 +21,22 @@ services:
         - CMD-SHELL
         - wget -q --spider http://127.0.0.1:2375/_ping || exit 1
       timeout: 10s
+    # The socket is root:docker 0660, so the proxy only needs the host's docker group.
+    group_add:
+      - ${DOCKER_GID:?DOCKER_GID is required; set it in the stack .env from getent group docker}
     image: ghcr.io/tecnativa/docker-socket-proxy:latest
     labels:
       - traefik.enable=false
+    # Host-network clients such as beszel-agent reach the read-only API here.
+    ports:
+      - 127.0.0.1:2375:2375
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    user: root
+    tmpfs:
+      - /run:rw,noexec,nosuid,size=8m,uid=568,gid=568
+      - /tmp:rw,noexec,nosuid,size=16m,uid=568,gid=568
+    user: 568:568
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

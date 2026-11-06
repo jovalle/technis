@@ -1,7 +1,10 @@
 services:
   technitium:
+    # Stays root: host networking rules out the unprivileged-port sysctl, so binding :53 needs NET_BIND_SERVICE as root.
     cap_add:
       - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
     container_name: technitium
     deploy:
       resources:

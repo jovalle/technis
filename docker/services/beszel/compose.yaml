@@ -1,5 +1,7 @@
 services:
   beszel:
+    cap_drop:
+      - ALL
     container_name: beszel
     environment:
       - APP_URL=https://beszel.techn.is
@@ -19,8 +21,12 @@ services:
       - traefik.enable=true
       - traefik.http.routers.beszel.rule=Host(`beszel.techn.is`)
       - traefik.http.services.beszel.loadbalancer.server.port=8090
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/beszel:/beszel_data

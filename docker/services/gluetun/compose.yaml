@@ -7,7 +7,7 @@ services:
       - FOWNER
       - NET_ADMIN
       - NET_RAW
-      - SYS_MODULE
+    # Hosts load the WireGuard module (ansible/playbooks/stacks.yaml), so SYS_MODULE stays dropped.
     cap_drop:
       - ALL
     container_name: gluetun
@@ -31,9 +31,9 @@ services:
       - HEALTH_SMALL_CHECK_TYPE=dns
       - HTTP_CONTROL_SERVER_LOG=${GLUETUN_HTTP_CONTROL_SERVER_LOG:?GLUETUN_HTTP_CONTROL_SERVER_LOG is required}
       - HTTPPROXY_STEALTH=${GLUETUN_HTTPPROXY_STEALTH:?GLUETUN_HTTPPROXY_STEALTH is required}
-      - PGID=${PGID:-1000}
+      - PGID=${PGID:-568}
       - PUBLICIP_FILE=${GLUETUN_PUBLICIP_FILE:?GLUETUN_PUBLICIP_FILE is required}
-      - PUID=${PUID:-1000}
+      - PUID=${PUID:-568}
       - TZ=${TZ:-America/New_York}
       - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER:?GLUETUN_VPN_SERVICE_PROVIDER is required}
       - VPN_TYPE=${GLUETUN_VPN_TYPE:?GLUETUN_VPN_TYPE is required}

@@ -1,11 +1,5 @@
 services:
   qbittorrent:
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - NET_RAW
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: qbittorrent
@@ -23,9 +17,8 @@ services:
           cpus: 0.5
           memory: 256M
     environment:
-      - PGID=${PGID:-1000}
-      - PUID=${PUID:-1000}
       - TZ=${TZ:-America/New_York}
+      - UMASK=002
       - WEBUI_PORT=${QBITTORRENT_WEBUI_PORT:?QBITTORRENT_WEBUI_PORT is required}
     healthcheck:
       interval: 30s
@@ -39,11 +32,14 @@ services:
     labels:
       - traefik.enable=false
     network_mode: service:gluetun
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,nosuid,size=16m,uid=568,gid=568,exec
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/qbittorrent:/config
       - /mnt/media/downloads:/downloads

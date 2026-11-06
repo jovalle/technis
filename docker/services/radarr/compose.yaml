@@ -1,10 +1,5 @@
 services:
   radarr:
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: radarr
@@ -17,10 +12,9 @@ services:
           cpus: 0.25
           memory: 128M
     environment:
-      - PGID=${PGID:-1000}
-      - PUID=${PUID:-1000}
       - RADARR__SERVER__URLBASE=/movies
       - TZ=${TZ:-America/New_York}
+      - UMASK=002
     healthcheck:
       interval: 30s
       retries: 3
@@ -33,11 +27,14 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     labels:
       - traefik.http.routers.radarr.middlewares=auth@file
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,nosuid,size=16m,uid=568,gid=568,exec
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/radarr:/config
       - /mnt/media/downloads:/downloads

@@ -1,7 +1,5 @@
 services:
   flaresolverr:
-    cap_add:
-      - SYS_ADMIN
     cap_drop:
       - ALL
     container_name: flaresolverr
@@ -33,4 +31,5 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
+    # Stays on the image's UID: FlareSolverr patches /app/chromedriver in place at startup.
     user: flaresolverr

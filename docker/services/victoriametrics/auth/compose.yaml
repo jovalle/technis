@@ -48,6 +48,7 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=32m
+      - /tmp:rw,noexec,nosuid,size=32m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/victoriametrics/auth/auth.yaml:/etc/vmauth/auth.yaml:ro

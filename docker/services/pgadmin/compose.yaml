@@ -1,5 +1,7 @@
 services:
   pgadmin:
+    cap_drop:
+      - ALL
     container_name: pgadmin
     depends_on:
       postgres:

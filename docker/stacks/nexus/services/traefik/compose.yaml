@@ -1,7 +1,5 @@
 services:
   traefik:
-    cap_add:
-      - DAC_OVERRIDE
     command:
       - --accesslog.format=json
       - --accesslog=true
@@ -76,7 +74,7 @@ services:
       - 8091:8091
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/dynamic:/etc/traefik/dynamic:ro
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/traefik/certs:/etc/traefik/certs:ro

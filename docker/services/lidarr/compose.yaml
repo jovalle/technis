@@ -1,11 +1,6 @@
 services:
   lidarr:
     build: .
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
     cap_drop:
       - ALL
     container_name: lidarr
@@ -19,9 +14,8 @@ services:
           memory: 128M
     environment:
       - LIDARR__SERVER__URLBASE=/songs
-      - PGID=${PGID:-1000}
-      - PUID=${PUID:-1000}
       - TZ=${TZ:-America/New_York}
+      - UMASK=002
     healthcheck:
       interval: 30s
       retries: 3
@@ -35,12 +29,15 @@ services:
     labels:
       - com.centurylinklabs.watchtower.enable=false
       - traefik.http.routers.lidarr.middlewares=auth@file
+    read_only: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     stop_grace_period: 2m
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,nosuid,size=16m,uid=568,gid=568,exec
+      - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
+    user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/lidarr:/config
       - /mnt/media/downloads:/downloads

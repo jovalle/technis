@@ -1,5 +1,6 @@
 services:
   syncthing:
+    # This image has no non-root mode (s6-applyuidgid fails), so init starts as root and drops to PUID.
     cap_add:
       - CHOWN
       - DAC_OVERRIDE
@@ -18,9 +19,10 @@ services:
           memory: 512M
     environment:
       - GOGC=${SYNCTHING_GOGC:?SYNCTHING_GOGC is required}
-      - PGID=${PGID:-1000}
-      - PUID=${PUID:-1000}
+      - PGID=${PGID:-568}
+      - PUID=${PUID:-568}
       - TZ=${TZ:-America/New_York}
+      - UMASK=002
     healthcheck:
       interval: 30s
       retries: 3
