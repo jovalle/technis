@@ -9,9 +9,9 @@ default:
 deploy *args:
     @./docker/scripts/stacks deploy "$@"
 
-# Validate a stack and show its status, or check the workstation.
+# Validate a stack and show its status, or check the workstation or container privileges.
 check *args:
-    @if [[ "${1:-}" == workstation ]]; then ./docker/scripts/stacks doctor; else ./docker/scripts/stacks check "$@"; fi
+    @case "${1:-}" in workstation) ./docker/scripts/stacks doctor ;; privileges) python3 docker/scripts/audit.py ;; *) ./docker/scripts/stacks check "$@" ;; esac
 
 # Show container status without resolving secrets.
 status *args:
