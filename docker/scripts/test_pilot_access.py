@@ -116,6 +116,7 @@ class AccessTest(unittest.TestCase):
              contextlib.redirect_stderr(output):
             self.assertEqual(access.main(['deploy', 'a' * 64]), 1)
         self.assertNotIn('sensitive detail', output.getvalue())
+        self.assertIn('credential lookup failed', output.getvalue())
 
 
 if __name__ == '__main__':
