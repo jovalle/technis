@@ -34,9 +34,8 @@ jobs:
           python3 docker/scripts/pilot_access.py probe "$digest"
 
   recovery:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/codex/pilot-oidc'
     runs-on: ubuntu-24.04
-    environment: pilot-recovery
     timeout-minutes: 10
     permissions:
       contents: read
