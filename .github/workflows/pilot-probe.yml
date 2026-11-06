@@ -32,3 +32,34 @@ jobs:
         run: |
           digest=$(python3 -c "import sys; sys.path.insert(0, 'docker/scripts'); from pilot_recovery import IMAGE; from pathlib import Path; matches = list(IMAGE.finditer(Path('docker/services/flaresolverr/compose.yaml').read_text())); assert len(matches) == 1; print(matches[0]['digest'])")
           python3 docker/scripts/pilot_access.py probe "$digest"
+
+  recovery:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: pilot-recovery
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - env:
+          INFISICAL_IDENTITY_ID: ${{ vars.PILOT_INFISICAL_RECOVERY_ID }}
+          INFISICAL_PROJECT_ID: ${{ vars.PILOT_INFISICAL_RECOVERY_PROJECT_ID }}
+          PILOT_GITHUB_APP_ID: ${{ vars.PILOT_GITHUB_APP_ID }}
+          PILOT_GITHUB_INSTALLATION_ID: ${{ vars.PILOT_GITHUB_INSTALLATION_ID }}
+        run: |
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, 'docker/scripts')
+          from pilot_access import infisical_secret, request
+          from pilot_recovery import github_api, installation_token
+          key = infisical_secret(request, os.environ, '/ci/pilot-recovery', 'PILOT_GITHUB_APP_KEY')
+          token = installation_token(github_api, os.environ['PILOT_GITHUB_APP_ID'], os.environ['PILOT_GITHUB_INSTALLATION_ID'], key)
+          response = github_api('GET', '/installation/repositories', token=token)
+          if [repo['full_name'] for repo in response['repositories']] != ['jovalle/technis']:
+              raise RuntimeError('Recovery identity has unexpected repository access')
+          print('Recovery identity is scoped to the pilot repository.')
+          PY
