@@ -19,7 +19,7 @@ def infisical_secret(request, env, path, name):
         raise ValueError('unqualified pilot credential')
     oidc_url = env['ACTIONS_ID_TOKEN_REQUEST_URL']
     parsed = urllib.parse.urlsplit(oidc_url)
-    if (parsed.scheme != 'https' or not re.fullmatch(r'pipelines[a-z0-9-]*\.actions\.githubusercontent\.com', parsed.hostname or '')
+    if (parsed.scheme != 'https' or not re.fullmatch(r'(?:pipelines[a-z0-9-]*|run-actions-[0-9]+-[a-z0-9-]+)\.actions\.githubusercontent\.com', parsed.hostname or '')
             or parsed.username or parsed.password or parsed.port not in (None, 443) or parsed.fragment):
         raise ValueError('untrusted GitHub OIDC endpoint')
     oidc_url += ('&' if parsed.query else '?') + urllib.parse.urlencode({'audience': 'infisical'})

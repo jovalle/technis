@@ -68,6 +68,18 @@ class AccessTest(unittest.TestCase):
             return {'secret': {'secretValue': 'key'}}
         self.assertEqual(access.pilot_key(request, env), 'key')
 
+    def test_accepts_current_github_runner_oidc_host(self):
+        env = {'ACTIONS_ID_TOKEN_REQUEST_URL': 'https://run-actions-3-azure-eastus.actions.githubusercontent.com/token',
+               'ACTIONS_ID_TOKEN_REQUEST_TOKEN': 'request-token',
+               'INFISICAL_IDENTITY_ID': 'identity', 'INFISICAL_PROJECT_ID': 'project'}
+        def request(url, bearer, payload=None):
+            if 'actions.githubusercontent.com' in url:
+                return {'value': 'jwt'}
+            if url.endswith('/api/v1/auth/oidc-auth/login'):
+                return {'accessToken': 'token'}
+            return {'secret': {'secretValue': 'key'}}
+        self.assertEqual(access.pilot_key(request, env), 'key')
+
     def test_probe_accepts_only_a_pinned_digest(self):
         access.validate_request('probe', 'a' * 64, 'nexus')
         with self.assertRaises(ValueError):

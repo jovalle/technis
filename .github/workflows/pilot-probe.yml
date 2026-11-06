@@ -34,8 +34,9 @@ jobs:
           python3 docker/scripts/pilot_access.py probe "$digest"
 
   recovery:
-    if: github.ref == 'refs/heads/codex/pilot-oidc'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    environment: pilot-recovery
     timeout-minutes: 10
     permissions:
       contents: read
@@ -51,9 +52,7 @@ jobs:
           PILOT_GITHUB_INSTALLATION_ID: ${{ vars.PILOT_GITHUB_INSTALLATION_ID }}
         run: |
           python3 - <<'PY'
-          import os, sys, urllib.parse
-          endpoint = urllib.parse.urlsplit(os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'])
-          print('OIDC endpoint hostname:', endpoint.hostname)
+          import os, sys
           sys.path.insert(0, 'docker/scripts')
           from pilot_access import infisical_secret, request
           from pilot_recovery import github_api, installation_token
