@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabled": false,
+  "enabledManagers": ["docker-compose"],
+  "packageRules": [
+    {
+      "matchManagers": ["docker-compose"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "matchFileNames": ["docker/services/flaresolverr/compose.yaml"],
+      "matchPackageNames": ["ghcr.io/flaresolverr/flaresolverr"],
+      "enabled": true,
+      "pinDigests": true,
+      "automerge": true
+    }
+  ]
+}

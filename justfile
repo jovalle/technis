@@ -23,7 +23,11 @@ logs +args:
 
 # Pull images and recreate a stack or service.
 update +args:
-    @./docker/scripts/stacks upgrade "$@"
+    @case "$1" in pilot) python3 docker/scripts/pilot_update.py "${@:2}" ;; *) ./docker/scripts/stacks upgrade "$@" ;; esac
+
+# Test the pilot deployment and rollback on Nexus.
+test target:
+    @case "$1" in pilot) python3 docker/scripts/verify_pilot.py ;; *) echo 'Usage: just test pilot' >&2; exit 2 ;; esac
 
 # Sync service files to a stack; add -n after the stack to preview.
 sync stack *args:

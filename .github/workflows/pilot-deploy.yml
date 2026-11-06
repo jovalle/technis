@@ -1,0 +1,150 @@
+name: Pilot deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docker/services/flaresolverr/compose.yaml
+
+permissions: {}
+
+concurrency:
+  group: pilot-flaresolverr
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: vars.PILOT_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      before: ${{ steps.pilot.outputs.before }}
+      digest: ${{ steps.pilot.outputs.digest }}
+      previous: ${{ steps.pilot.outputs.previous }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: pilot
+        run: python3 docker/scripts/pilot_prepare.py
+
+  deploy:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    environment: pilot
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      code: ${{ steps.deploy.outputs.code }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.PILOT_TS_CLIENT_ID }}
+          audience: ${{ vars.PILOT_TS_AUDIENCE }}
+          tags: tag:pilot-ci
+          use-cache: 'false'
+      - id: deploy
+        env:
+          DIGEST: ${{ needs.prepare.outputs.digest }}
+          INFISICAL_IDENTITY_ID: ${{ vars.PILOT_INFISICAL_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ vars.PILOT_INFISICAL_DEPLOY_PROJECT_ID }}
+          PILOT_HOST: ${{ vars.PILOT_HOST }}
+          PILOT_HOST_KEY: ${{ vars.PILOT_HOST_KEY }}
+        run: |
+          code=0
+          python3 docker/scripts/pilot_access.py deploy "$DIGEST" || code=$?
+          printf 'code=%s\n' "$code" >> "$GITHUB_OUTPUT"
+
+  recover:
+    if: always() && vars.PILOT_DEPLOY_ENABLED == 'true' && (needs.prepare.result == 'failure' || needs.deploy.result == 'failure' || (needs.deploy.result == 'success' && needs.deploy.outputs.code != '0'))
+    needs: [prepare, deploy]
+    runs-on: ubuntu-24.04
+    environment: pilot-recovery
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    outputs:
+      git: ${{ steps.recover.outputs.git }}
+      issue: ${{ steps.recover.outputs.issue }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - id: recover
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ needs.prepare.outputs.before }}
+          DIGEST: ${{ needs.prepare.outputs.digest }}
+          DEPLOY_CODE: ${{ needs.deploy.outputs.code }}
+          INFISICAL_IDENTITY_ID: ${{ vars.PILOT_INFISICAL_RECOVERY_ID }}
+          INFISICAL_PROJECT_ID: ${{ vars.PILOT_INFISICAL_RECOVERY_PROJECT_ID }}
+          PILOT_GITHUB_APP_ID: ${{ vars.PILOT_GITHUB_APP_ID }}
+          PILOT_GITHUB_INSTALLATION_ID: ${{ vars.PILOT_GITHUB_INSTALLATION_ID }}
+        run: |
+          git_status=failed
+          host_status=unknown
+          if [ "$DEPLOY_CODE" = 10 ] || [ "$DEPLOY_CODE" = 11 ]; then
+            if [ "$DEPLOY_CODE" = 10 ]; then host_status=restored; else host_status=recovery-failed; fi
+            if python3 docker/scripts/pilot_recovery.py reconcile "$BEFORE" "$DIGEST"; then git_status=reconciled; fi
+          else
+            if python3 docker/scripts/pilot_recovery.py pause; then git_status=paused; fi
+          fi
+          issue=failed
+          if python3 docker/scripts/pilot_recovery.py report "${DIGEST:-unknown}" "$GITHUB_RUN_ID" "$host_status" "$git_status"; then issue=created; fi
+          printf 'git=%s\nissue=%s\n' "$git_status" "$issue" >> "$GITHUB_OUTPUT"
+          # A recovered deployment is still a failed update and must be visible.
+          exit 1
+
+  unlock:
+    if: always() && needs.deploy.outputs.code == '10' && needs.recover.outputs.git == 'reconciled' && needs.recover.outputs.issue == 'created'
+    needs: [prepare, deploy, recover]
+    runs-on: ubuntu-24.04
+    environment: pilot
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.PILOT_TS_CLIENT_ID }}
+          audience: ${{ vars.PILOT_TS_AUDIENCE }}
+          tags: tag:pilot-ci
+          use-cache: 'false'
+      - env:
+          DIGEST: ${{ needs.prepare.outputs.previous }}
+          INFISICAL_IDENTITY_ID: ${{ vars.PILOT_INFISICAL_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ vars.PILOT_INFISICAL_DEPLOY_PROJECT_ID }}
+          PILOT_HOST: ${{ vars.PILOT_HOST }}
+          PILOT_HOST_KEY: ${{ vars.PILOT_HOST_KEY }}
+        run: python3 docker/scripts/pilot_access.py unlock "$DIGEST"
+
+  unlock-report:
+    if: always() && needs.unlock.result == 'failure'
+    needs: [prepare, unlock]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          DIGEST: ${{ needs.prepare.outputs.digest }}
+        run: python3 docker/scripts/pilot_recovery.py report "$DIGEST" "$GITHUB_RUN_ID" lock-held reconciled
