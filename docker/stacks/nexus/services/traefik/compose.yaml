@@ -36,6 +36,10 @@ services:
       docker-socket-proxy:
         condition: service_healthy
         required: true
+      # The API port binds the tailnet address, which exists only once Tailscale is up.
+      tailscale:
+        condition: service_healthy
+        required: true
     deploy:
       resources:
         limits:
@@ -70,7 +74,8 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      # api.insecure has no auth; external-dns on stargate reads it over the tailnet.
+      - 100.100.1.3:8080:8080
       - 8091:8091
     read_only: true
     tmpfs:
