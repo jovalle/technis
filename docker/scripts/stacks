@@ -417,6 +417,8 @@ bootstrap_shell() {
   esac
   grep -qs 'direnv hook' "$rc" || row warn shell "add to ${rc/#$HOME/~}: eval \"\$(direnv hook $shell_name)\""
   grep -qs 'mise activate' "$rc" || row warn shell "add to ${rc/#$HOME/~}: eval \"\$(mise activate $shell_name)\""
+  [[ $shell_name != zsh ]] || grep -qs 'technis/tools/completion.zsh' "$rc" ||
+    row warn shell "add to ${rc/#$HOME/~} after compinit: source \"$root/tools/completion.zsh\""
 }
 
 cmd_bootstrap() {
