@@ -48,3 +48,19 @@ services:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/plex:/config
       - /mnt/media:/media:ro
       - /dev/shm/transcode:/transcode
+
+  plex-discovery:
+    cap_drop:
+      - ALL
+    command: [python, /app/discovery.py]
+    container_name: plex-discovery
+    image: python:3-slim
+    network_mode: host
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 568:568
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/plex/Library/Application Support/Plex Media Server:/plex:ro
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/plex/discovery.py:/app/discovery.py:ro
