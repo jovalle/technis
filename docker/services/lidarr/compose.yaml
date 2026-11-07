@@ -35,7 +35,7 @@ services:
       - no-new-privileges:true
     stop_grace_period: 2m
     tmpfs:
-      - /run:rw,nosuid,size=16m,uid=568,gid=568,exec
+      - /run:rw,nosuid,size=1g,uid=568,gid=568,exec
       - /tmp:rw,noexec,nosuid,size=64m,uid=568,gid=568
     user: 568:568
     volumes:
