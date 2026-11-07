@@ -47,6 +47,4 @@ services:
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/plex:/config
       - /mnt/media:/media:ro
-      # Plex DVR records into the Series library.
-      - /mnt/media/series:/media/series
       - /dev/shm/transcode:/transcode
