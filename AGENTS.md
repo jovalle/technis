@@ -1,5 +1,10 @@
 # Repository Instructions
 
+## Sensitive Configuration
+
+- Store credentials and private infrastructure identifiers in Infisical and reference them using the existing `vault://` pattern. Do not hard-code them in tracked files, logs, tests, or examples.
+- Before adding or changing configuration, inspect related files and changes for exposed sensitive values; verify that secret resolution works without printing values.
+
 ## Command Names
 
 - Keep `just` recipe names to a single simple, memorable word or term; do not use hyphenated recipe names.

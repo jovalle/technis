@@ -14,6 +14,8 @@ services:
     environment:
       # Started as 568, the entrypoint skips its root chown and su-exec step.
       - HOME=/tmp
+      - CF_ACCESS_TEAM_DOMAIN=${WIZARR_CF_ACCESS_TEAM_DOMAIN:?WIZARR_CF_ACCESS_TEAM_DOMAIN is required}
+      - CF_ACCESS_AUD=${WIZARR_CF_ACCESS_AUD:?WIZARR_CF_ACCESS_AUD is required}
       - TZ=${TZ:-America/New_York}
       - UV_CACHE_DIR=/tmp/uv
     healthcheck:
