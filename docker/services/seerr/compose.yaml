@@ -41,3 +41,32 @@ services:
     user: 568:568
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/seerr:/app/config
+
+  seerr-tracearr:
+    cap_drop:
+      - ALL
+    command: [python, /app/adapter.py]
+    container_name: seerr-tracearr
+    environment:
+      - ADAPTER_API_KEY=${ADAPTER_API_KEY:?ADAPTER_API_KEY is required}
+      - TRACEARR_API_KEY=${TRACEARR_API_KEY:?TRACEARR_API_KEY is required}
+      - TRACEARR_SERVER_ID=${TRACEARR_SERVER_ID:?TRACEARR_SERVER_ID is required}
+    healthcheck:
+      test:
+        [
+          CMD,
+          python,
+          -c,
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8181/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    image: python:3-slim
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    user: 568:568
+    volumes:
+      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/seerr/adapter.py:/app/adapter.py:ro
