@@ -76,12 +76,12 @@ endpoints:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Authentication
-    url: https://auth.techn.is/api/health
+    url: https://watchtower.zip/app
     interval: 1m
     client: *public-client
     ui: *private-result
     conditions:
-      - "[STATUS] == 200"
+      - "[STATUS] == 302"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Status
     url: https://status.techn.is
@@ -108,7 +108,7 @@ endpoints:
       - "[STATUS] == 401"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Watch
-    url: https://watch.techn.is
+    url: https://watchtower.zip
     interval: 1m
     client: *public-client
     ui: *private-result
@@ -116,7 +116,7 @@ endpoints:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Requests
-    url: https://seerr.techn.is/api/v1/status
+    url: https://request.watchtower.zip/api/v1/status
     interval: 1m
     client: *public-client
     ui: *private-result
@@ -124,7 +124,7 @@ endpoints:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Photos
-    url: https://photos.techn.is/api/server/ping
+    url: https://photos.4j.do/api/server/ping
     interval: 1m
     client: *public-client
     ui: *private-result
@@ -132,16 +132,15 @@ endpoints:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Invites
-    url: https://wizarr.techn.is/health
+    url: https://join.watchtower.zip/
     interval: 1m
     client: *public-client
     ui: *private-result
     conditions:
       - "[STATUS] == 200"
-      - "[BODY].status == ok"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Media Dashboard
-    url: https://tracearr.techn.is/health
+    url: https://dash.watchtower.zip/health
     interval: 1m
     client: *public-client
     ui: *private-result
@@ -150,11 +149,11 @@ endpoints:
       - "[BODY].status == ok"
       - "[CERTIFICATE_EXPIRATION] > 72h"
   - name: Radio
-    url: https://azuracast.techn.is/api/status
+    url: https://zagre.us/stations/royal-talon/radio.mp3
+    method: HEAD
     interval: 1m
     client: *public-client
     ui: *private-result
     conditions:
       - "[STATUS] == 200"
-      - "[BODY].online == true"
       - "[CERTIFICATE_EXPIRATION] > 72h"
