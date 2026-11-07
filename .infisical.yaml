@@ -1,0 +1,5 @@
+version: 1
+general: {}
+secrets-management:
+  project-id: 6b80e55b-4b05-46ea-8df9-f8fa77d8baaf
+  environment: prod

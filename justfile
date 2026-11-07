@@ -33,9 +33,9 @@ sync stack *args:
 compose stack +args:
     @./docker/scripts/stacks -s "$1" compose "${@:2}"
 
-# Set an Infisical field; use -p for a password or -e for an editor.
+# Manage Infisical secrets: set, get, list, remove, or login (see bin/vault -h).
 vault +args:
-    @python3 tools/vault.py "$@"
+    @./bin/vault "$@"
 
 # Set up the workstation or Docker contexts.
 prepare target:

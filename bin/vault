@@ -1,0 +1,415 @@
+#!/usr/bin/env python3
+"""Manage Technis secrets in Infisical Cloud, the project linked by .infisical.yaml."""
+
+import argparse
+import codecs
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+import termios
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def linked(key):
+    """Read one secrets-management setting from the repository's .infisical.yaml."""
+    try:
+        text = (ROOT / ".infisical.yaml").read_text()
+    except OSError:
+        return None
+    match = re.search(rf"^\s+{key}:\s*['\"]?([^'\"\s]+)['\"]?\s*$", text, re.M)
+    return match.group(1) if match else None
+
+
+# Same precedence as the infisical CLI: environment first, then .infisical.yaml.
+PROJECT = os.environ.get("INFISICAL_PROJECT_ID") or linked("project-id")
+ENVIRONMENT = os.environ.get("INFISICAL_ENVIRONMENT") or linked("environment") or "prod"
+DOMAIN = re.sub(r"/api$", "", os.environ.get("INFISICAL_DOMAIN", "https://app.infisical.com").rstrip("/"))
+
+# Output follows docker/scripts/stacks and jsh: decoration on stderr, colored only for a terminal unless JSH_COLOR says otherwise.
+COLOR = (
+    os.environ.get("JSH_PLAIN_OUTPUT") != "1"
+    and os.environ.get("TERM") != "dumb"
+    and "NO_COLOR" not in os.environ
+    and {"always": True, "never": False}.get(os.environ.get("JSH_COLOR"), sys.stderr.isatty())
+)
+
+
+def sgr(code, text):
+    return f"\033[{code}m{text}\033[0m" if COLOR else text
+
+
+def say(text, end="\n"):
+    print(text, end=end, file=sys.stderr, flush=True)
+
+
+def heading(name):
+    return sgr(1, f"{name:>7}:") + " "
+
+
+def send(method, path, payload=None, bearer=None):
+    """Send JSON over the API without exposing request or response bodies in errors."""
+    headers = {"Content-Type": "application/json"}
+    if bearer:
+        headers["Authorization"] = "Bearer " + bearer
+    body = json.dumps(payload).encode() if payload is not None else None
+    for attempt in range(3):
+        req = urllib.request.Request(DOMAIN + path, data=body, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            if error.code == 429 and attempt < 2:
+                # Only the rate-limit message is read; it names the wait in seconds.
+                wait = re.search(rb"try again in (\d+) seconds", error.read())
+                seconds = min(int(wait.group(1)) + 1, 65) if wait else 30
+                say(sgr("2;37", f"Infisical rate limit reached, retrying in {seconds}s"))
+                time.sleep(seconds)
+                continue
+            if error.code == 401:
+                raise ValueError("Infisical rejected the credentials; run `vault login`") from None
+            if error.code == 404:
+                raise ValueError("Infisical has no such folder or value") from None
+            raise ValueError(f"Infisical API returned HTTP {error.code}") from None
+        except urllib.error.URLError:
+            raise ValueError("Cannot connect to Infisical") from None
+    raise ValueError("Infisical rate limit reached; try again in a minute")
+
+
+TOKEN = None
+
+
+def token():
+    """INFISICAL_TOKEN or universal-auth credentials when set, otherwise the infisical CLI login."""
+    global TOKEN
+    if TOKEN:
+        return TOKEN
+    client_id = os.environ.get("INFISICAL_CLIENT_ID", "")
+    client_secret = os.environ.get("INFISICAL_CLIENT_SECRET", "")
+    if os.environ.get("INFISICAL_TOKEN"):
+        TOKEN = os.environ["INFISICAL_TOKEN"]
+    elif client_id and client_secret:
+        TOKEN = send("POST", "/api/v1/auth/universal-auth/login", {
+            "clientId": client_id, "clientSecret": client_secret
+        })["accessToken"]
+    else:
+        try:
+            run = subprocess.run(["infisical", "user", "get", "token", "--plain", "--silent"],
+                                 capture_output=True, text=True, timeout=30, stdin=subprocess.DEVNULL,
+                                 env={**os.environ, "INFISICAL_DISABLE_UPDATE_CHECK": "true"})
+        except (OSError, subprocess.TimeoutExpired):
+            raise ValueError("Cannot run the infisical CLI; install it, then run `vault login`") from None
+        if run.returncode or not run.stdout.strip():
+            raise ValueError("Not logged in to Infisical; run `vault login`")
+        TOKEN = run.stdout.strip()
+    return TOKEN
+
+
+def request(method, path, payload=None):
+    if not PROJECT:
+        raise ValueError("No Infisical project; run `infisical init` here or set INFISICAL_PROJECT_ID")
+    return send(method, path, payload, token())
+
+
+def folder_path(title, name):
+    return "/" + "/".join(x for x in (title, name) if x)
+
+
+def ensure_folder(title, name):
+    parent = "/"
+    for part in (title, name):
+        if not part:
+            continue
+        query = urllib.parse.urlencode({"projectId": PROJECT, "environment": ENVIRONMENT, "path": parent})
+        folders = request("GET", "/api/v2/folders?" + query).get("folders", [])
+        if not any(folder.get("name") == part for folder in folders):
+            request("POST", "/api/v2/folders", {"projectId": PROJECT, "environment": ENVIRONMENT, "path": parent, "name": part})
+        parent = parent.rstrip("/") + "/" + part
+
+
+REFERENCE = re.compile(r"{{\s*(vault://[^}\s]+)\s*}}")
+
+
+def key_name(label):
+    key = re.sub(r"[^A-Za-z0-9_]", "_", label)
+    return "_" + key if not key or key[0].isdigit() else key
+
+
+def secrets(path, recursive=False):
+    """Shared secrets in one folder, or in the folder and all below it, in one request."""
+    query = {"projectId": PROJECT, "environment": ENVIRONMENT, "secretPath": path,
+             "expandSecretReferences": "false", "includeImports": "false"}
+    if recursive:
+        query["recursive"] = "true"
+    result = request("GET", "/api/v4/secrets?" + urllib.parse.urlencode(query))
+    return [entry for entry in result.get("secrets", []) if entry.get("type", "shared") == "shared"]
+
+
+def value(entry):
+    if entry.get("secretValueHidden"):
+        raise ValueError("Infisical hides the value of " + entry["secretKey"] + "; check your project role")
+    return entry["secretValue"]
+
+
+def read_folder(path):
+    return {entry["secretKey"]: value(entry) for entry in secrets(path)}
+
+
+def reference_parts(reference):
+    prefix = "vault://technis/"
+    if not reference.startswith(prefix):
+        raise ValueError("Invalid Infisical reference: " + reference)
+    parts = reference[len(prefix):].split("/")
+    if len(parts) not in (2, 3) or any(not part or part in (".", "..") for part in parts):
+        raise ValueError("Invalid Infisical reference: " + reference)
+    return "/" + "/".join(parts[:-1]), key_name(parts[-1])
+
+
+def inject(text):
+    """Replace every reference from one recursive read, so a whole stack costs a single request."""
+    references = sorted({m.group(1) for m in REFERENCE.finditer(text)})
+    if not references:
+        return text
+    tree = {}
+    for entry in secrets("/", recursive=True):
+        tree.setdefault(entry["secretPath"], {})[entry["secretKey"]] = entry
+    missing = []
+    values = {}
+    for reference in references:
+        path, key = reference_parts(reference)
+        if key not in tree.get(path, {}):
+            missing.append(reference)
+        else:
+            values[reference] = value(tree[path][key])
+    if missing:
+        raise ValueError("missing Infisical references: " + ", ".join(missing))
+    return REFERENCE.sub(lambda match: values[match.group(1)], text)
+
+
+USAGE = "Usage: vault set [-e | -p] KEY | ITEM/FIELD | ITEM/SECTION/FIELD"
+
+
+def split(path):
+    """KEY means field `value` of item KEY; otherwise ITEM/FIELD or ITEM/SECTION/FIELD."""
+    parts = path.split("/")
+    if len(parts) > 3 or any(not part or part in (".", "..") for part in parts):
+        raise ValueError(USAGE)
+    if len(parts) == 1:
+        parts.append("value")
+    return parts if len(parts) == 3 else (parts[0], None, parts[1])
+
+
+def get(path):
+    title, name, label = split(path)
+    entries = read_folder(folder_path(title, name))
+    if key_name(label) not in entries:
+        raise ValueError("missing Infisical reference: " + path)
+    return entries[key_name(label)]
+
+
+def folder(path):
+    path = path.strip("/")
+    if path and any(part in ("", ".", "..") for part in path.split("/")):
+        raise ValueError("Invalid Infisical folder")
+    return "/" + path
+
+
+def show(path):
+    return read_folder(folder(path))
+
+
+def listing(path):
+    """Folder and key names only; values never leave Infisical."""
+    path = folder(path)
+    query = urllib.parse.urlencode({"projectId": PROJECT, "environment": ENVIRONMENT, "path": path})
+    names = sorted(f["name"] + "/" for f in request("GET", "/api/v2/folders?" + query).get("folders", []))
+    return names + sorted(entry["secretKey"] for entry in secrets(path))
+
+
+def confirm(prompt):
+    # Unbuffered binary: a text-mode "r+" open fails on a terminal because it is not seekable.
+    with open("/dev/tty", "r+b", buffering=0) as tty:
+        tty.write(prompt.encode())
+        return tty.readline().decode(errors="replace").strip().lower() in ("y", "yes")
+
+
+def edit():
+    """Value written in $VISUAL/$EDITOR (vim by default) through a private temporary file."""
+    editor = shlex.split(os.environ.get("VISUAL") or os.environ.get("EDITOR") or "vim")
+    descriptor, name = tempfile.mkstemp(prefix="vault-")
+    os.close(descriptor)
+    try:
+        if subprocess.run([*editor, name], check=False).returncode:
+            raise ValueError("Editor exited with an error")
+        return Path(name).read_text().removesuffix("\n")
+    finally:
+        os.unlink(name)
+
+
+def masked(prompt):
+    """Read a line from the terminal, echoing a bullet per character."""
+    with open("/dev/tty", "r+b", buffering=0) as tty:
+        fd = tty.fileno()
+        saved, mode = termios.tcgetattr(fd), termios.tcgetattr(fd)
+        mode[3] &= ~(termios.ECHO | termios.ICANON)
+        mode[6][termios.VMIN], mode[6][termios.VTIME] = 1, 0
+        decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        chars = []
+        tty.write(prompt.encode())
+        termios.tcsetattr(fd, termios.TCSAFLUSH, mode)
+        try:
+            while True:
+                data = os.read(fd, 1)
+                if not data or (data == b"\x04" and not chars):
+                    raise EOFError
+                char = decoder.decode(data)
+                if char in ("\r", "\n"):
+                    return "".join(chars)
+                if char in ("\x7f", "\b") and chars:
+                    chars.pop()
+                    tty.write(b"\b \b")
+                elif char == "\x15":  # Ctrl-U
+                    tty.write(b"\b \b" * len(chars))
+                    chars.clear()
+                elif char.isprintable() and char:
+                    chars.append(char)
+                    tty.write("•".encode())
+        finally:
+            termios.tcsetattr(fd, termios.TCSAFLUSH, saved)
+            tty.write(b"\n")
+
+
+def secret(mode):
+    if not sys.stdin.isatty():
+        say(heading("value") + sgr("2;37", "from stdin"))
+        value = sys.stdin.read().removesuffix("\n")
+    elif mode == "edit":
+        say(heading("value") + sgr("2;37", "from editor"))
+        value = edit()
+    elif mode == "password":
+        value = masked(heading("value"))
+        if value != masked(heading("confirm")):
+            raise ValueError("Values do not match")
+    else:
+        say(heading("value"), end="")
+        value = input()
+    say("")
+    if not value:
+        raise ValueError("Value cannot be empty")
+    return value
+
+
+def store(title, name, values):
+    """Save one or more fields, asking before overwriting a changed value."""
+    ensure_folder(title, name)
+    path = folder_path(title, name)
+    current = {entry["secretKey"]: value(entry) for entry in secrets(path)}
+    for label, new in values.items():
+        key = key_name(label)
+        old = current.get(key)
+        where = path.lstrip("/") + "/" + label
+        if old == new:
+            say(f"{sgr('2;37', '–')} {sgr(1, where)} {sgr('2;37', 'already up to date')}")
+            continue
+        if old is not None:
+            if not sys.stdin.isatty():
+                raise ValueError(f"{where} already exists; overwrite requires a terminal")
+            if not confirm(f"{sgr(33, '!')} {sgr(1, where)} differs. Overwrite? [y/N] "):
+                say(f"{sgr('2;37', '–')} {sgr(1, where)} {sgr('2;37', 'left unchanged')}")
+                continue
+        endpoint = "/api/v4/secrets/" + urllib.parse.quote(key, safe="")
+        request("PATCH" if old is not None else "POST", endpoint, {
+            "projectId": PROJECT, "environment": ENVIRONMENT, "secretPath": path,
+            "secretValue": new, "skipMultilineEncoding": True, "type": "shared",
+        })
+        say(f"{sgr(32, '✓')} Wrote {sgr(1, where)}")
+
+
+def describe(title, name, key):
+    say(heading("vault") + sgr(36, "Infisical / " + ENVIRONMENT))
+    say(heading("path") + sgr(36, "/".join(p for p in (title, name) if p) + "/"))
+    say(heading("key") + sgr(36, key))
+    say("")
+
+
+def put(path, mode):
+    title, name, key = split(path)
+    describe(title, name, key)
+    store(title, name, {key: secret(mode)})
+
+
+def remove(path):
+    title, name, label = split(path)
+    path, key = folder_path(title, name), key_name(label)
+    where = path.lstrip("/") + "/" + label
+    describe(title, name, label)
+    if key not in {entry["secretKey"] for entry in secrets(path)}:
+        raise ValueError(f"{where} does not exist")
+    if not sys.stdin.isatty():
+        raise ValueError(f"Removing {where} requires a terminal")
+    if not confirm(f"{sgr(33, '!')} Remove {sgr(1, where)}? [y/N] "):
+        say(f"{sgr('2;37', '–')} {sgr(1, where)} {sgr('2;37', 'left unchanged')}")
+        return
+    request("DELETE", "/api/v4/secrets/" + urllib.parse.quote(key, safe=""), {
+        "projectId": PROJECT, "environment": ENVIRONMENT, "secretPath": path, "type": "shared",
+    })
+    say(f"{sgr(32, '✓')} Removed {sgr(1, where)}")
+
+
+def parser():
+    root = argparse.ArgumentParser(prog="vault", description="Manage Technis secrets in Infisical Cloud.")
+    commands = root.add_subparsers(dest="command", metavar="command")
+    setter = commands.add_parser("set", help="store a value, asking before overwriting")
+    modes = setter.add_mutually_exclusive_group()
+    modes.add_argument("-e", dest="mode", action="store_const", const="edit", help="write the value in an editor")
+    modes.add_argument("-p", dest="mode", action="store_const", const="password", help="hidden input, entered twice")
+    setter.add_argument("path", metavar="KEY|ITEM/FIELD|ITEM/SECTION/FIELD")
+    commands.add_parser("get", help="print one value").add_argument("path", metavar="KEY|ITEM/FIELD|ITEM/SECTION/FIELD")
+    commands.add_parser("list", help="list folders and keys, never values").add_argument(
+        "path", nargs="?", default="", metavar="FOLDER")
+    commands.add_parser("remove", help="delete one value after confirming").add_argument(
+        "path", metavar="KEY|ITEM/FIELD|ITEM/SECTION/FIELD")
+    commands.add_parser("login", help="log in to Infisical Cloud with the infisical CLI")
+    commands.add_parser("show", help="print one folder's values as JSON").add_argument("path", metavar="FOLDER")
+    commands.add_parser("inject", help="resolve {{ vault://technis/... }} references from stdin to stdout")
+    return root
+
+
+def main():
+    root = parser()
+    args = root.parse_args()
+    if args.command == "set":
+        put(args.path, args.mode)
+    elif args.command == "get":
+        sys.stdout.write(get(args.path) + ("\n" if sys.stdout.isatty() else ""))
+    elif args.command == "list":
+        for name in listing(args.path):
+            print(name)
+    elif args.command == "remove":
+        remove(args.path)
+    elif args.command == "login":
+        os.execvp("infisical", ["infisical", "login"])
+    elif args.command == "show":
+        json.dump(show(args.path), sys.stdout)
+    elif args.command == "inject":
+        sys.stdout.write(inject(sys.stdin.read()))
+    else:
+        root.print_help(sys.stderr)
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, EOFError, KeyboardInterrupt) as error:
+        say(sgr(31, f"✗ {error or 'Cancelled'}"))
+        sys.exit(1)

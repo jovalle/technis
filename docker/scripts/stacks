@@ -145,7 +145,7 @@ secretless() {
 
 resolve() {
   if [[ $1 == secret ]]; then
-    python3 "$root/tools/vault.py" inject
+    python3 "$root/bin/vault" inject
   else
     # *_IP keys must parse as addresses for Compose validation.
     sed -E -e "s/^([A-Za-z0-9_]*_IP=)'?\{\{ *vault:\/\/[^}]*\}\}'?/\1127.0.0.1/" \
