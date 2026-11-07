@@ -55,6 +55,7 @@ endpoints:
     url: https://www.techn.is
     interval: 1m
     client: &public-client
+      dns-resolver: tcp://1.1.1.1:53
       ignore-redirect: true
       timeout: 10s
     ui: &private-result

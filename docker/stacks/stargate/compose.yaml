@@ -26,10 +26,6 @@ include:
       - ../../services/gluetun/compose.yaml
       - services/gluetun/compose.yaml
     env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/gluetun.env
-  - path:
-      - ../../services/gatus/compose.yaml
-      - services/gatus/compose.yaml
-    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/gatus.env
   - path: ../../services/hawser/compose.yaml
     env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/hawser.env
   - path: ../../services/tailscale/compose.yaml
