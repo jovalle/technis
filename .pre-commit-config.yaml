@@ -1,6 +1,6 @@
 ---
 ci:
-  autofix_commit_msg: "chore(pre-commit): auto fixes from pre-commit hooks\n\n[skip ci]\n"
+  autofix_commit_msg: "chore(pre-commit): auto fixes from pre-commit hooks"
   autofix_prs: true
   autoupdate_commit_msg: "chore(pre-commit): autoupdate hook versions"
   autoupdate_schedule: weekly
