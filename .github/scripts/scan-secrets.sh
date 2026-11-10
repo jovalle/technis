@@ -7,6 +7,9 @@ git cat-file -e "${SCAN_HEAD}^{commit}"
 if [[ ${SCAN_BASE} =~ ^0{40}$ ]]; then
   range=${SCAN_HEAD}
 else
+  if ! git cat-file -e "${SCAN_BASE}^{commit}" 2>/dev/null; then
+    git fetch --no-tags --filter=blob:none origin "${SCAN_BASE}"
+  fi
   git cat-file -e "${SCAN_BASE}^{commit}"
   range="${SCAN_BASE}..${SCAN_HEAD}"
 fi

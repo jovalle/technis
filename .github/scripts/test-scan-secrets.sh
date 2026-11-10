@@ -66,3 +66,26 @@ if SCAN_BASE=${head} SCAN_HEAD=${final_head} bash "${scanner}" >/dev/null 2>&1; 
   echo 'failed to detect secret introduced in merge resolution' >&2
   exit 1
 fi
+
+# A fresh checkout after a force push may not contain the previous commit.
+git init -q -b main "${tmp}/clean-source"
+git -C "${tmp}/clean-source" config user.name Test
+git -C "${tmp}/clean-source" config user.email test@example.invalid
+printf 'first\n' >"${tmp}/clean-source/file"
+git -C "${tmp}/clean-source" add file
+git -C "${tmp}/clean-source" commit -qm first
+clean_base=$(git -C "${tmp}/clean-source" rev-parse HEAD)
+printf 'second\n' >"${tmp}/clean-source/file"
+git -C "${tmp}/clean-source" commit -qam second
+git clone -q --bare "${tmp}/clean-source" "${tmp}/remote.git"
+git clone -q --depth=1 "file://${tmp}/remote.git" "${tmp}/shallow"
+if git -C "${tmp}/shallow" cat-file -e "${clean_base}^{commit}" 2>/dev/null; then
+  echo 'test did not create a missing base commit' >&2
+  exit 1
+fi
+clean_head=$(git -C "${tmp}/shallow" rev-parse HEAD)
+(cd "${tmp}/shallow" && SCAN_BASE=${clean_base} SCAN_HEAD=${clean_head} bash "${scanner}" >/dev/null 2>&1)
+if (cd "${tmp}/shallow" && SCAN_BASE=0000000000000000000000000000000000000001 SCAN_HEAD=${clean_head} bash "${scanner}" >/dev/null 2>&1); then
+  echo 'accepted an unavailable base commit' >&2
+  exit 1
+fi
