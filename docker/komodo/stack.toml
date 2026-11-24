@@ -1,0 +1,16 @@
+[[stack]]
+name = "nexus"
+
+[stack.config]
+server = "nexus"
+project_name = "nexus"
+files_on_host = true
+run_directory = "/var/lib/technis/pilot/stack"
+file_paths = ["compose.json"]
+auto_pull = false
+auto_update = false
+poll_for_updates = false
+webhook_enabled = false
+run_build = false
+destroy_before_deploy = false
+extra_args = ["--wait", "--wait-timeout", "300", "--no-build", "--pull", "never", "--no-deps"]

@@ -1,0 +1,27 @@
+name: Compose
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    name: Compose Policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify pilot policy and recovery
+        env:
+          PILOT_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          python3 -m unittest discover -s docker/scripts -p test_pilot.py -v
+          python3 docker/scripts/pilot.py check
