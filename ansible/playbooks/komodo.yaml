@@ -1,0 +1,97 @@
+---
+- name: Install Komodo release management
+  hosts: "{{ komodo_release_hosts | default('nexus') }}"
+  become: true
+  gather_facts: false
+  vars:
+    release_root: /var/lib/technis/releases
+    release_files: "{{ release_root }}/source/docker/komodo"
+  tasks:
+    - name: Require the reviewed release revision
+      ansible.builtin.assert:
+        that:
+          - komodo_release_revision is defined
+          - komodo_release_revision is match('^[0-9a-f]{40}$')
+        fail_msg: Set komodo_release_revision to the reviewed merge commit.
+
+    - name: Prepare private release directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+      loop:
+        - "{{ release_root }}"
+        - "{{ release_root }}/stack"
+        - "{{ release_root }}/services"
+
+    - name: Find the installed release timer
+      ansible.builtin.stat:
+        path: /etc/systemd/system/technis-release.timer
+      register: release_timer
+
+    - name: Pause reconciliation during source changes
+      ansible.builtin.systemd_service:
+        name: technis-release.timer
+        state: stopped
+      when: release_timer.stat.exists
+
+    - name: Wait for an in-flight release to finish
+      ansible.builtin.command: systemctl show --property=ActiveState --value technis-release.service
+      register: release_service
+      changed_when: false
+      until: release_service.stdout in ['inactive', 'failed']
+      retries: 180
+      delay: 10
+      when: release_timer.stat.exists
+
+    - name: Install the coordinator from the reviewed revision
+      ansible.builtin.git:
+        repo: https://github.com/jovalle/technis.git
+        dest: "{{ release_root }}/source"
+        version: "{{ komodo_release_revision }}"
+        recursive: false
+
+    - name: Install release units
+      ansible.builtin.copy:
+        src: "{{ release_files }}/release.{{ item }}"
+        remote_src: true
+        dest: "/etc/systemd/system/technis-release.{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - service
+        - timer
+
+    - name: Reload systemd units
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: Check release configuration and credentials
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ release_root }}/settings.json"
+        - /etc/credstore.encrypted/technis-release-id
+        - /etc/credstore.encrypted/technis-release-secret
+      register: release_inputs
+
+    - name: Check for enrolled services
+      ansible.builtin.find:
+        paths: "{{ release_root }}/services"
+        patterns: state.json
+        recurse: true
+        file_type: file
+      register: release_states
+      when: release_inputs.results | map(attribute='stat.exists') | min
+
+    - name: Start release reconciliation for enrolled services
+      ansible.builtin.systemd_service:
+        name: technis-release.timer
+        enabled: true
+        state: started
+      when:
+        - not (release_states.skipped | default(false))
+        - release_states.matched | default(0) > 0

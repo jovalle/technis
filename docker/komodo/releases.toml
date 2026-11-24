@@ -1,0 +1,28 @@
+[[target]]
+host = "nexus"
+service = "flaresolverr"
+architecture = "amd64"
+repository = "ghcr.io/flaresolverr/flaresolverr"
+tags = 'v3\.[0-9]+\.[0-9]+'
+empty_mount = "/config"
+
+[target.environment]
+CAPTCHA_SOLVER = "none"
+LOG_HTML = "false"
+LOG_LEVEL = "info"
+TZ = "America/New_York"
+
+[target.probe]
+container = "prowlarr"
+port = 8191
+health = "/health"
+
+[[target.probe.startup]]
+path = "/v1"
+data = { cmd = "sessions.create", session = "{id}" }
+expect = { status = "ok", session = "{id}" }
+
+[[target.probe.startup]]
+path = "/v1"
+data = { cmd = "sessions.destroy", session = "{id}" }
+expect = { status = "ok" }

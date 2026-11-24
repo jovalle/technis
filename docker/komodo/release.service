@@ -1,0 +1,15 @@
+[Unit]
+Description=Technis Compose Release Reconciliation
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/lib/technis/releases/source
+ExecStart=/usr/bin/python3 docker/scripts/release.py poll
+LoadCredentialEncrypted=infisical_id:/etc/credstore.encrypted/technis-release-id
+LoadCredentialEncrypted=infisical_secret:/etc/credstore.encrypted/technis-release-secret
+Environment=GIT_TERMINAL_PROMPT=0
+UMask=0077
+TimeoutStartSec=30min

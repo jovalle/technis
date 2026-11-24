@@ -1,0 +1,8 @@
+/.github/ @jovalle
+/ansible/playbooks/komodo.yaml @jovalle
+/docker/.env @jovalle
+/docker/komodo/ @jovalle
+/docker/scripts/ @jovalle
+/docker/services/flaresolverr/.env @jovalle
+/docker/stacks/nexus/ @jovalle
+/renovate.json @jovalle
