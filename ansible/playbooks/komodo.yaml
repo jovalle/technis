@@ -1,0 +1,49 @@
+---
+- name: Install the Nexus Komodo pilot
+  hosts: nexus
+  become: true
+  gather_facts: false
+  vars:
+    pilot_root: /var/lib/technis/pilot
+    pilot_files: "{{ playbook_dir }}/../../docker/komodo"
+  tasks:
+    - name: Require the reviewed pilot revision
+      ansible.builtin.assert:
+        that:
+          - komodo_pilot_revision is defined
+          - komodo_pilot_revision is match('^[0-9a-f]{40}$')
+        fail_msg: Set komodo_pilot_revision to the reviewed merge commit.
+
+    - name: Prepare private pilot directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+      loop:
+        - "{{ pilot_root }}"
+        - "{{ pilot_root }}/stack"
+
+    - name: Install the coordinator from the reviewed revision
+      ansible.builtin.git:
+        repo: https://github.com/jovalle/technis.git
+        dest: "{{ pilot_root }}/source"
+        version: "{{ komodo_pilot_revision }}"
+        recursive: false
+        update: false
+
+    - name: Install disabled pilot units
+      ansible.builtin.copy:
+        src: "{{ pilot_files }}/pilot.{{ item }}"
+        dest: "/etc/systemd/system/technis-pilot.{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - service
+        - timer
+
+    - name: Reload systemd units
+      ansible.builtin.systemd_service:
+        daemon_reload: true

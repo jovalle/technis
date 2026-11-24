@@ -181,6 +181,18 @@ stack_env() (
   fi
 )
 
+# Render from repository inputs without a Docker context or Infisical credentials.
+render_stack() (
+  local stack=$1 scratch dir=$stacks_dir/$1
+  scratch=$(mktemp -d "${TMPDIR:-/tmp}/stacks-render.XXXXXX")
+  trap 'rm -rf "$scratch"' EXIT
+  env_root=$scratch
+  stack_env "$stack" plain "$scratch/env" || return
+  env -u DOCKER_HOST -u DOCKER_CONTEXT -u COMPOSE_FILE -u COMPOSE_PROJECT_NAME -u COMPOSE_PROFILES \
+    COMPOSE_ENV_FILES="$scratch/env/project.env" TECHNIS_ENV="$scratch/env" \
+    docker compose --project-directory "$dir" -f "$dir/compose.yaml" config --format json
+)
+
 # Isolate every call from direnv state; the project .env stays unread so raw references never override.
 compose() {
   local stack=$1
@@ -664,6 +676,29 @@ stack_run() {
   fi
 }
 
+guard_pilot() {
+  local stack=$1 verb=$2
+  shift 2
+  [[ $stack == nexus ]] || return 0
+  case $verb in
+    up | upgrade | down | create | pull | rm | start | stop | restart | kill | pause | unpause) ;;
+    *) return 0 ;;
+  esac
+  local active a
+  active=$(docker --context nexus ps -a \
+    --filter label=com.docker.compose.project=nexus \
+    --filter label=com.docker.compose.service=flaresolverr \
+    --filter label=io.technis.pilot.managed=true --format '{{.ID}}') || die "cannot verify Nexus pilot ownership"
+  [[ -n $active ]] || return 0
+  # The normal commands know their service selector. Raw Compose can pass
+  # flags with values, so its mutating commands need the operator path.
+  [[ ${raw_compose:-0} != 1 && $verb != down && -n ${svc_tokens[0]:-} ]] ||
+    die "Nexus FlareSolverr is managed by the Komodo pilot; select a different service"
+  for a in "$@"; do
+    [[ $a != flaresolverr ]] || die "Nexus FlareSolverr is managed by the Komodo pilot"
+  done
+}
+
 run_compose() {
   local verb=$1 kind=change a
   shift
@@ -685,7 +720,10 @@ run_compose() {
 
   [[ $explicit == 1 ]] || narrow_by_service "$verb" "$@"
   local n=${#targets[@]} s
-  for s in "${targets[@]}"; do ensure_ctx "$s" quiet; done
+  for s in "${targets[@]}"; do
+    ensure_ctx "$s" quiet
+    guard_pilot "$s" "$verb" "$@"
+  done
   case $kind in
     single) ((n == 1)) || die "$verb needs exactly one stack; matched: ${targets[*]} (use -s)" ;;
     one) ((n == 1)) || die "$verb is limited to one stack; matched: ${targets[*]} (use -s)" ;;
@@ -842,6 +880,11 @@ main() {
         ;;
       upgrade) run_compose upgrade ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
     esac
+    return
+  fi
+  if [[ $verb == render ]]; then
+    [[ $explicit == 1 && ${#targets[@]} == 1 && $# == 0 ]] || die "render needs one explicit stack"
+    render_stack "${targets[0]}"
     return
   fi
   if [[ $verb == compose ]]; then

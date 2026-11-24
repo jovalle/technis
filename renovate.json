@@ -14,6 +14,17 @@
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
       "automerge": true,
       "matchCurrentVersion": "!/^0/"
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "automerge": false
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "matchFileNames": ["docker/services/flaresolverr/compose.yaml"],
+      "matchPackageNames": ["ghcr.io/flaresolverr/flaresolverr"],
+      "allowedVersions": "/^v3\\.[0-9]+\\.[0-9]+$/",
+      "pinDigests": true
     }
   ]
 }

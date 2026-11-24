@@ -1,0 +1,13 @@
+[Unit]
+Description=Technis FlareSolverr Pilot
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/lib/technis/pilot/source
+ExecStart=/usr/bin/python3 docker/scripts/pilot.py poll
+LoadCredentialEncrypted=infisical_id:/etc/credstore.encrypted/technis-pilot-id
+LoadCredentialEncrypted=infisical_secret:/etc/credstore.encrypted/technis-pilot-secret
+UMask=0077
+TimeoutStartSec=30min
