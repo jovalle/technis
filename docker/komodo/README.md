@@ -9,10 +9,11 @@ Komodo deploys the service within the host's existing Compose project.
 
 [releases.toml](releases.toml) describes each eligible host, service, image
 repository, runtime environment, and probe. Nexus enrolls FlareSolverr,
-Redis Exporter, and Atuin. The release engine supports services without
-persistent storage, one verified empty read-only volume, or Atuin's dedicated
-SQLite bind mount. Each enrolled
-service has its own journal. One host lock serializes updates within the
+Redis Exporter, Atuin, and the VictoriaMetrics alert evaluators. The release
+engine supports services without persistent storage, one verified empty
+read-only volume, Atuin's dedicated SQLite bind, or a reviewed read-only
+rules bind. Each enrolled service has its own journal. One host lock
+serializes updates within the
 project. Spec changes and stateful upgrades require an explicit recovery
 procedure before they can use this release path.
 
@@ -30,6 +31,14 @@ using a fresh copy of the latest database. If it passes, Komodo switches the
 image while retaining the live bind and its committed writes. If it fails,
 recovery pauses for owner review with the live database intact. The temporary
 copies are used only for these checks.
+
+The alert evaluators retain their existing read-only rule files. Enrollment
+records their live contents, and every rollout or recovery validates the
+rules with the pinned image in a container without network access. The
+running evaluator must load and evaluate rules without errors. The metrics
+evaluator deploys first. The logs evaluator waits for the metrics evaluator
+to accept the same image digest and observes for six minutes to cover its
+five-minute evaluation interval. Re-enroll after an approved rule change.
 
 Swurapp updates require operator review. Its writable `/config` holds
 episode state, and the worker changes monitoring flags and can trigger

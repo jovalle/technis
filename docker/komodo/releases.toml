@@ -78,3 +78,73 @@ TZ = "America/New_York"
 container = "prowlarr"
 port = 8888
 health = "/healthz"
+
+[[target]]
+host = "nexus"
+service = "vmalert-metrics"
+architecture = "amd64"
+repository = "docker.io/victoriametrics/vmalert"
+tags = 'v1\.[0-9]+\.[0-9]+'
+source_directory = "victoriametrics/alert"
+environment = {}
+read_only = true
+depends_on = ["alertmanager"]
+config_mount = "/etc/vmalert/rules"
+config_files = ["logs.yaml", "metrics.yaml"]
+config_check = ["-dryRun", "-rule=/etc/vmalert/rules/metrics.yaml"]
+service_command = [
+  "-datasource.url=http://victoriametrics:8428",
+  "-remoteWrite.url=http://victoriametrics:8428",
+  "-remoteRead.url=http://victoriametrics:8428",
+  "-notifier.url=http://alertmanager:9093",
+  "-rule=/etc/vmalert/rules/metrics.yaml",
+  "-evaluationInterval=30s",
+  "-httpListenAddr=:8880",
+]
+
+[target.labels]
+"observability.metrics.address" = "vmalert-metrics:8880"
+"traefik.enable" = "false"
+
+[target.probe]
+container = "prowlarr"
+port = 8880
+health = "/api/v1/rules"
+alert_rules = true
+
+[[target]]
+host = "nexus"
+service = "vmalert-logs"
+architecture = "amd64"
+repository = "docker.io/victoriametrics/vmalert"
+tags = 'v1\.[0-9]+\.[0-9]+'
+source_directory = "victoriametrics/alert"
+environment = {}
+read_only = true
+depends_on = ["alertmanager", "victorialogs", "victoriametrics"]
+config_mount = "/etc/vmalert/rules"
+config_files = ["logs.yaml", "metrics.yaml"]
+config_check = ["-dryRun", "-rule=/etc/vmalert/rules/logs.yaml", "-rule.defaultRuleType=vlogs"]
+observation_seconds = 360
+promote_after = "vmalert-metrics"
+service_command = [
+  "-datasource.url=http://victorialogs:9428",
+  "-remoteWrite.url=http://victoriametrics:8428",
+  "-remoteRead.url=http://victoriametrics:8428",
+  "-notifier.url=http://alertmanager:9093",
+  "-rule=/etc/vmalert/rules/logs.yaml",
+  "-rule.defaultRuleType=vlogs",
+  "-rule.evalDelay=5s",
+  "-evaluationInterval=5m",
+  "-httpListenAddr=:8880",
+]
+
+[target.labels]
+"observability.metrics.address" = "vmalert-logs:8880"
+"traefik.enable" = "false"
+
+[target.probe]
+container = "prowlarr"
+port = 8880
+health = "/api/v1/rules"
+alert_rules = true
