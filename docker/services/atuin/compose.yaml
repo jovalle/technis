@@ -36,7 +36,7 @@ services:
           grep -q '"healthy"' <&3
       timeout: 5s
     hostname: atuin
-    image: ghcr.io/atuinsh/atuin:18.23.0
+    image: ghcr.io/atuinsh/atuin:18.23.0@sha256:f232feeead54a0a13132b9cd477e312c3380e9dc90f1db24c4f79ce6c8e034ea
     init: true
     labels:
       - traefik.http.routers.atuin.rule=Host(`atuin.techn.is`)
@@ -48,4 +48,8 @@ services:
       - no-new-privileges:true
     user: 568:568
     volumes:
-      - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/atuin/config:/config
+      - type: bind
+        source: ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/atuin/config
+        target: /config
+        bind:
+          create_host_path: false

@@ -50,3 +50,30 @@ container = "prowlarr"
 port = 9121
 health = "/metrics"
 contains = "redis_up 1"
+
+[[target]]
+host = "nexus"
+service = "atuin"
+architecture = "amd64"
+repository = "ghcr.io/atuinsh/atuin"
+tags = '18\.[0-9]+\.[0-9]+'
+read_only = true
+sqlite_db = "/config/atuin.db"
+
+[target.environment]
+ATUIN_DB_URI = "sqlite:///config/atuin.db"
+ATUIN_HOST = "0.0.0.0"
+ATUIN_OPEN_REGISTRATION = "false"
+ATUIN_PORT = "8888"
+RUST_LOG = "atuin_server=info"
+TZ = "America/New_York"
+
+[target.labels]
+"traefik.http.routers.atuin.rule" = 'Host(`atuin.techn.is`)'
+"traefik.http.routers.atuin.service" = "atuin"
+"traefik.http.services.atuin.loadbalancer.server.port" = "8888"
+
+[target.probe]
+container = "prowlarr"
+port = 8888
+health = "/healthz"

@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import tempfile
 import unittest
 from dataclasses import replace
@@ -193,6 +194,47 @@ class ReleaseTest(unittest.TestCase):
         self.assertTrue(service["read_only"])
         self.assertEqual(service["labels"], {**template["labels"], release.MANAGED_LABEL: "true"})
         self.assertNotIn("depends_on", service)
+
+    def test_sqlite_rollback_proves_previous_pin_against_latest_data(self):
+        target = replace(TARGET, read_only=True, sqlite_db="/config/atuin.db")
+        runtime = release.Runtime(self.path.parent, {}, {}, target, {target.service: target})
+        calls = []
+        with (patch.object(runtime, "target", return_value=({"configured": NEW}, None)),
+              patch.object(runtime, "check_sqlite", side_effect=lambda image: calls.append(("check", image))),
+              patch.object(runtime, "deploy", side_effect=lambda image: calls.append(("deploy", image))),
+              patch.object(runtime, "verify", side_effect=lambda image: calls.append(("verify", image)))):
+            runtime.restore(OLD)
+        self.assertEqual(calls, [("check", OLD), ("deploy", OLD), ("verify", OLD)])
+
+    def test_incompatible_sqlite_rollback_leaves_live_image_and_database_alone(self):
+        target = replace(TARGET, read_only=True, sqlite_db="/config/atuin.db")
+        runtime = release.Runtime(self.path.parent, {}, {}, target, {target.service: target})
+        with (patch.object(runtime, "target", return_value=({"configured": NEW}, None)),
+              patch.object(runtime, "check_sqlite", side_effect=release.ReleaseError("Incompatible database")),
+              patch.object(runtime, "stage") as stage,
+              patch.object(runtime, "deploy") as deploy,
+              self.assertRaisesRegex(release.ReleaseError, "Incompatible database")):
+            runtime.restore(OLD)
+        stage.assert_not_called()
+        deploy.assert_not_called()
+
+    def test_sqlite_copy_includes_committed_wal_writes_and_detects_mutation(self):
+        source = self.path.parent / "live.db"
+        copy = self.path.parent / "copy.db"
+        with sqlite3.connect(source) as live:
+            live.execute("PRAGMA journal_mode=WAL")
+            live.execute("CREATE TABLE history (entry TEXT)")
+            live.execute("INSERT INTO history VALUES ('accepted by candidate')")
+            live.commit()
+            release.copy_sqlite(source, copy)
+            before = release.sqlite_signature(copy)
+            with sqlite3.connect(copy) as replica:
+                self.assertEqual(replica.execute("SELECT entry FROM history").fetchall(),
+                                 [("accepted by candidate",)])
+                replica.execute("DELETE FROM history")
+            self.assertNotEqual(before, release.sqlite_signature(copy))
+            self.assertEqual(live.execute("SELECT entry FROM history").fetchall(),
+                             [("accepted by candidate",)])
 
     def test_missing_backend_metric_blocks_promotion(self):
         worker = replace(TARGET, probe={**TARGET.probe, "contains": "redis_up 1"})

@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import subprocess
 import tempfile
 import time
@@ -29,7 +30,7 @@ RESULTS = {"unchanged", "restored", "recovery blocked"}
 MANAGED_LABEL = "io.technis.release.managed"
 STACK_ARGS = ["--wait", "--wait-timeout", "300", "--no-build", "--pull", "never", "--no-deps"]
 DETAILS = {"baseline", "registry", "executor", "running-image", "container-health", "client-probe",
-           "volume", "interrupted"}
+           "volume", "sqlite-compatibility", "interrupted"}
 
 
 class ReleaseError(Exception):
@@ -60,6 +61,7 @@ class Target:
     depends_on: list = field(default_factory=list)
     labels: dict = field(default_factory=dict)
     read_only: bool = False
+    sqlite_db: str | None = None
 
     def __post_init__(self):
         if not NAME.fullmatch(self.host) or not NAME.fullmatch(self.service):
@@ -74,6 +76,9 @@ class Target:
             raise ReleaseError("Invalid Compose source directory")
         if self.image_user and (self.empty_mount or not re.fullmatch(r"[1-9]\d*:[1-9]\d*", self.image_user)):
             raise ReleaseError("An inherited image user must be a non-root UID and GID on a volume-free service")
+        if self.sqlite_db and (self.empty_mount or self.image_user or not self.read_only
+                               or not re.fullmatch(r"/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+\.db", self.sqlite_db)):
+            raise ReleaseError("SQLite releases require one dedicated database bind and a read-only root filesystem")
         if (any(not NAME.fullmatch(dependency) or dependency == self.service for dependency in self.depends_on)
                 or MANAGED_LABEL in self.labels):
             raise ReleaseError("Invalid Compose service policy")
@@ -89,6 +94,10 @@ class Target:
     @property
     def name(self):
         return f"{self.host}/{self.service}"
+
+    @property
+    def sqlite_directory(self):
+        return str(Path(self.sqlite_db).parent)
 
     def require_image(self, image):
         tagged, sep, digest = image.partition("@")
@@ -283,6 +292,31 @@ def command(*args, cwd=None, env=None, timeout=480):
     return result.stdout.decode()
 
 
+def copy_sqlite(source, destination):
+    deadline = time.monotonic() + 60
+
+    def progress(status, remaining, total):
+        if time.monotonic() > deadline:
+            raise TimeoutError("SQLite snapshot timed out")
+
+    with (contextlib.closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as live,
+          contextlib.closing(sqlite3.connect(destination)) as replica):
+        live.backup(replica, pages=256, progress=progress)
+        replica.execute("PRAGMA journal_mode=DELETE")
+
+
+def sqlite_signature(path):
+    with contextlib.closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as database:
+        if database.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
+            raise ReleaseError("SQLite integrity check failed", "sqlite-compatibility")
+        version, = database.execute("PRAGMA user_version").fetchone()
+        signature = hashlib.sha256(str(version).encode())
+        for line in database.iterdump():
+            signature.update(b"\0")
+            signature.update(line.encode())
+        return signature.digest()
+
+
 def git(repo, *args):
     return command("git", "-C", str(repo), *args)
 
@@ -431,6 +465,11 @@ class Runtime:
         if set(status["networks"]) != {f"{self.policy.host}_default"}:
             raise ReleaseError("Unexpected Compose network")
         mounts = status["mounts"]
+        if self.policy.sqlite_db:
+            if (len(mounts) != 1 or mounts[0]["Type"] != "bind" or not mounts[0]["RW"]
+                    or mounts[0]["Destination"] != self.policy.sqlite_directory):
+                raise ReleaseError("Unexpected SQLite bind mount", "volume")
+            return status, mounts[0]["Source"]
         if self.policy.empty_mount:
             if len(mounts) != 1 or mounts[0]["Type"] != "volume" or mounts[0]["Destination"] != self.policy.empty_mount:
                 raise ReleaseError("Unexpected release volume", "volume")
@@ -438,7 +477,10 @@ class Runtime:
             raise ReleaseError("Unexpected persistent storage", "volume")
         return status, mounts[0]["Name"] if mounts else None
 
-    def volume(self, target):
+    def volume(self, target, service=None):
+        if target.sqlite_db:
+            service = self.template(target) if service is None else service
+            return service["volumes"][0]["source"]
         return self.config.get("volumes", {}).get(target.service)
 
     def empty_volume(self):
@@ -461,6 +503,46 @@ class Runtime:
             if len(ids) != 1 or self.docker_call(
                     "inspect", "-f", "{{.State.Health.Status}}", ids[0]).strip() != "healthy":
                 raise ReleaseError("A release dependency is unhealthy", "client-probe")
+
+    def check_sqlite(self, image):
+        try:
+            _, mount = self.target()
+            if mount != self.volume(self.policy):
+                raise ReleaseError("Unexpected SQLite bind source", "volume")
+            directory = Path(mount)
+            live = directory / Path(self.policy.sqlite_db).name
+            if (directory.resolve(strict=True) != directory or not live.is_file()
+                    or any(Path(str(live) + suffix).is_symlink() for suffix in ("", "-wal", "-shm", "-journal"))):
+                raise ReleaseError("SQLite database files require owner review", "volume")
+            service = self.template(self.policy)
+            uid, gid = map(int, service["user"].split(":"))
+            with tempfile.TemporaryDirectory(prefix="technis-sqlite-", dir="/run") as work:
+                scratch = Path(work)
+                data = scratch / "data"
+                data.mkdir(mode=0o700)
+                replica = data / live.name
+                copy_sqlite(live, replica)
+                expected = sqlite_signature(replica)
+                os.chown(data, uid, gid)
+                os.chown(replica, uid, gid)
+                for key in ("container_name", "hostname", "labels", "networks", "expose"):
+                    service.pop(key, None)
+                service.update(image=self.policy.require_image(image), network_mode="none", restart="no",
+                               logging={"driver": "none"})
+                service["volumes"][0]["source"] = str(data)
+                spec = scratch / "compose.json"
+                save(spec, {"name": f"technis-sqlite-{uuid.uuid4().hex}", "services": {"check": service}})
+                try:
+                    self.docker_call("compose", "-f", str(spec), "up", "-d", "--wait", "--wait-timeout", "90",
+                                     "--pull", "never", "--no-build")
+                    self.docker_call("compose", "-f", str(spec), "stop", "-t", "10")
+                finally:
+                    self.docker_call("compose", "-f", str(spec), "down", "-t", "10")
+                if sqlite_signature(replica) != expected:
+                    raise ReleaseError("Image startup changed the SQLite database", "sqlite-compatibility")
+        except (ReleaseError, OSError, sqlite3.Error, subprocess.TimeoutExpired) as error:
+            detail = error.detail if isinstance(error, ReleaseError) and error.detail else "sqlite-compatibility"
+            raise ReleaseError("SQLite compatibility check failed", detail) from None
 
     def stage(self, image):
         services = {}
@@ -498,28 +580,37 @@ class Runtime:
         except (ReleaseError, OSError, subprocess.TimeoutExpired):
             raise ReleaseError("Could not cache the candidate image", "registry") from None
         self.dependencies_ready()
+        if self.policy.sqlite_db:
+            self.check_sqlite(candidate)
 
     def deploy(self, image):
         self.approved_stack()
         self.empty_volume()
+        if self.policy.sqlite_db:
+            _, mount = self.target()
+            if mount != self.volume(self.policy):
+                raise ReleaseError("Unexpected SQLite bind source", "volume")
         self.image_id(image)
         self.stage(image)
         update = self.komodo("execute", "DeployStack", stack=self.policy.host, services=[self.policy.service])
         self.wait_update(update)
 
     def restore(self, image):
-        self.stage(image)
         try:
             status, _ = self.target()
             if status["configured"] == image:
                 self.verify(image)
+                self.stage(image)
                 return
         except (ReleaseError, OSError, ValueError):
             pass
+        if self.policy.sqlite_db:
+            # Rehearse the previous image on a copy of the latest database. Keep the live bind and its writes.
+            self.check_sqlite(image)
         self.deploy(image)
         self.verify(image)
 
-    def verify(self, image, observe=True):
+    def verify(self, image, observe=True, service=None):
         expected = self.image_id(image)
         deadline = time.monotonic() + (self.config.get("observe_seconds", 300) if observe else 0)
         first = True
@@ -527,7 +618,8 @@ class Runtime:
             status, volume = self.target()
             if status["image"] != expected:
                 raise ReleaseError("The service is running a different image", "running-image")
-            if volume != self.volume(self.policy) or (observe and volume and status["mounts"][0]["RW"]):
+            if (volume != self.volume(self.policy, service)
+                    or (observe and self.policy.empty_mount and status["mounts"][0]["RW"])):
                 raise ReleaseError("Unexpected release volume state", "volume")
             if status["health"] != "healthy" or status["restarts"]:
                 raise ReleaseError("Container failed release verification", "container-health")
@@ -611,21 +703,33 @@ def effective_service(repo, target):
     configured_user = (service or {}).get("user")
     user = str(configured_user or target.image_user or "").split(":", 1)[0]
     dependencies = {name: {"condition": "service_healthy", "required": True} for name in target.depends_on}
+    extra = {"expose", "init", "volumes"} if target.sqlite_db else set()
+    expected_command = ["start"] if target.sqlite_db else None
     if (model["name"] != target.host or model["networks"]["default"]["name"] != f"{target.host}_default"
             or service is None or set(service["networks"]) != {"default"}
             or set(service) - {"cap_drop", "command", "container_name", "deploy", "entrypoint",
                                "environment", "healthcheck", "hostname", "image", "networks",
-                               "restart", "security_opt", "tmpfs", "user", "labels", "read_only", "depends_on"}
+                               "restart", "security_opt", "tmpfs", "user", "labels", "read_only", "depends_on"} - extra
             or service.get("cap_drop") != ["ALL"]
             or (not re.fullmatch(r"[1-9][0-9]*|[a-z_][a-z0-9_-]*", user) or user == "root")
             or (target.image_user and configured_user is not None)
-            or service.get("command") is not None or service.get("entrypoint") is not None
+            or service.get("command") != expected_command or service.get("entrypoint") is not None
             or service.get("security_opt") not in (["no-new-privileges:true"], ["no-new-privileges=true"])
             or not service.get("healthcheck") or service.get("environment", {}) != target.environment
             or service.get("labels", {}) != target.labels or service.get("read_only", False) != target.read_only
             or service.get("depends_on", {}) != dependencies
             or service["image"] != pin_line(target, (repo / target.source).read_text())):
         raise ReleaseError("The effective service requires owner review")
+    if target.sqlite_db:
+        mounts = service.get("volumes", [])
+        if (not re.fullmatch(r"[1-9][0-9]*:[1-9][0-9]*", configured_user or "")
+                or service["environment"].get("ATUIN_DB_URI") != "sqlite://" + target.sqlite_db
+                or service["environment"].get("ATUIN_OPEN_REGISTRATION") != "false"
+                or len(mounts) != 1 or mounts[0].get("type") != "bind" or mounts[0].get("read_only")
+                or mounts[0].get("target") != target.sqlite_directory
+                or not Path(mounts[0].get("source", "")).is_absolute()
+                or mounts[0].get("bind") != {"create_host_path": False}):
+            raise ReleaseError("The effective SQLite bind requires owner review")
     return service
 
 
@@ -747,12 +851,12 @@ def enroll(repo, host):
         raise ReleaseError("Enroll from a clean, reviewed Compose checkout")
     host.approved_stack()
     status, volume = host.target()
-    if host.volume(target) != volume:
+    if host.volume(target, service) != volume:
         raise ReleaseError("Configure the exact existing release volume")
     host.docker_call("pull", "--platform", "linux/" + target.architecture, image)
     if status["image"] != host.image_id(image):
         raise ReleaseError("The pinned baseline differs from the live image")
-    host.verify(image, observe=False)
+    host.verify(image, observe=False, service=service)
     host.empty_volume()
     state = load(state_path) if state_path.exists() else {"failed": {}, "outbox": {}}
     state_path.parent.mkdir(parents=True, exist_ok=True)
