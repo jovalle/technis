@@ -728,8 +728,10 @@ def effective_service(repo, target):
                 or len(mounts) != 1 or mounts[0].get("type") != "bind" or mounts[0].get("read_only")
                 or mounts[0].get("target") != target.sqlite_directory
                 or not Path(mounts[0].get("source", "")).is_absolute()
-                or mounts[0].get("bind") != {"create_host_path": False}):
+                or mounts[0].get("bind", {}) not in ({}, {"create_host_path": False})):
             raise ReleaseError("The effective SQLite bind requires owner review")
+        # Compose 2.40 omits false on render. Make the staging behavior explicit.
+        mounts[0]["bind"] = {"create_host_path": False}
     return service
 
 
