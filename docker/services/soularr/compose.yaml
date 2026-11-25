@@ -36,7 +36,7 @@ services:
         - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8265/', timeout=5).close()"
       timeout: 10s
     hostname: soularr
-    image: mrusse08/soularr:latest@sha256:89b6809a169f6c78032c9a66abf5130e4877c46c0b95391818a38ab66cd71548
+    image: mrusse08/soularr:latest@sha256:61ee506de5fb1447f3abd4a5a47e2537fad152ddf8c7e0392a36ef00b4f1c3d9
     labels:
       - traefik.http.routers.soularr.middlewares=auth@file
       - traefik.http.services.soularr.loadbalancer.server.port=8265
