@@ -26,3 +26,27 @@ expect = { status = "ok", session = "{id}" }
 path = "/v1"
 data = { cmd = "sessions.destroy", session = "{id}" }
 expect = { status = "ok" }
+
+[[target]]
+host = "nexus"
+service = "redis-exporter"
+source_service = "redis"
+architecture = "amd64"
+repository = "docker.io/oliver006/redis_exporter"
+tags = 'v1\.[0-9]+\.[0-9]+'
+image_user = "59000:59000"
+depends_on = ["redis"]
+read_only = true
+
+[target.labels]
+"observability.metrics.address" = "redis-exporter:9121"
+"traefik.enable" = "false"
+
+[target.environment]
+REDIS_ADDR = "redis://redis:6379"
+
+[target.probe]
+container = "prowlarr"
+port = 9121
+health = "/metrics"
+contains = "redis_up 1"

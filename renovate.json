@@ -21,6 +21,21 @@
       "matchUpdateTypes": ["digest", "patch", "minor"],
       "automerge": true,
       "platformAutomerge": false
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "matchFileNames": ["docker/services/redis/compose.yaml"],
+      "matchPackageNames": ["docker.io/oliver006/redis_exporter"],
+      "allowedVersions": "/^v1\\.[0-9]+\\.[0-9]+$/",
+      "pinDigests": true
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "matchFileNames": ["docker/services/redis/compose.yaml"],
+      "matchPackageNames": ["docker.io/oliver006/redis_exporter"],
+      "matchUpdateTypes": ["digest", "patch", "minor"],
+      "automerge": true,
+      "platformAutomerge": false
     }
   ]
 }
