@@ -21,6 +21,11 @@ volume defaults, keeps the exporter settings, and requires the running
 Redis dependency to be healthy. The deployment updates only the exporter
 and the client probe verifies `redis_up 1` through its metrics endpoint.
 
+Swurapp updates require operator review. Its writable `/config` holds
+episode state, and the worker changes monitoring flags and can trigger
+searches in Sonarr. Follow the
+[Swurapp release and recovery procedure](../services/swurapp/README.md).
+
 ## Choose the Runtime
 
 Core, MongoDB, and Periphery run in Compose. The coordinator is a systemd
