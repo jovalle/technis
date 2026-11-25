@@ -260,6 +260,23 @@ class ReleaseTest(unittest.TestCase):
             self.assertEqual(live.execute("SELECT entry FROM history").fetchall(),
                              [("candidate\0write",)])
 
+    def test_sqlite_rehearsal_rejects_an_alternate_database_or_modified_configuration(self):
+        directory = self.path.parent / "replica"
+        directory.mkdir()
+        database = directory / "atuin.db"
+        database.touch()
+        config = directory / "server.toml"
+        config.write_text("# Use Compose settings\n")
+        release.check_sqlite_directory(database, config.read_text())
+        alternate = directory / "alternate.db"
+        alternate.touch()
+        with self.assertRaises(release.ReleaseError):
+            release.check_sqlite_directory(database, config.read_text())
+        alternate.unlink()
+        config.write_text('db_uri = "sqlite:///config/alternate.db"\n')
+        with self.assertRaises(release.ReleaseError):
+            release.check_sqlite_directory(database, "# Use Compose settings\n")
+
     def test_missing_backend_metric_blocks_promotion(self):
         worker = replace(TARGET, probe={**TARGET.probe, "contains": "redis_up 1"})
         runtime = release.Runtime(self.path.parent, {}, {}, worker, {worker.service: worker})
