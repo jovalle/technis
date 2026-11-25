@@ -36,6 +36,21 @@
       "matchUpdateTypes": ["digest", "patch", "minor"],
       "automerge": true,
       "platformAutomerge": false
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "matchFileNames": ["docker/services/atuin/compose.yaml"],
+      "matchPackageNames": ["ghcr.io/atuinsh/atuin"],
+      "allowedVersions": "/^18\\.[0-9]+\\.[0-9]+$/",
+      "pinDigests": true
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "matchFileNames": ["docker/services/atuin/compose.yaml"],
+      "matchPackageNames": ["ghcr.io/atuinsh/atuin"],
+      "matchUpdateTypes": ["digest", "patch", "minor"],
+      "automerge": true,
+      "platformAutomerge": false
     }
   ]
 }
