@@ -583,11 +583,10 @@ def checked_commit(repository, revision):
     if not REPOSITORY.fullmatch(repository) or not REVISION.fullmatch(revision):
         raise ReleaseError("Invalid GitHub release source")
     runs = github("GET", f"/repos/{repository}/commits/{revision}/check-runs?per_page=100")
-    return any(
-        run["name"] == "Compose Policy" and run["app"]["slug"] == "github-actions"
-        and run["head_sha"] == revision and run["conclusion"] == "success"
-        for run in runs["check_runs"]
-    )
+    passed = {run["name"] for run in runs["check_runs"]
+              if run["app"]["slug"] == "github-actions" and run["head_sha"] == revision
+              and run["conclusion"] == "success"}
+    return {"Compose Policy", "Gitleaks"} <= passed
 
 
 def vault(repo, ref):
@@ -743,7 +742,7 @@ def poll(repo, config, hosts):
     if all(load(path)["revision"] == revision for _, path in active):
         return
     if not REVISION.fullmatch(revision) or not checked_commit(upstream, revision):
-        raise ReleaseError("Waiting for Compose Policy to pass on the exact main commit")
+        raise ReleaseError("Waiting for Compose Policy and Gitleaks to pass on the exact main commit")
     for host, path in active:
         target = host.policy
         state = load(path)
