@@ -134,13 +134,14 @@ class ReleaseTest(unittest.TestCase):
         self.assertEqual({k: v["image"] for k, v in active["services"].items()},
                          {"server": NEW, "worker": worker_ref})
 
-    def test_release_commit_requires_its_own_successful_compose_check(self):
+    def test_release_commit_requires_both_successful_checks_on_the_exact_commit(self):
         endpoint = f"/repos/owner/releases/commits/{REV}/check-runs?per_page=100"
-        passed = {"name": "Compose Policy", "head_sha": REV, "conclusion": "success",
-                  "app": {"slug": "github-actions"}}
+        compose = {"name": "Compose Policy", "head_sha": REV, "conclusion": "success",
+                   "app": {"slug": "github-actions"}}
+        gitleaks = {**compose, "name": "Gitleaks"}
 
         def github(_method, path):
-            return {"check_runs": [passed]} if path == endpoint else []
+            return {"check_runs": [compose, gitleaks]} if path == endpoint else []
 
         with patch.object(release, "github", side_effect=github) as api:
             self.assertTrue(release.checked_commit("owner/releases", REV))
@@ -152,10 +153,12 @@ class ReleaseTest(unittest.TestCase):
             {"conclusion": "failure"},
             {"app": {"slug": "other-app"}},
         )
-        for mismatch in mismatches:
-            with self.subTest(mismatch=mismatch):
-                with patch.object(release, "github", return_value={"check_runs": [{**passed, **mismatch}]}):
-                    self.assertFalse(release.checked_commit("owner/releases", REV))
+        for required, other in ((compose, gitleaks), (gitleaks, compose)):
+            for mismatch in mismatches:
+                with self.subTest(name=required["name"], mismatch=mismatch):
+                    checks = [other, {**required, **mismatch}]
+                    with patch.object(release, "github", return_value={"check_runs": checks}):
+                        self.assertFalse(release.checked_commit("owner/releases", REV))
 
     def test_production_promotion_defaults_on_after_required_checks(self):
         self.host.path = self.path

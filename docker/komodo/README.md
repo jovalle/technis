@@ -3,7 +3,8 @@
 Renovate opens PRs for digest-pinned images. GitHub checks the effective
 Compose service and its registry manifest. Eligible digest, patch, and minor
 updates use Renovate automerge. The release coordinator follows `main` and
-promotes a commit only after **Compose Policy** passes on that exact commit.
+promotes a commit only after **Compose Policy** and **Gitleaks** pass on that
+exact commit.
 Komodo deploys the service within the host's existing Compose project.
 
 [releases.toml](releases.toml) describes each eligible host, service, image
@@ -47,8 +48,8 @@ changes to policy, workflows, and deployment tooling.
 
 1. Keep each Renovate automerge rule limited to a cataloged service and its
    approved update types. Renovate checks pull-request CI before it merges.
-   The release coordinator checks **Compose Policy** again on the resulting
-   commit on `main`.
+   The release coordinator checks **Compose Policy** and **Gitleaks** again
+   on the resulting commit on `main`.
 2. Create a private GitHub incident repository with Issues enabled and
    install a GitHub App there with Issues write and Metadata read. Store
    the App private key and Komodo service-user credentials in Infisical.
