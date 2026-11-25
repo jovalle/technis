@@ -328,7 +328,7 @@ copy(Path(mount) / Path(source).name, Path(destination))
 """
     command("unshare", "--mount", "--propagation", "private", sys.executable, "-c", reader,
             str(Path(__file__).resolve()), str(source), str(mount), str(destination), str(uid), str(gid),
-            timeout=90)
+            env={"PATH": os.defpath}, timeout=90)
 
 
 def sqlite_signature(path):
@@ -352,9 +352,25 @@ def sqlite_signature(path):
         return signature.digest()
 
 
+def sqlite_files(path):
+    return {path.with_name(path.name + suffix) for suffix in ("", "-wal", "-shm", "-journal")}
+
+
 def regular_sqlite_files(path):
-    files = [path.with_name(path.name + suffix) for suffix in ("", "-wal", "-shm", "-journal")]
-    return path.is_file() and all(not item.is_symlink() and (not item.exists() or item.is_file()) for item in files)
+    return path.is_file() and all(not item.is_symlink() and (not item.exists() or item.is_file())
+                                  for item in sqlite_files(path))
+
+
+def check_sqlite_directory(database, original_config):
+    config = database.with_name("server.toml")
+    if set(database.parent.iterdir()) - (sqlite_files(database) | {config}):
+        raise ReleaseError("Image startup created unexpected SQLite files", "sqlite-compatibility")
+    if config.is_symlink() or (config.exists() and not config.is_file()):
+        raise ReleaseError("Image startup changed the SQLite configuration", "sqlite-compatibility")
+    config_text = config.read_text() if config.exists() else None
+    if ((original_config is not None and config_text != original_config)
+            or (config_text is not None and tomllib.loads(config_text))):
+        raise ReleaseError("Image startup changed the SQLite configuration", "sqlite-compatibility")
 
 
 def git(repo, *args):
@@ -498,7 +514,7 @@ class Runtime:
             return None
         if len(ids) != 1:
             raise ReleaseError("Expected one Compose service container")
-        return json.loads(self.docker_call("inspect", "-f", template, ids[0]))
+        return {**json.loads(self.docker_call("inspect", "-f", template, ids[0])), "id": ids[0]}
 
     def target(self, allow_missing=False):
         status = self.inspect(allow_missing)
@@ -548,6 +564,24 @@ class Runtime:
                     "inspect", "-f", "{{.State.Health.Status}}", ids[0]).strip() != "healthy":
                 raise ReleaseError("A release dependency is unhealthy", "client-probe")
 
+    def require_open_database(self, container, database):
+        identity = database.stat()
+        pids = self.docker_call("top", container, "-eo", "pid").split()[1:]
+        for pid in pids:
+            if not pid.isdecimal():
+                raise ReleaseError("Could not identify the SQLite process", "sqlite-compatibility")
+            try:
+                files = list((Path("/proc") / pid / "fd").iterdir())
+            except FileNotFoundError:
+                continue
+            for descriptor in files:
+                try:
+                    if os.path.samestat(identity, descriptor.stat()):
+                        return
+                except (FileNotFoundError, PermissionError):
+                    continue
+        raise ReleaseError("Atuin did not open the approved SQLite database", "sqlite-compatibility")
+
     def check_sqlite(self, image):
         try:
             _, mount = self.target(allow_missing=True)
@@ -590,9 +624,12 @@ class Runtime:
                 try:
                     self.docker_call("compose", "-f", str(spec), "up", "-d", "--wait", "--wait-timeout", "90",
                                      "--pull", "never", "--no-build")
+                    container = self.docker_call("compose", "-f", str(spec), "ps", "-q", "check").strip()
+                    self.require_open_database(container, replica)
                     self.docker_call("compose", "-f", str(spec), "stop", "-t", "10")
                 finally:
                     self.docker_call("compose", "-f", str(spec), "down", "-t", "10")
+                check_sqlite_directory(replica, config_text)
                 if sqlite_signature(replica) != expected:
                     raise ReleaseError("Image startup changed the SQLite database", "sqlite-compatibility")
         except (ReleaseError, OSError, ValueError, sqlite3.Error, subprocess.TimeoutExpired) as error:
@@ -682,6 +719,11 @@ class Runtime:
                 raise ReleaseError("The release requires a read-only container filesystem", "container-health")
             if self.policy.image_user and status["user"] != self.policy.image_user:
                 raise ReleaseError("The container user differs from its approved image user", "container-health")
+            if first and self.policy.sqlite_db:
+                database = Path(volume) / Path(self.policy.sqlite_db).name
+                if not regular_sqlite_files(database):
+                    raise ReleaseError("SQLite database files require owner review", "volume")
+                self.require_open_database(status["id"], database)
             try:
                 self.dependencies_ready()
                 self.probe(self.policy.probe["health"])
