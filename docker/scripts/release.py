@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import sqlite3
 import subprocess
+import sys
 import tempfile
 import time
 import tomllib
@@ -306,20 +307,28 @@ def copy_sqlite(source, destination):
 
 
 def copy_sqlite_as_service(source, destination, uid, gid):
-    child = os.fork()
-    if child == 0:
-        try:
-            os.setgroups([])
-            os.setgid(gid)
-            os.setuid(uid)
-            os.umask(0o077)
-            copy_sqlite(source, destination)
-        except BaseException:
-            os._exit(1)
-        os._exit(0)
-    _, status = os.waitpid(child, 0)
-    if status != 0:
-        raise ReleaseError("Could not copy the SQLite database", "sqlite-compatibility")
+    mount = destination.parent.parent / "live"
+    mount.mkdir()
+    # The live service UID may not be able to traverse the bind source's host parents.
+    reader = """
+import os
+from pathlib import Path
+import runpy
+import subprocess
+import sys
+
+script, source, mount, destination, uid, gid = sys.argv[1:]
+copy = runpy.run_path(script)["copy_sqlite"]
+subprocess.run(["mount", "--bind", str(Path(source).parent), mount], check=True)
+os.setgroups([])
+os.setgid(int(gid))
+os.setuid(int(uid))
+os.umask(0o077)
+copy(Path(mount) / Path(source).name, Path(destination))
+"""
+    command("unshare", "--mount", "--propagation", "private", sys.executable, "-c", reader,
+            str(Path(__file__).resolve()), str(source), str(mount), str(destination), str(uid), str(gid),
+            timeout=90)
 
 
 def sqlite_signature(path):
