@@ -41,7 +41,7 @@ services:
         - CMD-SHELL
         - wget -q -T 3 -O /dev/null http://127.0.0.1:9999/ && wget -q -T 3 -O /dev/null http://127.0.0.1:5030/health
       timeout: 10s
-    image: slskd/slskd:0.26.1
+    image: slskd/slskd:0.26.2
     labels:
       - traefik.enable=false
     network_mode: service:gluetun
