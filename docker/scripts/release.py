@@ -328,7 +328,7 @@ copy(Path(mount) / Path(source).name, Path(destination))
 """
     command("unshare", "--mount", "--propagation", "private", sys.executable, "-c", reader,
             str(Path(__file__).resolve()), str(source), str(mount), str(destination), str(uid), str(gid),
-            timeout=90)
+            env={"PATH": os.defpath}, timeout=90)
 
 
 def sqlite_signature(path):
