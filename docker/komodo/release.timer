@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for Approved Compose Releases
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+Unit=technis-release.service
+
+[Install]
+WantedBy=timers.target

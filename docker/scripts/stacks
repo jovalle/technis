@@ -181,6 +181,18 @@ stack_env() (
   fi
 )
 
+# Render from repository inputs without a Docker context or Infisical credentials.
+render_stack() (
+  local stack=$1 scratch dir=$stacks_dir/$1
+  scratch=$(mktemp -d "${TMPDIR:-/tmp}/stacks-render.XXXXXX")
+  trap 'rm -rf "$scratch"' EXIT
+  env_root=$scratch
+  stack_env "$stack" plain "$scratch/env" || return
+  env -u DOCKER_HOST -u DOCKER_CONTEXT -u COMPOSE_FILE -u COMPOSE_PROJECT_NAME -u COMPOSE_PROFILES \
+    COMPOSE_ENV_FILES="$scratch/env/project.env" TECHNIS_ENV="$scratch/env" \
+    docker compose --project-directory "$dir" -f "$dir/compose.yaml" config --format json
+)
+
 # Isolate every call from direnv state; the project .env stays unread so raw references never override.
 compose() {
   local stack=$1
@@ -651,17 +663,42 @@ compose_up() {
 
 # up alone reuses a cached image, so upgrade pulls first.
 stack_run() {
-  local s=$1 verb=$2
+  local s=$1 verb=$2 deps=()
   shift 2
+  if in_list "$s" ${guarded[@]+"${guarded[@]}"}; then deps=(--no-deps); fi
   if [[ ${raw_compose:-0} == 1 ]]; then
     compose "$s" "$verb" "$@"
   elif [[ $verb == upgrade ]]; then
-    compose "$s" pull "$@" && compose_up "$s" -d "$@"
+    compose "$s" pull "$@" && compose_up "$s" -d ${deps[@]+"${deps[@]}"} "$@"
   elif [[ $verb == up ]]; then
-    compose_up "$s" "$@"
+    compose_up "$s" ${deps[@]+"${deps[@]}"} "$@"
   else
     compose "$s" "$verb" "$@"
   fi
+}
+
+guard_releases() {
+  local stack=$1 verb=$2
+  shift 2
+  case $verb in
+    up | upgrade | down | create | pull | rm | run | start | stop | restart | kill | pause | unpause) ;;
+    *) return 0 ;;
+  esac
+  local active a
+  active=$(docker --context "$stack" ps -a \
+    --filter "label=com.docker.compose.project=$stack" \
+    --filter label=io.technis.release.managed=true \
+    --format '{{.Label "com.docker.compose.service"}}') || die "cannot verify release ownership on $stack"
+  [[ -n $active ]] || return 0
+  guarded+=("$stack")
+  # Whole-project and raw mutations can affect services outside the supplied arguments.
+  [[ ${raw_compose:-0} != 1 && $verb != down && -n ${svc_tokens[0]:-} ]] ||
+    die "$stack has services managed by Komodo release automation; select a different service"
+  for a in "$@"; do
+    if [[ $'\n'$active$'\n' == *$'\n'"$a"$'\n'* ]]; then
+      die "$stack/$a is managed by Komodo release automation"
+    fi
+  done
 }
 
 run_compose() {
@@ -684,8 +721,11 @@ run_compose() {
   esac
 
   [[ $explicit == 1 ]] || narrow_by_service "$verb" "$@"
-  local n=${#targets[@]} s
-  for s in "${targets[@]}"; do ensure_ctx "$s" quiet; done
+  local n=${#targets[@]} s guarded=()
+  for s in "${targets[@]}"; do
+    ensure_ctx "$s" quiet
+    guard_releases "$s" "$verb" "$@"
+  done
   case $kind in
     single) ((n == 1)) || die "$verb needs exactly one stack; matched: ${targets[*]} (use -s)" ;;
     one) ((n == 1)) || die "$verb is limited to one stack; matched: ${targets[*]} (use -s)" ;;
@@ -842,6 +882,11 @@ main() {
         ;;
       upgrade) run_compose upgrade ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
     esac
+    return
+  fi
+  if [[ $verb == render ]]; then
+    [[ $explicit == 1 && ${#targets[@]} == 1 && $# == 0 ]] || die "render needs one explicit stack"
+    render_stack "${targets[0]}"
     return
   fi
   if [[ $verb == compose ]]; then
