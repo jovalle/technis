@@ -61,6 +61,7 @@ read_only = true
 sqlite_db = "/config/atuin.db"
 
 [target.environment]
+ATUIN_CONFIG_DIR = "/config"
 ATUIN_DB_URI = "sqlite:///config/atuin.db"
 ATUIN_HOST = "0.0.0.0"
 ATUIN_OPEN_REGISTRATION = "false"

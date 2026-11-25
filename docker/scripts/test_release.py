@@ -1,3 +1,4 @@
+from contextlib import closing
 import json
 import sqlite3
 import tempfile
@@ -218,20 +219,43 @@ class ReleaseTest(unittest.TestCase):
         stage.assert_not_called()
         deploy.assert_not_called()
 
+    def test_sqlite_rollback_can_recreate_a_missing_container(self):
+        target = replace(TARGET, read_only=True, sqlite_db="/config/atuin.db")
+        runtime = release.Runtime(self.path.parent, {}, {}, target, {target.service: target})
+        with (patch.object(runtime, "inspect", return_value=None),
+              patch.object(runtime, "volume", return_value="/data/approved"),
+              patch.object(runtime, "approved_stack"),
+              patch.object(runtime, "image_id"),
+              patch.object(runtime, "stage") as stage,
+              patch.object(runtime, "komodo", return_value={"status": "Complete", "success": True}) as komodo):
+            self.assertEqual(runtime.target(allow_missing=True), (None, "/data/approved"))
+            runtime.deploy(OLD)
+        stage.assert_called_once_with(OLD)
+        komodo.assert_called_once_with("execute", "DeployStack", stack=target.host, services=[target.service])
+
+    def test_sqlite_candidate_cannot_add_implicit_volumes(self):
+        target = replace(TARGET, read_only=True, sqlite_db="/config/atuin.db")
+        runtime = release.Runtime(self.path.parent, {}, {}, target, {target.service: target})
+        metadata = {"id": OLD, "user": "", "volumes": {"/unapproved": {}}}
+        with (patch.object(runtime, "docker_call", return_value=json.dumps(metadata)),
+              self.assertRaisesRegex(release.ReleaseError, "volume defaults changed")):
+            runtime.image_id(NEW)
+
     def test_sqlite_copy_includes_committed_wal_writes_and_detects_mutation(self):
         source = self.path.parent / "live.db"
         copy = self.path.parent / "copy.db"
-        with sqlite3.connect(source) as live:
+        with closing(sqlite3.connect(source)) as live:
             live.execute("PRAGMA journal_mode=WAL")
             live.execute("CREATE TABLE history (entry TEXT)")
             live.execute("INSERT INTO history VALUES ('accepted by candidate')")
             live.commit()
             release.copy_sqlite(source, copy)
             before = release.sqlite_signature(copy)
-            with sqlite3.connect(copy) as replica:
+            with closing(sqlite3.connect(copy)) as replica:
                 self.assertEqual(replica.execute("SELECT entry FROM history").fetchall(),
                                  [("accepted by candidate",)])
                 replica.execute("DELETE FROM history")
+                replica.commit()
             self.assertNotEqual(before, release.sqlite_signature(copy))
             self.assertEqual(live.execute("SELECT entry FROM history").fetchall(),
                              [("accepted by candidate",)])

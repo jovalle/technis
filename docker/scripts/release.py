@@ -352,10 +352,10 @@ def manifest(target, image):
                                 platform_image))["config"]["digest"]
     if not DIGEST.fullmatch(config):
         raise ReleaseError("Invalid registry image configuration digest")
-    if target.image_user:
+    if target.image_user or target.sqlite_db:
         metadata = json.loads(command("docker", "buildx", "imagetools", "inspect",
                                       "--format", "{{json .Image}}", platform_image))["config"]
-        if metadata.get("User") != target.image_user or metadata.get("Volumes"):
+        if metadata.get("Volumes") or (target.image_user and metadata.get("User") != target.image_user):
             raise ReleaseError("Image user or volume defaults changed")
     return config
 
@@ -432,17 +432,17 @@ class Runtime:
 
     def image_id(self, image):
         image = self.policy.require_image(image)
-        if not self.policy.image_user:
+        if not (self.policy.image_user or self.policy.sqlite_db):
             return self.docker_call("image", "inspect", "-f", "{{.Id}}", image).strip()
         output = self.docker_call("image", "inspect", "-f",
                                   '{"id":{{json .Id}},"user":{{json .Config.User}},'
                                   '"volumes":{{json .Config.Volumes}}}', image)
         metadata = json.loads(output)
-        if metadata["user"] != self.policy.image_user or metadata["volumes"]:
+        if metadata["volumes"] or (self.policy.image_user and metadata["user"] != self.policy.image_user):
             raise ReleaseError("Image user or volume defaults changed", "registry")
         return metadata["id"]
 
-    def inspect(self):
+    def inspect(self, allow_missing=False):
         # Constrain Docker's response to the properties needed for the safety check.
         template = ('{"image":{{json .Image}},"health":{{json .State.Health.Status}},'
                     '"configured":{{json .Config.Image}},"restarts":{{json .RestartCount}},"mounts":{{json .Mounts}},'
@@ -454,12 +454,16 @@ class Runtime:
                                "--filter", f"label=com.docker.compose.project={self.policy.host}",
                                "--filter", f"label=com.docker.compose.service={self.policy.service}",
                                "--filter", "label=com.docker.compose.oneoff=False").splitlines()
+        if not ids and allow_missing:
+            return None
         if len(ids) != 1:
             raise ReleaseError("Expected one Compose service container")
         return json.loads(self.docker_call("inspect", "-f", template, ids[0]))
 
-    def target(self):
-        status = self.inspect()
+    def target(self, allow_missing=False):
+        status = self.inspect(allow_missing)
+        if status is None:
+            return None, self.volume(self.policy)
         if (status["project"], status["service"]) != (self.policy.host, self.policy.service):
             raise ReleaseError("Unexpected Compose ownership")
         if set(status["networks"]) != {f"{self.policy.host}_default"}:
@@ -506,7 +510,7 @@ class Runtime:
 
     def check_sqlite(self, image):
         try:
-            _, mount = self.target()
+            _, mount = self.target(allow_missing=True)
             if mount != self.volume(self.policy):
                 raise ReleaseError("Unexpected SQLite bind source", "volume")
             directory = Path(mount)
@@ -514,6 +518,12 @@ class Runtime:
             if (directory.resolve(strict=True) != directory or not live.is_file()
                     or any(Path(str(live) + suffix).is_symlink() for suffix in ("", "-wal", "-shm", "-journal"))):
                 raise ReleaseError("SQLite database files require owner review", "volume")
+            config = directory / "server.toml"
+            if config.is_symlink() or (config.exists() and not config.is_file()):
+                raise ReleaseError("The SQLite server configuration requires owner review", "volume")
+            config_text = config.read_text() if config.exists() else None
+            if config_text is not None and tomllib.loads(config_text):
+                raise ReleaseError("The SQLite server configuration overrides Compose settings", "volume")
             service = self.template(self.policy)
             uid, gid = map(int, service["user"].split(":"))
             with tempfile.TemporaryDirectory(prefix="technis-sqlite-", dir="/run") as work:
@@ -525,6 +535,10 @@ class Runtime:
                 expected = sqlite_signature(replica)
                 os.chown(data, uid, gid)
                 os.chown(replica, uid, gid)
+                if config_text is not None:
+                    replica_config = data / config.name
+                    replica_config.write_text(config_text)
+                    os.chown(replica_config, uid, gid)
                 for key in ("container_name", "hostname", "labels", "networks", "expose"):
                     service.pop(key, None)
                 service.update(image=self.policy.require_image(image), network_mode="none", restart="no",
@@ -540,7 +554,7 @@ class Runtime:
                     self.docker_call("compose", "-f", str(spec), "down", "-t", "10")
                 if sqlite_signature(replica) != expected:
                     raise ReleaseError("Image startup changed the SQLite database", "sqlite-compatibility")
-        except (ReleaseError, OSError, sqlite3.Error, subprocess.TimeoutExpired) as error:
+        except (ReleaseError, OSError, ValueError, sqlite3.Error, subprocess.TimeoutExpired) as error:
             detail = error.detail if isinstance(error, ReleaseError) and error.detail else "sqlite-compatibility"
             raise ReleaseError("SQLite compatibility check failed", detail) from None
 
@@ -587,7 +601,7 @@ class Runtime:
         self.approved_stack()
         self.empty_volume()
         if self.policy.sqlite_db:
-            _, mount = self.target()
+            _, mount = self.target(allow_missing=True)
             if mount != self.volume(self.policy):
                 raise ReleaseError("Unexpected SQLite bind source", "volume")
         self.image_id(image)
@@ -724,6 +738,7 @@ def effective_service(repo, target):
         mounts = service.get("volumes", [])
         if (not re.fullmatch(r"[1-9][0-9]*:[1-9][0-9]*", configured_user or "")
                 or service["environment"].get("ATUIN_DB_URI") != "sqlite://" + target.sqlite_db
+                or service["environment"].get("ATUIN_CONFIG_DIR") != target.sqlite_directory
                 or service["environment"].get("ATUIN_OPEN_REGISTRATION") != "false"
                 or len(mounts) != 1 or mounts[0].get("type") != "bind" or mounts[0].get("read_only")
                 or mounts[0].get("target") != target.sqlite_directory
