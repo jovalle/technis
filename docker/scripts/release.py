@@ -3,7 +3,7 @@
 
 import argparse
 import contextlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import datetime as dt
 import fcntl
 import hashlib
@@ -55,6 +55,11 @@ class Target:
     environment: dict
     probe: dict
     empty_mount: str | None = None
+    source_service: str | None = None
+    image_user: str | None = None
+    depends_on: list = field(default_factory=list)
+    labels: dict = field(default_factory=dict)
+    read_only: bool = False
 
     def __post_init__(self):
         if not NAME.fullmatch(self.host) or not NAME.fullmatch(self.service):
@@ -65,10 +70,17 @@ class Target:
             raise ReleaseError("An explicit image repository is required")
         if self.empty_mount and not re.fullmatch(r"(?:/[a-zA-Z0-9_.-]+)+", self.empty_mount):
             raise ReleaseError("Invalid release volume target")
+        if self.source_service and not NAME.fullmatch(self.source_service):
+            raise ReleaseError("Invalid Compose source directory")
+        if self.image_user and (self.empty_mount or not re.fullmatch(r"[1-9]\d*:[1-9]\d*", self.image_user)):
+            raise ReleaseError("An inherited image user must be a non-root UID and GID on a volume-free service")
+        if (any(not NAME.fullmatch(dependency) or dependency == self.service for dependency in self.depends_on)
+                or MANAGED_LABEL in self.labels):
+            raise ReleaseError("Invalid Compose service policy")
 
     @property
     def source(self):
-        return Path("docker/services") / self.service / "compose.yaml"
+        return Path("docker/services") / (self.source_service or self.service) / "compose.yaml"
 
     @property
     def stack(self):
@@ -276,6 +288,11 @@ def git(repo, *args):
 
 
 def pin_line(target, contents):
+    if target.source_service:
+        stanza = re.search(rf"(?ms)^  {re.escape(target.service)}:[ \t]*\n(.*?)(?=^ {{0,2}}\S|\Z)", contents)
+        if stanza is None:
+            raise ReleaseError("The release service is missing from its Compose source")
+        contents = stanza[1]
     matches = re.findall(r"^    image: ([^\s]+)$", contents, re.MULTILINE)
     if len(matches) != 1:
         raise ReleaseError("Expected one literal release image")
@@ -293,10 +310,16 @@ def manifest(target, image):
         raise ReleaseError(f"Cannot find linux/{target.architecture} in the pinned image index")
     if not DIGEST.fullmatch(platform["digest"]):
         raise ReleaseError("Invalid registry manifest")
+    platform_image = f"{name}@{platform['digest']}"
     config = json.loads(command("docker", "buildx", "imagetools", "inspect", "--raw",
-                                f"{name}@{platform['digest']}"))["config"]["digest"]
+                                platform_image))["config"]["digest"]
     if not DIGEST.fullmatch(config):
         raise ReleaseError("Invalid registry image configuration digest")
+    if target.image_user:
+        metadata = json.loads(command("docker", "buildx", "imagetools", "inspect",
+                                      "--format", "{{json .Image}}", platform_image))["config"]
+        if metadata.get("User") != target.image_user or metadata.get("Volumes"):
+            raise ReleaseError("Image user or volume defaults changed")
     return config
 
 
@@ -371,12 +394,22 @@ class Runtime:
             raise ReleaseError("Komodo deployment failed", "executor")
 
     def image_id(self, image):
-        return self.docker_call("image", "inspect", "-f", "{{.Id}}", self.policy.require_image(image)).strip()
+        image = self.policy.require_image(image)
+        if not self.policy.image_user:
+            return self.docker_call("image", "inspect", "-f", "{{.Id}}", image).strip()
+        output = self.docker_call("image", "inspect", "-f",
+                                  '{"id":{{json .Id}},"user":{{json .Config.User}},'
+                                  '"volumes":{{json .Config.Volumes}}}', image)
+        metadata = json.loads(output)
+        if metadata["user"] != self.policy.image_user or metadata["volumes"]:
+            raise ReleaseError("Image user or volume defaults changed", "registry")
+        return metadata["id"]
 
     def inspect(self):
         # Constrain Docker's response to the properties needed for the safety check.
         template = ('{"image":{{json .Image}},"health":{{json .State.Health.Status}},'
                     '"configured":{{json .Config.Image}},"restarts":{{json .RestartCount}},"mounts":{{json .Mounts}},'
+                    '"read_only":{{json .HostConfig.ReadonlyRootfs}},'
                     '"networks":{{json .NetworkSettings.Networks}},'
                     '"project":{{json (index .Config.Labels "com.docker.compose.project")}},'
                     '"service":{{json (index .Config.Labels "com.docker.compose.service")}}}')
@@ -415,6 +448,17 @@ class Runtime:
         if not mount.is_absolute() or not mount.is_dir() or any(mount.iterdir()):
             raise ReleaseError("A nonempty release volume requires owner review", "volume")
 
+    def dependencies_ready(self):
+        for name in self.policy.depends_on:
+            ids = self.docker_call(
+                "ps", "-q", "--filter", f"label=com.docker.compose.project={self.policy.host}",
+                "--filter", f"label=com.docker.compose.service={name}",
+                "--filter", "label=com.docker.compose.oneoff=False",
+            ).splitlines()
+            if len(ids) != 1 or self.docker_call(
+                    "inspect", "-f", "{{.State.Health.Status}}", ids[0]).strip() != "healthy":
+                raise ReleaseError("A release dependency is unhealthy", "client-probe")
+
     def stage(self, image):
         services = {}
         volumes = {}
@@ -427,7 +471,9 @@ class Runtime:
             else:
                 continue
             service = {**self.template(target), "image": target.require_image(pin)}
-            service["labels"] = {MANAGED_LABEL: "true"}
+            service["labels"] = {**service.get("labels", {}), MANAGED_LABEL: "true"}
+            # The executor uses --no-deps. Check the live dependency instead of recreating it.
+            service.pop("depends_on", None)
             if target.empty_mount:
                 source = f"release_{target.service}"
                 service["volumes"] = [{"type": "volume", "source": source, "target": target.empty_mount,
@@ -453,6 +499,7 @@ class Runtime:
         self.approved_stack()
         self.empty_volume()
         self.image_id(image)
+        self.dependencies_ready()
         self.stage(image)
         update = self.komodo("execute", "DeployStack", stack=self.policy.host, services=[self.policy.service])
         self.wait_update(update)
@@ -481,7 +528,10 @@ class Runtime:
                 raise ReleaseError("Unexpected release volume state", "volume")
             if status["health"] != "healthy" or status["restarts"]:
                 raise ReleaseError("Container failed release verification", "container-health")
+            if self.policy.read_only and not status["read_only"]:
+                raise ReleaseError("The release requires a read-only container filesystem", "container-health")
             try:
+                self.dependencies_ready()
                 self.probe(self.policy.probe["health"])
                 if first:
                     self.smoke()
@@ -511,6 +561,8 @@ class Runtime:
         if data is not None:
             args += ["-H", "Content-Type: application/json", "--data", json.dumps(data)]
         output = self.docker_call(*args, f"http://{self.policy.service}:{int(probe['port'])}{route}")
+        if "contains" in probe and probe["contains"] not in output.splitlines():
+            raise ReleaseError("The probe response did not contain the expected line", "client-probe")
         return json.loads(output) if data is not None else None
 
 
@@ -524,11 +576,14 @@ def source_signature(repo, revision, target):
             contents = git(repo, "show", f"{revision}:{path}")
             env.extend(line for line in contents.splitlines()
                        if line.split("=", 1)[0].strip().removeprefix("export ") in keys)
-    override = git(repo, "ls-tree", "-r", revision, str(target.stack.parent / "services" / target.service))
+    input_name = target.source.parent.name
+    override = git(repo, "ls-tree", "-r", revision, str(target.stack.parent / "services" / input_name))
     stack = git(repo, "show", f"{revision}:{target.stack}")
     relative = target.source.relative_to("docker")
-    required = (f"  - path: ../../{relative}\n"
-                f"    env_file: ${{TECHNIS_ENV:?run compose through docker/scripts/stacks}}/{target.service}.env\n")
+    path = f"  - path: ../../{relative}\n"
+    if target.source_service:
+        path = f"  - path:\n      - ../../{relative}\n      - services/{input_name}/compose.yaml\n"
+    required = path + f"    env_file: ${{TECHNIS_ENV:?run compose through docker/scripts/stacks}}/{input_name}.env\n"
     if required not in stack or f"\nname: {target.host}\n" not in stack:
         raise ReleaseError("Managed service wiring changed")
     contents = [source.replace(image, "RELEASE_IMAGE", 1), *env, override]
@@ -539,17 +594,22 @@ def effective_service(repo, target):
     env = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"]}
     model = json.loads(command("bash", "docker/scripts/stacks", "-s", target.host, "render", cwd=repo, env=env))
     service = model["services"].get(target.service)
-    user = str((service or {}).get("user", "")).split(":", 1)[0]
+    configured_user = (service or {}).get("user")
+    user = str(configured_user or target.image_user or "").split(":", 1)[0]
+    dependencies = {name: {"condition": "service_healthy", "required": True} for name in target.depends_on}
     if (model["name"] != target.host or model["networks"]["default"]["name"] != f"{target.host}_default"
             or service is None or set(service["networks"]) != {"default"}
             or set(service) - {"cap_drop", "command", "container_name", "deploy", "entrypoint",
                                "environment", "healthcheck", "hostname", "image", "networks",
-                               "restart", "security_opt", "tmpfs", "user"}
+                               "restart", "security_opt", "tmpfs", "user", "labels", "read_only", "depends_on"}
             or service.get("cap_drop") != ["ALL"]
             or (not re.fullmatch(r"[1-9][0-9]*|[a-z_][a-z0-9_-]*", user) or user == "root")
+            or (target.image_user and configured_user is not None)
             or service.get("command") is not None or service.get("entrypoint") is not None
             or service.get("security_opt") not in (["no-new-privileges:true"], ["no-new-privileges=true"])
             or not service.get("healthcheck") or service.get("environment", {}) != target.environment
+            or service.get("labels", {}) != target.labels or service.get("read_only", False) != target.read_only
+            or service.get("depends_on", {}) != dependencies
             or service["image"] != pin_line(target, (repo / target.source).read_text())):
         raise ReleaseError("The effective service requires owner review")
     return service

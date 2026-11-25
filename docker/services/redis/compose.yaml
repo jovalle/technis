@@ -65,7 +65,7 @@ services:
       test: [CMD, /redis_exporter, --version]
       timeout: 10s
     hostname: redis-exporter
-    image: oliver006/redis_exporter:latest
+    image: docker.io/oliver006/redis_exporter:v1.99.0@sha256:2c0cdc2452096b5af460d870e72fa6ee2ebb971780f443a616885685d2c0ebad
     labels:
       - observability.metrics.address=redis-exporter:9121
       - traefik.enable=false

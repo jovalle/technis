@@ -8,12 +8,18 @@ exact commit.
 Komodo deploys the service within the host's existing Compose project.
 
 [releases.toml](releases.toml) describes each eligible host, service, image
-repository, runtime environment, and probe. `nexus/flaresolverr` is the first
-entry. The release engine supports services without persistent storage and
+repository, runtime environment, and probe. Nexus enrolls FlareSolverr and
+Redis Exporter. The release engine supports services without persistent storage and
 services with one verified empty volume mounted read-only. Each enrolled
 service has its own journal. One host lock serializes updates within the
 project. Spec changes and stateful upgrades require an explicit recovery
 procedure before they can use this release path.
+
+Redis Exporter shares a Compose file with Redis and inherits its non-root
+user from the pinned image. The coordinator checks the image user and
+volume defaults, keeps the exporter settings, and requires the running
+Redis dependency to be healthy. The deployment updates only the exporter
+and the client probe verifies `redis_up 1` through its metrics endpoint.
 
 ## Choose the Runtime
 

@@ -1,5 +1,7 @@
+import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -133,6 +135,45 @@ class ReleaseTest(unittest.TestCase):
         self.assertEqual(active["name"], "example")
         self.assertEqual({k: v["image"] for k, v in active["services"].items()},
                          {"server": NEW, "worker": worker_ref})
+
+    def test_multi_service_file_pins_the_requested_service(self):
+        exporter = replace(TARGET, source_service="datastore")
+        compose = f"services:\n  datastore:\n    image: redis:latest\n  server:\n    image: {OLD}\n"
+        self.assertEqual(exporter.source, Path("docker/services/datastore/compose.yaml"))
+        self.assertEqual(release.pin_line(exporter, compose), OLD)
+
+    def test_staging_preserves_worker_labels_and_root_filesystem(self):
+        worker = replace(TARGET, depends_on=["datastore"], read_only=True)
+        root = self.path.parent
+        (root / "stack").mkdir()
+        runtime = release.Runtime(root, {}, {}, worker, {worker.service: worker})
+        runtime.state_path(worker).parent.mkdir(parents=True)
+        template = {"read_only": True, "labels": {"observability.metrics.address": "server:9121"},
+                    "depends_on": {"datastore": {"condition": "service_healthy", "required": True}}}
+        release.save(runtime.state_path(worker).with_name("template.json"), template)
+        runtime.stage(NEW)
+        service = release.load(root / "stack" / "compose.json")["services"][worker.service]
+        self.assertTrue(service["read_only"])
+        self.assertEqual(service["labels"], {**template["labels"], release.MANAGED_LABEL: "true"})
+        self.assertNotIn("depends_on", service)
+
+    def test_missing_backend_metric_blocks_promotion(self):
+        worker = replace(TARGET, probe={**TARGET.probe, "contains": "redis_up 1"})
+        runtime = release.Runtime(self.path.parent, {}, {}, worker, {worker.service: worker})
+        with (patch.object(runtime, "docker_call", return_value="redis_up 0\n"),
+              self.assertRaisesRegex(release.ReleaseError, "response did not contain")):
+            runtime.probe(worker.probe["health"])
+
+    def test_rejects_image_defaults_that_would_create_storage_or_run_as_root(self):
+        worker = replace(TARGET, image_user="59000:59000")
+        runtime = release.Runtime(self.path.parent, {}, {}, worker, {worker.service: worker})
+        metadata = ({"id": "image-id", "user": "0:0", "volumes": None},
+                    {"id": "image-id", "user": worker.image_user, "volumes": {"/state": {}}})
+        for invalid in metadata:
+            with (self.subTest(metadata=invalid),
+                  patch.object(runtime, "docker_call", return_value=json.dumps(invalid)),
+                  self.assertRaisesRegex(release.ReleaseError, "user or volume defaults changed")):
+                runtime.image_id(NEW)
 
     def test_release_commit_requires_both_successful_checks_on_the_exact_commit(self):
         endpoint = f"/repos/owner/releases/commits/{REV}/check-runs?per_page=100"
