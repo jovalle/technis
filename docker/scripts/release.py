@@ -287,12 +287,15 @@ def git(repo, *args):
     return command("git", "-C", str(repo), *args)
 
 
+def service_stanza(target, contents):
+    if not target.source_service:
+        return contents
+    stanza = re.search(rf"(?ms)^  {re.escape(target.service)}:[ \t]*\n(.*?)(?=^ {{0,2}}\S|\Z)", contents)
+    return stanza[1] if stanza else ""
+
+
 def pin_line(target, contents):
-    if target.source_service:
-        stanza = re.search(rf"(?ms)^  {re.escape(target.service)}:[ \t]*\n(.*?)(?=^ {{0,2}}\S|\Z)", contents)
-        if stanza is None:
-            raise ReleaseError("The release service is missing from its Compose source")
-        contents = stanza[1]
+    contents = service_stanza(target, contents)
     matches = re.findall(r"^    image: ([^\s]+)$", contents, re.MULTILINE)
     if len(matches) != 1:
         raise ReleaseError("Expected one literal release image")
@@ -409,7 +412,7 @@ class Runtime:
         # Constrain Docker's response to the properties needed for the safety check.
         template = ('{"image":{{json .Image}},"health":{{json .State.Health.Status}},'
                     '"configured":{{json .Config.Image}},"restarts":{{json .RestartCount}},"mounts":{{json .Mounts}},'
-                    '"read_only":{{json .HostConfig.ReadonlyRootfs}},'
+                    '"read_only":{{json .HostConfig.ReadonlyRootfs}},"user":{{json .Config.User}},'
                     '"networks":{{json .NetworkSettings.Networks}},'
                     '"project":{{json (index .Config.Labels "com.docker.compose.project")}},'
                     '"service":{{json (index .Config.Labels "com.docker.compose.service")}}}')
@@ -494,12 +497,12 @@ class Runtime:
             self.image_id(candidate)
         except (ReleaseError, OSError, subprocess.TimeoutExpired):
             raise ReleaseError("Could not cache the candidate image", "registry") from None
+        self.dependencies_ready()
 
     def deploy(self, image):
         self.approved_stack()
         self.empty_volume()
         self.image_id(image)
-        self.dependencies_ready()
         self.stage(image)
         update = self.komodo("execute", "DeployStack", stack=self.policy.host, services=[self.policy.service])
         self.wait_update(update)
@@ -530,6 +533,8 @@ class Runtime:
                 raise ReleaseError("Container failed release verification", "container-health")
             if self.policy.read_only and not status["read_only"]:
                 raise ReleaseError("The release requires a read-only container filesystem", "container-health")
+            if self.policy.image_user and status["user"] != self.policy.image_user:
+                raise ReleaseError("The container user differs from its approved image user", "container-health")
             try:
                 self.dependencies_ready()
                 self.probe(self.policy.probe["health"])
@@ -569,15 +574,24 @@ class Runtime:
 def source_signature(repo, revision, target):
     source = git(repo, "show", f"{revision}:{target.source}")
     image = pin_line(target, source)
+    source = service_stanza(target, source)
+    input_name = target.source.parent.name
+    override_dir = target.stack.parent / "services" / input_name
     env = []
     keys = set(re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)", source))
-    for path in (target.source.with_name(".env"), Path("docker/.env"), target.stack.with_name(".env")):
+    env_paths = [target.source.with_name(".env"), Path("docker/.env"), target.stack.with_name(".env")]
+    if target.source_service:
+        env_paths.append(override_dir / ".env")
+    for path in env_paths:
         if git(repo, "ls-tree", revision, str(path)):
             contents = git(repo, "show", f"{revision}:{path}")
             env.extend(line for line in contents.splitlines()
                        if line.split("=", 1)[0].strip().removeprefix("export ") in keys)
-    input_name = target.source.parent.name
-    override = git(repo, "ls-tree", "-r", revision, str(target.stack.parent / "services" / input_name))
+    if target.source_service:
+        override_file = override_dir / "compose.yaml"
+        override = service_stanza(target, git(repo, "show", f"{revision}:{override_file}"))
+    else:
+        override = git(repo, "ls-tree", "-r", revision, str(override_dir))
     stack = git(repo, "show", f"{revision}:{target.stack}")
     relative = target.source.relative_to("docker")
     path = f"  - path: ../../{relative}\n"

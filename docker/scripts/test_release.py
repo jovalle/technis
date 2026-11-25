@@ -142,6 +142,43 @@ class ReleaseTest(unittest.TestCase):
         self.assertEqual(exporter.source, Path("docker/services/datastore/compose.yaml"))
         self.assertEqual(release.pin_line(exporter, compose), OLD)
 
+    def test_shared_signature_ignores_sibling_only_compose_changes(self):
+        worker = replace(TARGET, source_service="datastore")
+        override = worker.stack.parent / "services/datastore/compose.yaml"
+        stack = ("\nname: example\ninclude:\n  - path:\n"
+                 "      - ../../services/datastore/compose.yaml\n"
+                 "      - services/datastore/compose.yaml\n"
+                 "    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/datastore.env\n")
+
+        def git(_repo, operation, *args):
+            if operation == "ls-tree":
+                return "blob" if str(override) in args[-1] else ""
+            revision, path = args[0].split(":", 1)
+            return {str(worker.stack): stack,
+                    str(worker.source): (f"services:\n  datastore:\n    image: redis:{revision}\n"
+                                         f"  server:\n    image: {OLD}\n"),
+                    str(override): f"services:\n  datastore:\n    hostname: {revision}\n"}[path]
+
+        with patch.object(release, "git", side_effect=git):
+            first = release.source_signature(self.path.parent, "old", worker)
+            second = release.source_signature(self.path.parent, "new", worker)
+        self.assertEqual(first, second)
+
+    def test_rollback_recreates_worker_even_when_dependency_is_down(self):
+        worker = replace(TARGET, depends_on=["datastore"])
+        runtime = release.Runtime(self.path.parent, {}, {}, worker, {worker.service: worker})
+        with (patch.object(runtime, "stage"),
+              patch.object(runtime, "target", return_value=({"configured": NEW}, None)),
+              patch.object(runtime, "approved_stack"),
+              patch.object(runtime, "image_id"),
+              patch.object(runtime, "komodo") as komodo,
+              patch.object(runtime, "wait_update"),
+              patch.object(runtime, "dependencies_ready", side_effect=release.ReleaseError("Backend unavailable")),
+              patch.object(runtime, "verify", side_effect=release.ReleaseError("Backend unavailable"))):
+            with self.assertRaisesRegex(release.ReleaseError, "Backend unavailable"):
+                runtime.restore(OLD)
+        komodo.assert_called_once_with("execute", "DeployStack", stack=worker.host, services=[worker.service])
+
     def test_staging_preserves_worker_labels_and_root_filesystem(self):
         worker = replace(TARGET, depends_on=["datastore"], read_only=True)
         root = self.path.parent
