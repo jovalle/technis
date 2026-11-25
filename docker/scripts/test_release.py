@@ -284,6 +284,57 @@ class ReleaseTest(unittest.TestCase):
               self.assertRaisesRegex(release.ReleaseError, "response did not contain")):
             runtime.probe(worker.probe["health"])
 
+    def test_readonly_release_requires_the_approved_bind(self):
+        target = replace(TARGET, read_only=True, config_mount="/etc/rules", config_check=["-dryRun"],
+                         config_files=["test.yaml"])
+        runtime = release.Runtime(self.path.parent, {}, {}, target, {target.service: target})
+        mount = {"Type": "bind", "RW": False, "Destination": "/etc/rules", "Source": "/data/rules"}
+        status = {"project": target.host, "service": target.service, "networks": {"example_default": {}},
+                  "mounts": [mount]}
+        with patch.object(runtime, "inspect", return_value=status):
+            self.assertEqual(runtime.target()[1], "/data/rules")
+            mount["RW"] = True
+            with self.assertRaises(release.ReleaseError):
+                runtime.target()
+
+    def test_shared_rule_file_wiring_keeps_anchor_changes_in_the_signature(self):
+        worker = replace(TARGET, source_directory="monitoring/alert")
+        other = OLD.replace("v1.2.3", "v1.2.5")
+        base = (f"services:\n  server:\n    image: {OLD}\n  sibling:\n    image: {other}\n"
+                "    healthcheck: &shared [healthy]\n    volume: ${STACK_DATA_ROOT}/example\n")
+        stack = ("\nname: example\ninclude:\n  - path: ../../services/monitoring/alert/compose.yaml\n"
+                 "    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/monitoring.alert.env\n")
+
+        def git(_repo, operation, *args):
+            if operation == "ls-tree":
+                if args[0] == "env" and args[-1].endswith("services/monitoring/alert/.env"):
+                    return "blob"
+                return ""
+            revision, path = args[0].split(":", 1)
+            variants = {"base": base, "pin": base.replace(other, NEW),
+                        "anchor": base.replace("[healthy]", "[changed]"), "env": base}
+            if path.endswith("services/monitoring/alert/.env"):
+                return "STACK_DATA_ROOT=/different"
+            return stack if path == str(worker.stack) else variants[revision]
+
+        with patch.object(release, "git", side_effect=git):
+            signatures = [release.source_signature(self.path.parent, revision, worker)[0]
+                          for revision in ("base", "pin", "anchor", "env")]
+        self.assertEqual(signatures[0], signatures[1])
+        self.assertNotEqual(signatures[0], signatures[2])
+        self.assertNotEqual(signatures[0], signatures[3])
+
+    def test_alert_rule_probe_rejects_evaluation_errors(self):
+        policy = replace(TARGET, probe={**TARGET.probe, "alert_rules": True})
+        runtime = release.Runtime(self.path.parent, {}, {}, policy, {policy.service: policy})
+        rule = {"health": "ok", "lastError": ""}
+        response = {"status": "success", "data": {"groups": [{"rules": [rule]}]}}
+        with patch.object(runtime, "docker_call", side_effect=lambda *args: json.dumps(response)):
+            runtime.probe(policy.probe["health"])
+            rule["lastError"] = "synthetic"
+            with self.assertRaises(release.ReleaseError):
+                runtime.probe(policy.probe["health"])
+
     def test_rejects_image_defaults_that_would_create_storage_or_run_as_root(self):
         worker = replace(TARGET, image_user="59000:59000")
         runtime = release.Runtime(self.path.parent, {}, {}, worker, {worker.service: worker})
@@ -374,6 +425,26 @@ class ReleaseTest(unittest.TestCase):
         self.assertEqual(release.report(self.path, TARGET, api, "owner/incidents"), 1)
         self.assertEqual(len(existing), 1)
         self.assertEqual(release.load(self.path)["outbox"], {})
+
+    def test_second_evaluator_waits_for_the_first_to_accept_the_same_digest(self):
+        first = self.host
+        first.path = self.path
+        second = Host()
+        second.path = self.path.parent / "logs.json"
+        second.policy = replace(TARGET, service="logs", promote_after="server")
+        baseline = {"good": OLD, "pending": None, "failed": {}, "outbox": {},
+                    "revision": "d" * 40, "signature": "reviewed"}
+        release.save(first.path, {**baseline, "revision": REV})
+        release.save(second.path, baseline)
+        with (patch.object(release, "git", return_value=REV),
+              patch.object(release, "source_signature", return_value=("reviewed", NEW)),
+              patch.object(release, "checked_commit", return_value=True),
+              patch.object(release, "incident_api", return_value=(None, "owner/incidents"))):
+            release.poll(self.path.parent, {"repository": "owner/releases"}, [first, second])
+            self.assertEqual(second.deploys, [])
+            release.save(first.path, {**baseline, "revision": REV, "good": NEW})
+            release.poll(self.path.parent, {"repository": "owner/releases"}, [first, second])
+        self.assertEqual(second.deploys, [NEW])
 
 
 if __name__ == "__main__":
