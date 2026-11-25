@@ -41,5 +41,10 @@ services:
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/lidarr:/config
       - /mnt/media/downloads:/downloads
+      - type: bind
+        source: ${SLSKD_DOWNLOADS_ROOT:?SLSKD_DOWNLOADS_ROOT is required}
+        target: /downloads/slskd
+        bind:
+          create_host_path: false
       - /mnt/media/music:/music
       - /mnt/media/.lidarr-recycle:/recycle

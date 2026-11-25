@@ -47,4 +47,8 @@ services:
     volumes:
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/soularr:/data
       - ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/soularr/run.sh:/app/run.sh:ro
-      - /mnt/media/downloads/slskd:/downloads/slskd
+      - type: bind
+        source: ${SLSKD_DOWNLOADS_ROOT:?SLSKD_DOWNLOADS_ROOT is required}
+        target: /downloads/slskd
+        bind:
+          create_host_path: false
