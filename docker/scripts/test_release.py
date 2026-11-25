@@ -247,18 +247,18 @@ class ReleaseTest(unittest.TestCase):
         with closing(sqlite3.connect(source)) as live:
             live.execute("PRAGMA journal_mode=WAL")
             live.execute("CREATE TABLE history (entry TEXT)")
-            live.execute("INSERT INTO history VALUES ('accepted by candidate')")
+            live.execute("INSERT INTO history VALUES (?)", ("candidate\0write",))
             live.commit()
             release.copy_sqlite(source, copy)
             before = release.sqlite_signature(copy)
             with closing(sqlite3.connect(copy)) as replica:
                 self.assertEqual(replica.execute("SELECT entry FROM history").fetchall(),
-                                 [("accepted by candidate",)])
-                replica.execute("DELETE FROM history")
+                                 [("candidate\0write",)])
+                replica.execute("UPDATE history SET entry = ?", ("candidate\0mutated",))
                 replica.commit()
             self.assertNotEqual(before, release.sqlite_signature(copy))
             self.assertEqual(live.execute("SELECT entry FROM history").fetchall(),
-                             [("accepted by candidate",)])
+                             [("candidate\0write",)])
 
     def test_missing_backend_metric_blocks_promotion(self):
         worker = replace(TARGET, probe={**TARGET.probe, "contains": "redis_up 1"})

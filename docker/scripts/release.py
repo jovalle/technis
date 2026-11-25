@@ -305,16 +305,47 @@ def copy_sqlite(source, destination):
         replica.execute("PRAGMA journal_mode=DELETE")
 
 
+def copy_sqlite_as_service(source, destination, uid, gid):
+    child = os.fork()
+    if child == 0:
+        try:
+            os.setgroups([])
+            os.setgid(gid)
+            os.setuid(uid)
+            os.umask(0o077)
+            copy_sqlite(source, destination)
+        except BaseException:
+            os._exit(1)
+        os._exit(0)
+    _, status = os.waitpid(child, 0)
+    if status != 0:
+        raise ReleaseError("Could not copy the SQLite database", "sqlite-compatibility")
+
+
 def sqlite_signature(path):
+    if not regular_sqlite_files(path):
+        raise ReleaseError("SQLite database files require owner review", "volume")
     with contextlib.closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as database:
+        database.execute("PRAGMA trusted_schema=OFF")
         if database.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
             raise ReleaseError("SQLite integrity check failed", "sqlite-compatibility")
-        version, = database.execute("PRAGMA user_version").fetchone()
-        signature = hashlib.sha256(str(version).encode())
-        for line in database.iterdump():
-            signature.update(b"\0")
-            signature.update(line.encode())
+        metadata = [database.execute(f"PRAGMA {key}").fetchone() for key in ("application_id", "user_version", "encoding")]
+        schema = database.execute("SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name").fetchall()
+        signature = hashlib.sha256(repr((metadata, schema)).encode())
+        for kind, name, _, _ in schema:
+            if kind != "table":
+                continue
+            table = '"' + name.replace('"', '""') + '"'
+            signature.update(repr((name,)).encode())
+            for row in database.execute(f"SELECT * FROM {table}"):
+                signature.update(b"\0")
+                signature.update(repr(row).encode())
         return signature.digest()
+
+
+def regular_sqlite_files(path):
+    files = [path.with_name(path.name + suffix) for suffix in ("", "-wal", "-shm", "-journal")]
+    return path.is_file() and all(not item.is_symlink() and (not item.exists() or item.is_file()) for item in files)
 
 
 def git(repo, *args):
@@ -515,8 +546,7 @@ class Runtime:
                 raise ReleaseError("Unexpected SQLite bind source", "volume")
             directory = Path(mount)
             live = directory / Path(self.policy.sqlite_db).name
-            if (directory.resolve(strict=True) != directory or not live.is_file()
-                    or any(Path(str(live) + suffix).is_symlink() for suffix in ("", "-wal", "-shm", "-journal"))):
+            if directory.resolve(strict=True) != directory or not regular_sqlite_files(live):
                 raise ReleaseError("SQLite database files require owner review", "volume")
             config = directory / "server.toml"
             if config.is_symlink() or (config.exists() and not config.is_file()):
@@ -528,13 +558,15 @@ class Runtime:
             uid, gid = map(int, service["user"].split(":"))
             with tempfile.TemporaryDirectory(prefix="technis-sqlite-", dir="/run") as work:
                 scratch = Path(work)
+                os.chown(scratch, 0, gid)
+                scratch.chmod(0o710)
                 data = scratch / "data"
                 data.mkdir(mode=0o700)
-                replica = data / live.name
-                copy_sqlite(live, replica)
-                expected = sqlite_signature(replica)
                 os.chown(data, uid, gid)
-                os.chown(replica, uid, gid)
+                replica = data / live.name
+                # A WAL reader can create live sidecars. Use Atuin's UID so they stay usable.
+                copy_sqlite_as_service(live, replica, uid, gid)
+                expected = sqlite_signature(replica)
                 if config_text is not None:
                     replica_config = data / config.name
                     replica_config.write_text(config_text)
