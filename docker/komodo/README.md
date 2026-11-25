@@ -8,9 +8,10 @@ exact commit.
 Komodo deploys the service within the host's existing Compose project.
 
 [releases.toml](releases.toml) describes each eligible host, service, image
-repository, runtime environment, and probe. Nexus enrolls FlareSolverr and
-Redis Exporter. The release engine supports services without persistent storage and
-services with one verified empty volume mounted read-only. Each enrolled
+repository, runtime environment, and probe. Nexus enrolls FlareSolverr,
+Redis Exporter, and Atuin. The release engine supports services without
+persistent storage, one verified empty read-only volume, or Atuin's dedicated
+SQLite bind mount. Each enrolled
 service has its own journal. One host lock serializes updates within the
 project. Spec changes and stateful upgrades require an explicit recovery
 procedure before they can use this release path.
@@ -20,6 +21,15 @@ user from the pinned image. The coordinator checks the image user and
 volume defaults, keeps the exporter settings, and requires the running
 Redis dependency to be healthy. The deployment updates only the exporter
 and the client probe verifies `redis_up 1` through its metrics endpoint.
+
+Atuin uses its existing writable SQLite directory. Before rollout, the
+coordinator starts the candidate against an online SQLite backup in a private
+container without network access. The image must start and leave the copied
+schema and data intact. Recovery rehearses the previous image the same way
+using a fresh copy of the latest database. If it passes, Komodo switches the
+image while retaining the live bind and its committed writes. If it fails,
+recovery pauses for owner review with the live database intact. The temporary
+copies are used only for these checks.
 
 Swurapp updates require operator review. Its writable `/config` holds
 episode state, and the worker changes monitoring flags and can trigger
