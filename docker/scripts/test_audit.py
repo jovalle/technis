@@ -1,4 +1,6 @@
 import importlib.util
+import contextlib
+import io
 import sys
 import tempfile
 import textwrap
@@ -51,6 +53,23 @@ class FindingsTest(unittest.TestCase):
 
 
 class StackTest(unittest.TestCase):
+    def test_only_active_top_level_stacks_are_audited(self):
+        audit = load()
+        with tempfile.TemporaryDirectory() as tmp:
+            audit.STACKS = Path(tmp)
+            active = audit.STACKS / 'active'
+            archive = audit.STACKS / '.archive' / 'beacon'
+            nested = active / 'services' / 'nested'
+            for directory in (active, archive, nested):
+                directory.mkdir(parents=True, exist_ok=True)
+            (active / 'compose.yaml').write_text('include: []\n')
+            for directory in (archive, nested):
+                (directory / 'compose.yaml').write_text('include:\n  - path: missing.yaml\n')
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(audit.main(), 0)
+            self.assertIn('1 stacks', output.getvalue())
+
     def test_overrides_merge_and_exceptions_apply(self):
         audit = load()
         with tempfile.TemporaryDirectory() as tmp:

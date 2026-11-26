@@ -125,7 +125,8 @@ def audit(stack_files):
 
 
 def main():
-    stack_files = sorted(p for p in STACKS.glob('**/compose.yaml') if 'include' in p.read_text())
+    stack_files = sorted(p for p in STACKS.glob('*/compose.yaml')
+                         if not p.parent.name.startswith('.') and 'include' in p.read_text())
     problems = audit(stack_files)
     for problem in problems:
         print(f'✗ {problem}')
