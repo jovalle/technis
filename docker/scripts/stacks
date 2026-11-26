@@ -90,10 +90,10 @@ usage() {
 ${O_B}just${O_X} ${O_D}Docker Compose across the Technis stacks ($list)${O_X}
 
 ${O_B}Commands:${O_X}
-  ${O_C}just deploy${O_X} ${O_D}[target]${O_X}          start or update services, removing orphaned containers
+  ${O_C}just deploy${O_X} ${O_D}[target]${O_X}          start or update services, then wait for health
   ${O_C}just check${O_X} ${O_D}[target]${O_X}           preflight compose models, then show container status
   ${O_C}just logs${O_X} ${O_D}<target> [flags]${O_X}    show or follow logs
-  ${O_C}just update${O_X} ${O_D}<target>${O_X}          pull images and recreate services
+  ${O_C}just update${O_X} ${O_D}<target>${O_X}          pull images, recreate services, and wait for health
   ${O_C}just compose${O_X} ${O_D}<stack> <args...>${O_X} pass arguments to Docker Compose
   ${O_C}just sync${O_X} ${O_D}<stack> [-n] [service...]${O_X}  copy service files to the host (default: all)
   ${O_C}just check workstation${O_X}       check tools, SSH, contexts, and engines
@@ -115,6 +115,7 @@ ${O_B}Targeting:${O_X}
   to all stacks. Other changes across stacks ask first.
   Preflight prompts for missing values on a terminal; Esc skips, Ctrl-C stops.
   Values are hidden and used only for the current run; skipped values block changes.
+  Deploy removes orphans; deploy and update wait up to 5 minutes for health.
 
 ${O_B}Examples:${O_X}
   just check
@@ -578,7 +579,7 @@ ps_table() {
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/stacks.XXXXXX")
   for s in "${targets[@]}"; do
     (
-      if compose "$s" ps --format json "$@" >"$tmp/$s.json" 2>"$tmp/$s.err"; then echo 0; else echo $?; fi >"$tmp/$s.rc"
+      if compose "$s" ps --all --format json "$@" >"$tmp/$s.json" 2>"$tmp/$s.err"; then echo 0; else echo $?; fi >"$tmp/$s.rc"
     ) &
   done
   wait
@@ -614,7 +615,7 @@ ps_table() {
         "$(status_color "$state" "$health")" "$w3" "$status" "$O_X" "$O_D" "$image" "$O_X"
       n=$((n + 1))
       case $state/$health in
-        running/unhealthy | exited/* | dead/*) bad+=("$stack/$svc") ;;
+        running/unhealthy | exited/* | dead/* | created/*) bad+=("$stack/$svc") ;;
         running/starting | restarting/*) warn_n=$((warn_n + 1)) ;;
       esac
     done < <(printf '%s\n' "${rows[@]}" | sort -t $'\t' -k1,1 -k2,2)
@@ -670,7 +671,7 @@ stack_run() {
   if [[ ${raw_compose:-0} == 1 ]]; then
     compose "$s" "$verb" "$@"
   elif [[ $verb == upgrade ]]; then
-    compose "$s" pull "$@" && compose_up "$s" -d ${deps[@]+"${deps[@]}"} "$@"
+    compose "$s" pull "$@" && compose_up "$s" --wait --wait-timeout 300 ${deps[@]+"${deps[@]}"} "$@"
   elif [[ $verb == up ]]; then
     compose_up "$s" ${deps[@]+"${deps[@]}"} "$@"
   else
@@ -750,7 +751,7 @@ run_compose() {
 
   if [[ $verb == upgrade ]]; then
     show_cmd pull "$@"
-    show_cmd up -d "$@"
+    show_cmd up --wait --wait-timeout 300 "$@"
   else
     show_cmd "$verb" "$@"
   fi
@@ -874,7 +875,7 @@ main() {
       for s in "${targets[@]}"; do preflight "$s" secret || die "preflight failed for $s"; done
     fi
     case $verb in
-      deploy) assume_yes=1 run_compose up -d --remove-orphans ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
+      deploy) assume_yes=1 run_compose up --wait --wait-timeout 300 --remove-orphans ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
       check | status) run_compose ps ${svc_tokens[@]+"${svc_tokens[@]}"} ;;
       logs)
         if ((follow && ${#targets[@]} > 1)); then
