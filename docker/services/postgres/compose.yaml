@@ -49,6 +49,7 @@ services:
     # Float within PG18 only; a major bump needs pg_upgrade on the data directory.
     image: timescale/timescaledb-ha:pg18
     labels:
+      - dockhand.update=false
       - traefik.enable=false
     restart: unless-stopped
     security_opt:
