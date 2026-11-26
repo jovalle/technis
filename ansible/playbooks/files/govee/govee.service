@@ -1,0 +1,19 @@
+[Unit]
+Description=Govee light bridge on Isolated
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=4
+
+[Service]
+Type=simple
+RuntimeDirectory=govee
+ExecStartPre=/usr/bin/install -g nogroup -m 0640 /mnt/data/govee/bridge.py /mnt/data/govee/config.json /run/govee/
+ExecStartPre=/usr/bin/python3 -I /mnt/data/govee/network.py /mnt/data/govee/config.json
+ExecStart=/usr/sbin/ip netns exec govee /usr/bin/setpriv --reuid=nobody --regid=nogroup --clear-groups --no-new-privs --bounding-set=-all /usr/bin/python3 -I /run/govee/bridge.py /run/govee/config.json
+ExecStopPost=-/usr/sbin/ip netns del govee
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

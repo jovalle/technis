@@ -1,0 +1,95 @@
+---
+- name: Deploy the Isolated Govee Bridge
+  hosts: nexus
+  gather_facts: false
+  become: true
+  vars:
+    govee_reference: vault://technis/govee/bridge
+    govee_link_reference: vault://technis/govee/attachment
+    govee_directory: /mnt/data/govee
+    govee_network: "{{ govee_config.stdout | from_json }}"
+  tasks:
+    - name: Resolve the Govee bridge network from Infisical
+      delegate_to: localhost
+      become: false
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ playbook_dir }}/../../bin/vault"
+          - get
+          - "{{ govee_reference | replace('vault://technis/', '') }}"
+      register: govee_config
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: Resolve the Isolated uplink from Infisical
+      delegate_to: localhost
+      become: false
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ playbook_dir }}/../../bin/vault"
+          - get
+          - "{{ govee_link_reference | replace('vault://technis/', '') }}"
+      register: govee_link
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: Create the private bridge directory
+      ansible.builtin.file:
+        path: "{{ govee_directory }}"
+        state: directory
+        owner: root
+        group: nogroup
+        mode: "0750"
+
+    - name: Install the bridge scripts
+      ansible.builtin.copy:
+        src: "govee/{{ item }}"
+        dest: "{{ govee_directory }}/{{ item }}"
+        owner: root
+        group: nogroup
+        mode: "0640"
+      loop:
+        - bridge.py
+        - network.py
+      notify: Restart the Govee bridge
+
+    - name: Install the effective network configuration
+      ansible.builtin.copy:
+        content: >-
+          {{ govee_network
+             | combine(govee_link.stdout | from_json,
+                       {'lights': {'downlights': govee_network.lights.downlights}})
+             | to_nice_json }}
+        dest: "{{ govee_directory }}/config.json"
+        owner: root
+        group: nogroup
+        mode: "0640"
+      no_log: true
+      notify: Restart the Govee bridge
+
+    - name: Install the systemd service
+      ansible.builtin.copy:
+        src: govee/govee.service
+        dest: /etc/systemd/system/govee.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart the Govee bridge
+
+    - name: Enable and start the Govee bridge
+      ansible.builtin.systemd_service:
+        name: govee
+        daemon_reload: true
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart the Govee bridge
+      ansible.builtin.systemd_service:
+        name: govee
+        daemon_reload: true
+        state: restarted
