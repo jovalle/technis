@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 ESCAPE = re.compile(r'\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)')
 LIMIT = 4096
+SPINNER_INTERVAL = .15
 
 
 def clean(value):
@@ -45,6 +46,10 @@ def paint(text, code, enabled):
     return f'\x1b[{code}m{text}\x1b[0m' if enabled else text
 
 
+def animation_frame(now: float) -> int:
+    return int(now / SPINNER_INTERVAL) % len(SPINNER_FRAMES)
+
+
 def resource_key(ident):
     name = re.sub(r'^(?:Container|Network|Volume|Image) ', '', ident, flags=re.IGNORECASE)
     return (name.casefold(), ident.casefold(), ident)
@@ -62,6 +67,7 @@ STATE_COLORS = {
     'downloading': 32, 'extracting': 37, 'done': 114, 'up to date': 72,
     'pull complete': 79, 'already exists': 109,
 }
+SPINNER_FRAMES = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 
 
 def state_color(state, status):
@@ -168,13 +174,16 @@ class Progress:
             counts[name] = counts.get(name, 0) + 1
         return {ident: ident if counts[name] > 1 else name for ident, name in names.items()}
 
-    def entries(self, color=False):
+    def entries(self, color=False, frame=None):
         entries = []
         names = self.display_names()
         for ident in sorted(self.resources, key=lambda ident: resource_key(names[ident])):
             r = self.resources[ident]
             mark = '✗' if r.failed else '!' if r.status.lower() == 'warning' else '◌' if r.status.lower() == 'working' else '✓' if r.status.lower() in ('done', 'completed') else '–'
-            shade = '31' if r.failed else '33' if r.status.lower() == 'warning' else '32' if mark == '✓' else '36' if mark == '◌' else '2;37'
+            if frame is not None and mark == '◌':
+                mark = SPINNER_FRAMES[frame % len(SPINNER_FRAMES)]
+            shade = ('31' if r.failed else '33' if r.status.lower() == 'warning' else '32' if mark == '✓'
+                     else '36' if r.status.lower() == 'working' else '2;37')
             state_shade = state_color(r.text, r.status)
             entries.append(f'{paint(mark, shade, color)} {paint(names[ident], "1", color)}  {paint(r.text, state_shade, color)}')
         return entries
@@ -207,8 +216,10 @@ def main():
     progress = Progress(stack=sys.argv[1] if len(sys.argv) > 1 else "")
     interactive = sys.stderr.isatty() and os.environ.get('TERM') not in ('', 'dumb')
     color = colors_enabled()
+    animate = interactive and os.environ.get('JSH_PLAIN_OUTPUT') != '1'
     drawn = 0
     last_draw = 0
+    last_frame = None
     page = 0
     last_page = time.monotonic()
     pending = b''
@@ -222,7 +233,7 @@ def main():
             drawn = 0
 
     def render(now):
-        nonlocal drawn, page, last_page, last_draw, dirty, dimensions
+        nonlocal drawn, page, last_page, last_draw, last_frame, dirty, dimensions
         try:
             size = os.get_terminal_size(sys.stderr.fileno())
         except OSError:
@@ -236,7 +247,11 @@ def main():
             dimensions = (size.columns, size.lines)
             page = 0
             dirty = True
-        pages = layout(progress.entries(color), size.columns, size.lines)
+        frame = animation_frame(now) if animate else None
+        if animate and frame != last_frame:
+            dirty = True
+            last_frame = frame
+        pages = layout(progress.entries(color, frame), size.columns, size.lines)
         if now - last_page >= 3 and len(pages) > 1:
             page = (page + 1) % len(pages)
             last_page = now
@@ -247,6 +262,8 @@ def main():
         clear()
         header = f'Compose progress: {len(progress.resources)} resources'
         footer = f'Page {page + 1}/{len(pages)} · more resources on other pages' if len(pages) > 1 else 'Waiting for Compose…'
+        if frame is not None:
+            footer = f'{SPINNER_FRAMES[frame]} {footer}'
         lines = [wrap(header, size.columns - 1)[0], *pages[page], wrap(footer, size.columns - 1)[0]]
         sys.stderr.write(''.join('\r\x1b[2K' + line + '\n' for line in lines))
         sys.stderr.flush()

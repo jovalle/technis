@@ -3,6 +3,8 @@ import json
 import os
 import pty
 import fcntl
+import re
+import signal
 import termios
 import struct
 import time
@@ -13,6 +15,7 @@ from unittest import mock
 from pathlib import Path
 
 PATH = Path(__file__).with_name('compose_progress.py')
+SPINNER_FRAMES = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 
 
 def load():
@@ -23,7 +26,248 @@ def load():
     return module
 
 
+def read_pty(master, timeout=1):
+    import select
+    data = bytearray()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        ready, _, _ = select.select([master], [], [], deadline - time.monotonic())
+        if not ready:
+            break
+        try:
+            chunk = os.read(master, 4096)
+        except OSError:
+            break
+        if not chunk:
+            break
+        data.extend(chunk)
+    return bytes(data)
+
+
+def start_renderer_pty(term='xterm', rows=7, columns=52, extra_env=None):
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', rows, columns, 0, 0))
+    env = {key: value for key, value in os.environ.items()
+           if key not in ('NO_COLOR', 'JSH_COLOR', 'JSH_PLAIN_OUTPUT')}
+    env.update({'TERM': term, **(extra_env or {})})
+    proc = subprocess.Popen([sys.executable, str(PATH)], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                            stderr=slave, env=env)
+    return proc, master, slave
+
+
+def stop_renderer_pty(proc, master, slave):
+    if proc.poll() is None:
+        if proc.stdin and not proc.stdin.closed:
+            proc.stdin.close()
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=2)
+    if proc.stdin and not proc.stdin.closed:
+        proc.stdin.close()
+    os.close(slave)
+    os.close(master)
+
+
+def spinner_frames(output):
+    text = load().ESCAPE.sub('', output.decode('utf-8', 'replace'))
+    return [char for char in text if char in SPINNER_FRAMES]
+
+
 class ProgressTest(unittest.TestCase):
+    def test_animation_frames_change_only_the_active_marker(self):
+        m = load()
+        p = m.Progress()
+        p.accept(json.dumps({'id': 'Container db-1', 'text': 'Waiting', 'status': 'Working'}))
+
+        first = p.entries(frame=0)[0]
+        second = p.entries(frame=1)[0]
+
+        self.assertEqual(first, '⠋ Container db-1  Waiting')
+        self.assertEqual(second, '⠙ Container db-1  Waiting')
+        self.assertEqual(p.entries(frame=10)[0], first)
+        self.assertEqual(m.width(first), m.width(second))
+        self.assertEqual(p.entries()[0], '◌ Container db-1  Waiting')
+
+    def test_animation_does_not_change_nonworking_or_failed_markers(self):
+        p = load().Progress()
+        for event in [
+            {'id': 'Container done', 'text': 'Healthy', 'status': 'Done'},
+            {'id': 'Container warning', 'text': 'Warning', 'status': 'Warning'},
+            {'id': 'Container unknown', 'text': 'Mysterious', 'status': ''},
+            {'id': 'Container failed', 'text': 'Error', 'status': 'Error'},
+            {'id': 'Container failed', 'text': 'Waiting', 'status': 'Working'},
+        ]:
+            p.accept(json.dumps(event))
+
+        self.assertEqual(p.entries(frame=0), p.entries(frame=1))
+        self.assertIn('✓ Container done  Healthy', p.entries(frame=0))
+        self.assertIn('! Container warning  Warning', p.entries(frame=0))
+        self.assertIn('– Container unknown  Mysterious', p.entries(frame=0))
+        self.assertIn('✗ Container failed  Waiting', p.entries(frame=0))
+
+    def test_animation_calls_do_not_mutate_final_output(self):
+        p = load().Progress()
+        p.accept(json.dumps({'id': 'Container app', 'text': 'Waiting', 'status': 'Working'}))
+        entries = p.entries()
+        final = p.final()
+
+        p.entries(frame=0)
+        p.entries(frame=1)
+
+        self.assertEqual(p.entries(), entries)
+        self.assertEqual(p.final(), final)
+        self.assertIn('0 reported done · 0 failed · 1 in progress or unknown', final)
+        self.assertIn('◌ Container app  Waiting', final)
+
+    def test_animation_frame_uses_fixed_time_steps(self):
+        m = load()
+        self.assertEqual(m.animation_frame(0.0), 0)
+        self.assertEqual(m.animation_frame(0.16), 1)
+        self.assertEqual(m.animation_frame(1.51), 0)
+
+    def test_waiting_resource_animates_without_new_compose_events(self):
+        proc, master, slave = start_renderer_pty()
+        try:
+            proc.stdin.write((json.dumps({'id': 'Container db', 'text': 'Waiting', 'status': 'Working'}) + '\n').encode())
+            proc.stdin.flush()
+            output = read_pty(master, .7)
+            self.assertGreaterEqual(len(set(spinner_frames(output))), 2)
+            self.assertIn(b'Container db', output)
+            proc.stdin.close()
+            proc.wait(timeout=3)
+            final = read_pty(master)
+            final_record = load().ESCAPE.sub('', final.decode('utf-8', 'replace')).split('Compose resources:')[-1]
+            self.assertIn('◌ Container db  Waiting', final_record)
+            self.assertFalse(any(char in SPINNER_FRAMES for char in final_record))
+        finally:
+            stop_renderer_pty(proc, master, slave)
+
+    def test_footer_animates_before_first_resource_event(self):
+        proc, master, slave = start_renderer_pty()
+        try:
+            output = read_pty(master, .7)
+            self.assertGreaterEqual(len(set(spinner_frames(output))), 2)
+            self.assertIn(b'Waiting for Compose', output)
+            proc.stdin.close()
+            proc.wait(timeout=3)
+            self.assertIn(b'No resource progress reported', read_pty(master))
+        finally:
+            stop_renderer_pty(proc, master, slave)
+
+    def test_completed_rows_stay_static_while_footer_animates(self):
+        proc, master, slave = start_renderer_pty()
+        try:
+            proc.stdin.write((json.dumps({'id': 'Container web', 'text': 'Healthy', 'status': 'Done'}) + '\n').encode())
+            proc.stdin.flush()
+            output = read_pty(master, .7)
+            self.assertGreaterEqual(len(set(spinner_frames(output))), 2)
+            visible = load().ESCAPE.sub('', output.decode('utf-8', 'replace'))
+            resource_rows = [line for line in visible.splitlines() if 'Container web' in line]
+            self.assertTrue(resource_rows)
+            self.assertTrue(all('✓ Container web  Healthy' in line for line in resource_rows))
+            proc.stdin.close()
+            proc.wait(timeout=3)
+            self.assertFalse(spinner_frames(read_pty(master).split(b'Compose resources:')[-1]))
+        finally:
+            stop_renderer_pty(proc, master, slave)
+
+    def test_animated_entries_keep_narrow_layout_bounds_and_names(self):
+        m = load()
+        p = m.Progress()
+        for i in range(12):
+            p.accept(json.dumps({'id': f'Container service-{i}', 'text': 'Waiting', 'status': 'Working'}))
+        pages = m.layout(p.entries(frame=4), 20, 5)
+        rendered = [row for page in pages for row in page]
+        self.assertTrue(all(m.width(row) < 20 for row in rendered))
+        combined = ''.join(rendered)
+        for i in range(12):
+            self.assertEqual(len(re.findall(rf'Container service-{i}(?!\d)', combined)), 1)
+
+    def test_page_footer_keeps_counts_during_animation(self):
+        proc, master, slave = start_renderer_pty(rows=5, columns=50)
+        try:
+            for i in range(4):
+                proc.stdin.write((json.dumps({'id': f'Container service-{i}', 'text': 'Waiting', 'status': 'Working'}) + '\n').encode())
+            proc.stdin.flush()
+            output = read_pty(master, 3.5)
+            self.assertIn(b'Page 1/2', output)
+            self.assertIn(b'Page 2/2', output)
+            self.assertGreaterEqual(len(set(spinner_frames(output))), 2)
+            for i in range(4):
+                self.assertIn(f'Container service-{i}'.encode(), output)
+        finally:
+            stop_renderer_pty(proc, master, slave)
+
+    def test_noninteractive_and_dumb_term_output_never_animates(self):
+        for term in ('xterm', 'dumb'):
+            with self.subTest(term=term):
+                proc = subprocess.Popen([sys.executable, str(PATH)], stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+                                        stdout=subprocess.DEVNULL, env={**os.environ, 'TERM': term})
+                proc.stdin.write((json.dumps({'id': 'Container db', 'text': 'Waiting', 'status': 'Working'}) + '\n').encode())
+                proc.stdin.flush()
+                time.sleep(.35)
+                proc.stdin.close()
+                output = proc.stderr.read()
+                proc.wait(timeout=3)
+                proc.stderr.close()
+                self.assertFalse(spinner_frames(output))
+                self.assertNotIn(b'\x1b[', output)
+                self.assertIn(b'Container db', output)
+
+    def test_plain_output_disables_animation_but_no_color_does_not(self):
+        plain, master, slave = start_renderer_pty(extra_env={'JSH_PLAIN_OUTPUT': '1'})
+        try:
+            plain.stdin.write((json.dumps({'id': 'Container db', 'text': 'Waiting', 'status': 'Working'}) + '\n').encode())
+            plain.stdin.flush()
+            output = read_pty(master, .6)
+            self.assertFalse(spinner_frames(output))
+            visible = load().ESCAPE.sub('', output.decode('utf-8', 'replace'))
+            self.assertIn('◌ Container db  Waiting', visible)
+        finally:
+            stop_renderer_pty(plain, master, slave)
+
+        no_color, master, slave = start_renderer_pty(extra_env={'NO_COLOR': ''})
+        try:
+            no_color.stdin.write((json.dumps({'id': 'Container db', 'text': 'Waiting', 'status': 'Working'}) + '\n').encode())
+            no_color.stdin.flush()
+            output = read_pty(master, .6)
+            self.assertGreaterEqual(len(set(spinner_frames(output))), 2)
+            self.assertIsNone(re.search(rb'\x1b\[[0-9;]*m', output))
+        finally:
+            stop_renderer_pty(no_color, master, slave)
+
+    def test_unterminated_event_is_reported_statically_at_eof(self):
+        event = json.dumps({'id': 'Container final', 'text': 'Waiting', 'status': 'Working'})
+        proc = subprocess.run([sys.executable, str(PATH)], input=event.encode(), capture_output=True,
+                             env={**os.environ, 'TERM': 'dumb'}, timeout=3)
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn(b'Container final', proc.stderr)
+        self.assertIn(b'Waiting', proc.stderr)
+        self.assertFalse(spinner_frames(proc.stderr))
+        self.assertNotIn(b'\x1b[', proc.stderr)
+
+    def test_sigint_clears_animation_and_keeps_unfinished_status(self):
+        proc, master, slave = start_renderer_pty()
+        try:
+            proc.stdin.write((json.dumps({'id': 'Container db', 'text': 'Waiting', 'status': 'Working'}) + '\n').encode())
+            proc.stdin.flush()
+            live = read_pty(master, .5)
+            self.assertGreaterEqual(len(set(spinner_frames(live))), 2)
+            proc.send_signal(signal.SIGINT)
+            proc.wait(timeout=3)
+            final = load().ESCAPE.sub('', read_pty(master).decode('utf-8', 'replace')).split('Compose resources:')[-1]
+            self.assertIn('Container db  Waiting', final)
+            self.assertFalse(any(char in SPINNER_FRAMES for char in final))
+            self.assertNotIn('✓ Container db', final)
+        finally:
+            stop_renderer_pty(proc, master, slave)
+
     def test_states_and_errors_are_retained(self):
         p = load().Progress()
         for event in [
@@ -150,14 +394,11 @@ class ProgressTest(unittest.TestCase):
         env['TERM'] = 'xterm'
         proc = subprocess.Popen([sys.executable, str(PATH)], stdin=subprocess.PIPE, stderr=slave,
                                 stdout=subprocess.DEVNULL, env=env)
-        os.close(slave)
         events = [{'id':'Container web', 'text':'Healthy', 'status':'Done'},
                   {'id':'Container db', 'text':'Error', 'status':'Error'}]
         proc.communicate(('\n'.join(map(json.dumps, events)) + '\n').encode(), timeout=5)
-        data = b''
-        while True:
-            try: data += os.read(master, 4096)
-            except OSError: break
+        data = read_pty(master)
+        os.close(slave)
         os.close(master)
         self.assertIn(b'\x1b[32m', data)
         self.assertIn(b'\x1b[38;5;118mHealthy', data)
@@ -170,7 +411,6 @@ class ProgressTest(unittest.TestCase):
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 7, 52, 0, 0))
         proc = subprocess.Popen([sys.executable, str(PATH)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=slave, env={**os.environ, 'TERM': 'xterm'})
-        os.close(slave)
         proc.stdin.write((json.dumps({'id':'Container web', 'text':'Creating', 'status':'Working'}) + '\n').encode())
         proc.stdin.flush()
         time.sleep(.35)
@@ -179,14 +419,8 @@ class ProgressTest(unittest.TestCase):
         proc.stdin.write((json.dumps({'id':'Container web', 'text':'Started', 'status':'Done'}) + '\n').encode())
         proc.stdin.close()
         proc.wait(timeout=5)
-        output = b''
-        while True:
-            try:
-                part = os.read(master, 4096)
-                if not part: break
-                output += part
-            except OSError:
-                break
+        output = initial.encode() + read_pty(master)
+        os.close(slave)
         os.close(master)
         proc.stdout.close()
         self.assertEqual(proc.returncode, 0)
@@ -228,7 +462,7 @@ class ProgressTest(unittest.TestCase):
 
     def test_compose_up_preserves_stdout_and_failure_status(self):
         script = PATH.with_name('stacks')
-        command = r"""source <(sed '$d' "$1")
+        command = r"""source <(sed '/^# Bash parses the whole group/,$d' "$1")
 root=$2
 compose() { printf 'compose stdout\n'; printf '%s\n' '{"id":"Container web","text":"Creating","status":"Working"}' >&2; return 7; }
 compose_up example -d
@@ -241,7 +475,7 @@ compose_up example -d
 
     def test_renderer_failure_does_not_interrupt_compose(self):
         script = PATH.with_name('stacks')
-        command = r"""source <(sed '$d' "$1")
+        command = r"""source <(sed '/^# Bash parses the whole group/,$d' "$1")
 root=$2
 python3() { return 23; }
 compose() { for ((i=0; i<2000; i++)); do printf '{"id":"Container s%s","text":"Started","status":"Done"}\n' "$i" >&2; done; return 7; }

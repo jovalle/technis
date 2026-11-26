@@ -106,7 +106,8 @@ ${O_B}Options:${O_X}
 
 ${O_B}Environment:${O_X}
   ${O_C}STACKS_PROGRESS=compose${O_X}  use Compose's own progress view for detached runs;
-                           by default show resource progress and final results
+                           otherwise animate active statuses on terminals and keep
+                           final or redirected output static
 
 ${O_B}Targeting:${O_X}
   Use a stack name, a service name, or stack/service. Service names are found
