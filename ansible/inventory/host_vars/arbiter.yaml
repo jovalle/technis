@@ -1,5 +1,0 @@
----
-receiver_additional_signal_formats:
-  - name: SD
-    source_index: "21"
-    value: "4" # 8K Enhanced (4K120/VRR)
