@@ -27,6 +27,7 @@ ROOTFUL = {
     'azuracast': 'supervisord drops each service to its own user; caps are restricted',
     'plex': 'pms-docker init drops Plex Media Server to PLEX_UID',
     'syncthing': 'image has no non-root mode; s6 drops Syncthing to PUID',
+    'dispatcharr': 'the AIO entrypoint uses su to drop nginx, PostgreSQL, Redis, and Celery to PUID',
 }
 
 # finding -> service -> reason; every entry was checked against the running containers.
@@ -41,6 +42,7 @@ EXCEPTIONS = {
     'no-cap-drop': {
         'nut': 'Beacon was unreachable during the rollout; drop caps once it can be tested',
         'peanut': 'Beacon was unreachable during the rollout; drop caps once it can be tested',
+        'dispatcharr': 'the AIO entrypoint switches users for its bundled services; drop caps once a reduced set is tested',
     },
     'docker-socket': {
         'docker-socket-proxy': 'the read-only API gateway everything else uses',

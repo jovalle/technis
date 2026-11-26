@@ -39,6 +39,8 @@ include:
     env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/cloudflared-2.env
   - path: ../../services/ddclient/compose.yaml
     env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/ddclient.env
+  - path: ../../services/dispatcharr/compose.yaml
+    env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/dispatcharr.env
   - path: ../../services/docker-socket-proxy/compose.yaml
     env_file: ${TECHNIS_ENV:?run compose through docker/scripts/stacks}/docker-socket-proxy.env
   - path: ../../services/flaresolverr/compose.yaml

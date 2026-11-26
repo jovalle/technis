@@ -1,0 +1,41 @@
+services:
+  dispatcharr:
+    container_name: dispatcharr
+    environment:
+      - CELERY_BROKER_URL=redis://localhost:6379/0
+      - DISPATCHARR_ENV=aio
+      - DISPATCHARR_LOG_LEVEL=warning
+      - DISPATCHARR_TRUSTED_PROXIES=none
+      - PGID=${PGID:-568}
+      - PUID=${PUID:-568}
+      - REDIS_HOST=localhost
+      - TZ=${TZ:-America/New_York}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 90s
+      test: [CMD, curl, -fsS, -o, /dev/null, http://127.0.0.1:9191/]
+      timeout: 5s
+    image: ghcr.io/dispatcharr/dispatcharr:0.34.1
+    labels:
+      - traefik.enable=false
+    networks:
+      - dispatcharr
+    ports:
+      # Plex runs on the host network and can reach the tuner over loopback.
+      - 127.0.0.1:9191:9191
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: bind
+        source: ${STACK_DATA_ROOT:?STACK_DATA_ROOT is required}/dispatcharr/secure/data
+        target: /data
+        bind:
+          # Fail closed if the encrypted dataset has not mounted.
+          create_host_path: false
+
+networks:
+  # Keep the bundled PostgreSQL and Redis off the shared stack network.
+  dispatcharr:
+    driver: bridge
