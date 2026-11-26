@@ -21,7 +21,6 @@ services:
       - /dev/dri:/dev/dri:rwm
     environment:
       - ADVERTISE_IP=${PLEX_ADVERTISE_IP:?PLEX_ADVERTISE_IP is required}
-      - ALLOWED_NETWORKS=192.168.0.0/16,172.16.0.0/12
       # pms-docker reads PLEX_UID/PLEX_GID, not PUID/PGID; init stays root, the server runs as 568.
       - PLEX_GID=${PGID:-568}
       - PLEX_UID=${PUID:-568}
