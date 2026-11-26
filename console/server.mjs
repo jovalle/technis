@@ -122,7 +122,7 @@ export function loadConfig(name, inventory = loadInventory()) {
     credentials = JSON.parse(
       execFileSync(
         "python3",
-        [resolve(root, "tools/vault.py"), "section", `${protocol}/${name}`],
+        [resolve(root, "bin/vault"), "show", `${protocol}/${name}`],
         { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
       )
     );
@@ -139,7 +139,7 @@ export function loadConfig(name, inventory = loadInventory()) {
     credentials.password === "CHANGEME"
   )
     throw new Error(
-      `Set real console credentials with just vault ${protocol}/${name}/username and .../password`
+      `Set real console credentials with just vault set ${protocol}/${name}/username and .../password`
     );
   return {
     name,
