@@ -34,7 +34,8 @@ services:
       - STATE_PATH=/data/state.json
       - SYNC_MODE=${EXTERNAL_DNS_SYNC_MODE:-watch}
       - TECHNITIUM_URL=http://100.100.1.2:5380
-      - TECHNITIUM_ZONES=techn.is,homelab,nexus,mothership,stargate,go
+      # The existing home.techn.is forwarder zone takes precedence over techn.is.
+      - TECHNITIUM_ZONES=techn.is,home.techn.is,homelab,nexus,mothership,stargate,go
     hostname: external-dns
     image: ghcr.io/jovalle/external-dns:latest
     labels:

@@ -1,0 +1,67 @@
+---
+# Run from the repo root: ansible-playbook ansible/playbooks/assistant.yaml
+# Home Assistant must trust the LAN address of nexus as a reverse proxy.
+# ExternalDNS reconciles this route into the home.techn.is zone on stargate.
+# The nexus resolver serves a secondary copy of that zone.
+- name: Deploy Home Assistant LAN HTTPS
+  hosts: nexus
+  gather_facts: false
+  vars:
+    route_reference: vault://technis/assistant/route
+    route: "{{ assistant_route.stdout | from_json }}"
+  tasks:
+    - name: Read the Home Assistant route from Infisical
+      delegate_to: localhost
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ playbook_dir }}/../../bin/vault"
+          - get
+          - "{{ route_reference | replace('vault://technis/', '') }}"
+      register: assistant_route
+      check_mode: false
+      changed_when: false
+      no_log: true
+
+    - name: Validate the backend and LAN allowlist
+      ansible.builtin.assert:
+        that:
+          - route.address is match('^192[.]168[.][0-9]{1,3}[.][0-9]{1,3}$')
+          - route.networks | type_debug == 'list'
+          - route.networks | length > 0
+          - route.networks | reject('match', '^192[.]168[.][0-9]{1,3}[.]0/24$') | list | length == 0
+      no_log: true
+
+    - name: Install the Home Assistant Traefik route
+      ansible.builtin.copy:
+        dest: /mnt/data/traefik/dynamic/assistant.yaml
+        mode: "0640"
+        group: "568"
+        content: |
+          http:
+            routers:
+              assistant:
+                rule: Host(`home.techn.is`)
+                entryPoints: [websecure]
+                middlewares: [assistant-lan]
+                service: assistant
+                tls: {}
+              assistant-http:
+                rule: Host(`home.techn.is`)
+                entryPoints: [web]
+                middlewares: [assistant-lan, assistant-https]
+                service: noop@internal
+            middlewares:
+              assistant-lan:
+                ipAllowList:
+                  sourceRange: {{ route.networks | to_json }}
+              assistant-https:
+                redirectScheme:
+                  scheme: https
+                  permanent: true
+            services:
+              assistant:
+                loadBalancer:
+                  servers:
+                    - url: {{ ('http://' ~ route.address ~ ':8123') | to_json }}
+      no_log: true
