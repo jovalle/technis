@@ -115,16 +115,16 @@ groups:
           priority: P1
           service: redis
         annotations:
-          summary: Redis exporter cannot reach the database
-          description: Redis on {{ $labels.host }} has been unavailable for two minutes.
+          summary: The exporter cannot reach Valkey
+          description: Valkey on {{ $labels.host }} has been unavailable for two minutes.
       - alert: RedisRejectedConnections
         expr: increase(redis_rejected_connections_total[5m]) > 0
         labels:
           priority: P2
           service: redis
         annotations:
-          summary: Redis rejected client connections
-          description: Redis on {{ $labels.host }} rejected one or more connections in five minutes.
+          summary: Valkey rejected client connections
+          description: Valkey on {{ $labels.host }} rejected one or more connections in five minutes.
   - name: observability-control-plane
     interval: 30s
     rules:
