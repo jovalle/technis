@@ -31,7 +31,7 @@ services:
         - ping
       timeout: 5s
     hostname: redis
-    image: valkey/valkey:9.0-alpine
+    image: valkey/valkey:9.2-alpine
     labels:
       - traefik.enable=false
     read_only: true
